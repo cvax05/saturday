@@ -1,0 +1,123 @@
+Below is a complete starter you can paste into a new Replit Next.js project. It includes browsing groups, group profile, simple inbox with polling, and basic report flow. Replace the files in your Replit with these. Defaults: Email-only auth placeholder, SQLite, simple polling, free-text availability, multi-city support, simple report form, local image upload.
+
+---
+
+## Quick start
+
+1. Create a new Replit: Next.js + Node 18 or higher
+2. Add files below matching the exact paths
+3. Install deps:
+
+```
+npm i next@14 react react-dom prisma @prisma/client tailwindcss postcss autoprefixer zod bcryptjs jsonwebtoken multer uuid
+```
+
+4. Init Prisma and DB:
+
+```
+npx prisma init --datasource-provider sqlite
+npx prisma migrate dev --name init
+```
+
+5. Create `.env` at project root with:
+
+```
+DATABASE_URL="file:./dev.db"
+JWT_SECRET="change_me_long_random"
+NEXT_PUBLIC_APP_NAME="PreGame"
+```
+
+6. Run:
+
+```
+npm run dev
+```
+
+---
+
+## File tree
+
+```
+prisma/schema.prisma
+src/lib/db.ts
+src/lib/auth.ts
+src/lib/validators.ts
+src/app/globals.css
+src/app/layout.tsx
+src/app/page.tsx
+src/app/groups/[id]/page.tsx
+src/app/inbox/page.tsx
+src/app/api/auth/signup/route.ts
+src/app/api/auth/signin/route.ts
+src/app/api/me/route.ts
+src/app/api/upload/route.ts
+src/app/api/groups/route.ts
+src/app/api/groups/[id]/route.ts
+src/app/api/threads/route.ts
+src/app/api/threads/[id]/messages/route.ts
+src/components/Filters.tsx
+src/components/GroupCard.tsx
+src/components/MessageButton.tsx
+src/components/Badge.tsx
+postcss.config.js
+tailwind.config.ts
+next.config.mjs
+package.json (scripts)
+```
+
+---
+
+## prisma/schema.prisma
+
+```prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  avatarUrl String?
+  city      String?
+  createdAt DateTime @default(now())
+  groups    Group[]  @relation("UserGroups")
+  owned     Group[]  @relation("OwnedGroups")
+  threads   Thread[] @relation("UserThreads")
+}
+
+model Group {
+  id            String   @id @default(cuid())
+  ownerId       String
+  owner         User     @relation("OwnedGroups", fields: [ownerId], references: [id])
+  name          String
+  description   String
+  imageUrl      String?
+  sizeMin       Int
+  sizeMax       Int
+  preferredAlcohol String
+  availability  String
+  city          String
+  tags          String
+  isSportsTeam  Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  members       User[]   @relation("UserGroups")
+  threads       Thread[]
+}
+
+model Thread {
+  id             String   @id @default(cuid())
+  groupId        String
+  group          Group    @relation(fields: [groupId], references: [id])
+  initiatorId    String
+  initiator      User     @relation("UserThreads", fields: [initiatorId], references: [id])
+  lastMessageAt  DateTime @default(now())
+  isBlocked      Boolean  @default(false)
+  messag
+```
