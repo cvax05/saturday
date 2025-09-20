@@ -95,6 +95,11 @@ export default function UserProfilePage() {
     setLocation("/messages");
   };
 
+  const handleConnect = (userId: string) => {
+    console.log('Connect and pregame with user:', userId);
+    setLocation("/messages");
+  };
+
   const handleBack = () => {
     setLocation("/home");
   };
@@ -104,6 +109,7 @@ export default function UserProfilePage() {
       {...user}
       reviews={mockReviews}
       onMessage={handleMessage}
+      onConnect={handleConnect}
       onBack={handleBack}
     />
   );

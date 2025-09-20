@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Star, Users, Wine, Clock, MapPin, MessageCircle } from "lucide-react";
+import { Star, Users, Wine, Clock, MapPin, MessageCircle, Calendar } from "lucide-react";
 
 interface Review {
   id: string;
@@ -28,6 +28,7 @@ interface UserProfileProps {
   city: string;
   reviews: Review[];
   onMessage: (id: string) => void;
+  onConnect?: (id: string) => void;
   onBack: () => void;
   isOwnProfile?: boolean;
 }
@@ -47,12 +48,18 @@ export default function UserProfile({
   city,
   reviews,
   onMessage,
+  onConnect,
   onBack,
   isOwnProfile = false
 }: UserProfileProps) {
   const handleMessage = () => {
     console.log(`Starting message with ${name}`);
     onMessage(id);
+  };
+
+  const handleConnect = () => {
+    console.log(`Connect and pregame with ${name}`);
+    onConnect?.(id);
   };
 
   const handleBack = () => {
@@ -108,10 +115,25 @@ export default function UserProfile({
               </div>
               
               {!isOwnProfile && (
-                <Button onClick={handleMessage} className="w-full sm:w-auto" data-testid={`button-message-${id}`}>
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Send Message
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleMessage} 
+                    className="flex-1 sm:flex-none"
+                    data-testid={`button-message-${id}`}
+                  >
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Message
+                  </Button>
+                  <Button 
+                    onClick={handleConnect} 
+                    className="flex-1 sm:flex-none"
+                    data-testid={`button-connect-${id}`}
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Connect & Pregame
+                  </Button>
+                </div>
               )}
             </div>
           </div>

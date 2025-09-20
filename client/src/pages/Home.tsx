@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import DiscoverFeed from "@/components/DiscoverFeed";
+import ConnectModal from "@/components/ConnectModal";
+import RatingModal from "@/components/RatingModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Settings, AlertTriangle } from "lucide-react";
 
 // TODO: Remove mock data when implementing backend
 const mockUsers = [
@@ -72,9 +75,15 @@ const mockUsers = [
 export default function Home() {
   const [, setLocation] = useLocation();
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [showConnectModal, setShowConnectModal] = useState(false);
+  const [connectUser, setConnectUser] = useState<typeof mockUsers[0] | null>(null);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratingUser, setRatingUser] = useState<{name: string, image?: string} | null>(null);
 
-  // TODO: Get current user's school from backend
+  // TODO: Get current user's school and pending ratings from backend
   const currentUserSchool = "University of Texas at Austin";
+  const hasPendingRating = true; // TODO: Get from backend
+  const pendingRatingUser = "Mike Rodriguez"; // TODO: Get from backend
   
   // Filter users by school
   const schoolUsers = mockUsers.filter(user => user.school === currentUserSchool);
@@ -85,12 +94,53 @@ export default function Home() {
   };
 
   const handleMessage = (userId: string) => {
+    if (hasPendingRating) {
+      // Show rating modal instead of allowing new messages
+      const user = mockUsers.find(u => u.name === pendingRatingUser);
+      setRatingUser({
+        name: pendingRatingUser,
+        image: user?.profileImage
+      });
+      setShowRatingModal(true);
+      return;
+    }
+    
     console.log('Starting message with user:', userId);
     setLocation("/messages");
   };
 
+  const handleConnect = (userId: string) => {
+    const user = mockUsers.find(u => u.id === userId);
+    if (user) {
+      setConnectUser(user);
+      setShowConnectModal(true);
+    }
+  };
+
+  const handleConfirmConnect = () => {
+    console.log('Confirmed pregame connection');
+    // TODO: Create connection record in backend
+    setLocation("/messages");
+  };
+
+  const handleSubmitRating = (rating: number, comment: string) => {
+    console.log('Rating submitted:', { rating, comment });
+    // TODO: Submit rating to backend
+    setShowRatingModal(false);
+    setRatingUser(null);
+  };
+
   const handleRefreshFeed = () => {
     console.log('Refreshing discover feed...');
+  };
+
+  const showRatingDemo = () => {
+    const user = mockUsers.find(u => u.name === pendingRatingUser);
+    setRatingUser({
+      name: pendingRatingUser,
+      image: user?.profileImage
+    });
+    setShowRatingModal(true);
   };
 
   return (
@@ -104,6 +154,18 @@ export default function Home() {
             <p className="text-sm text-muted-foreground">{currentUserSchool}</p>
           </div>
           <div className="flex items-center gap-2">
+            {hasPendingRating && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={showRatingDemo}
+                data-testid="button-pending-rating"
+                className="text-xs"
+              >
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                Rate Experience
+              </Button>
+            )}
             <Button
               variant="outline"
               size="icon"
@@ -118,6 +180,27 @@ export default function Home() {
       </header>
 
       <main className="max-w-2xl mx-auto p-4">
+        {hasPendingRating && (
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <h3 className="font-semibold text-destructive">Rating Required</h3>
+            </div>
+            <p className="text-sm text-destructive mb-3">
+              You have a pending rating for <strong>{pendingRatingUser}</strong>. 
+              Complete your rating to continue messaging other users.
+            </p>
+            <Button 
+              size="sm" 
+              variant="destructive" 
+              onClick={showRatingDemo}
+              data-testid="button-complete-rating"
+            >
+              Complete Rating Now
+            </Button>
+          </div>
+        )}
+        
         <DiscoverFeed
           users={schoolUsers}
           onViewProfile={handleViewProfile}
@@ -136,11 +219,23 @@ export default function Home() {
             <span className="text-xs font-medium">Home</span>
           </button>
           <button
-            onClick={() => setLocation("/messages")}
-            className="flex flex-col items-center py-2 px-4 rounded-lg text-muted-foreground hover:text-foreground"
+            onClick={() => hasPendingRating ? showRatingDemo() : setLocation("/messages")}
+            className={`flex flex-col items-center py-2 px-4 rounded-lg relative ${
+              hasPendingRating 
+                ? "text-destructive" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
             data-testid="nav-messages"
           >
             <span className="text-xs font-medium">Messages</span>
+            {hasPendingRating && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-4 w-4 p-0 text-[10px] font-bold rounded-full flex items-center justify-center"
+              >
+                !
+              </Badge>
+            )}
           </button>
           <button
             onClick={() => setLocation("/profile/edit")}
@@ -151,6 +246,29 @@ export default function Home() {
           </button>
         </div>
       </nav>
+
+      {showConnectModal && connectUser && (
+        <ConnectModal
+          isOpen={showConnectModal}
+          onClose={() => setShowConnectModal(false)}
+          onConfirm={handleConfirmConnect}
+          userName={connectUser.name}
+          userImage={connectUser.profileImage}
+          userAge={connectUser.age}
+          groupSize={`${connectUser.groupSizeMin}-${connectUser.groupSizeMax}`}
+          preferredAlcohol={connectUser.preferredAlcohol}
+        />
+      )}
+
+      {showRatingModal && ratingUser && (
+        <RatingModal
+          isOpen={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          userName={ratingUser.name}
+          userImage={ratingUser.image}
+          onSubmitRating={handleSubmitRating}
+        />
+      )}
     </div>
   );
 }

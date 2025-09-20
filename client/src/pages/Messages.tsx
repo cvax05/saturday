@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import MessageList from "@/components/MessageList";
+import RatingModal from "@/components/RatingModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 
 // TODO: Remove mock conversations when implementing backend
 const mockConversations = [
@@ -38,15 +40,47 @@ const mockConversations = [
 
 export default function Messages() {
   const [, setLocation] = useLocation();
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratingUser, setRatingUser] = useState<{name: string, image?: string} | null>(null);
+
+  // TODO: Get pending ratings from backend
+  const hasPendingRating = true;
+  const pendingRatingUser = "Mike Rodriguez";
 
   const handleConversationClick = (conversationId: string) => {
+    if (hasPendingRating) {
+      // Show rating modal instead of allowing conversation access
+      const user = mockConversations.find(c => c.participantName === pendingRatingUser);
+      setRatingUser({
+        name: pendingRatingUser,
+        image: user?.participantImage
+      });
+      setShowRatingModal(true);
+      return;
+    }
+    
     console.log('Opening conversation:', conversationId);
-    // TODO: Navigate to individual conversation view
     setLocation(`/messages/${conversationId}`);
+  };
+
+  const handleSubmitRating = (rating: number, comment: string) => {
+    console.log('Rating submitted:', { rating, comment });
+    // TODO: Submit rating to backend
+    setShowRatingModal(false);
+    setRatingUser(null);
   };
 
   const handleBack = () => {
     setLocation("/home");
+  };
+
+  const showRatingDemo = () => {
+    const user = mockConversations.find(c => c.participantName === pendingRatingUser);
+    setRatingUser({
+      name: pendingRatingUser,
+      image: user?.participantImage
+    });
+    setShowRatingModal(true);
   };
 
   return (
@@ -69,6 +103,27 @@ export default function Messages() {
       </header>
 
       <main className="max-w-2xl mx-auto p-4">
+        {hasPendingRating && (
+          <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <h3 className="font-semibold text-destructive">Messaging Locked</h3>
+            </div>
+            <p className="text-sm text-destructive mb-3">
+              Complete your rating for <strong>{pendingRatingUser}</strong> to unlock messaging. 
+              You have 48 hours after connecting to leave a review.
+            </p>
+            <Button 
+              size="sm" 
+              variant="destructive" 
+              onClick={showRatingDemo}
+              data-testid="button-unlock-messaging"
+            >
+              Complete Rating Now
+            </Button>
+          </div>
+        )}
+        
         <MessageList
           conversations={mockConversations}
           onConversationClick={handleConversationClick}
@@ -86,10 +141,22 @@ export default function Messages() {
           </button>
           <button
             onClick={() => setLocation("/messages")}
-            className="flex flex-col items-center py-2 px-4 rounded-lg text-primary bg-primary/10"
+            className={`flex flex-col items-center py-2 px-4 rounded-lg relative ${
+              hasPendingRating 
+                ? "text-destructive bg-destructive/10" 
+                : "text-primary bg-primary/10"
+            }`}
             data-testid="nav-messages"
           >
             <span className="text-xs font-medium">Messages</span>
+            {hasPendingRating && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-4 w-4 p-0 text-[10px] font-bold rounded-full flex items-center justify-center"
+              >
+                !
+              </Badge>
+            )}
           </button>
           <button
             onClick={() => setLocation("/profile/edit")}
@@ -100,6 +167,16 @@ export default function Messages() {
           </button>
         </div>
       </nav>
+
+      {showRatingModal && ratingUser && (
+        <RatingModal
+          isOpen={showRatingModal}
+          onClose={() => setShowRatingModal(false)}
+          userName={ratingUser.name}
+          userImage={ratingUser.image}
+          onSubmitRating={handleSubmitRating}
+        />
+      )}
     </div>
   );
 }
