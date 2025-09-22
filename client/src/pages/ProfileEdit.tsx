@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArrowLeft, Upload } from "lucide-react";
@@ -27,18 +28,10 @@ export default function ProfileEdit() {
     profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
   });
 
-  const schools = [
-    "University of Texas at Austin",
-    "Texas A&M University", 
-    "University of Houston",
-    "Rice University",
-    "Texas Tech University",
-    "Southern Methodist University",
-    "Baylor University",
-    "Texas Christian University"
-  ];
+  // Schools list now handled by SearchableCollegeSelect component
 
   const alcoholOptions = [
+    "None",
     "Beer",
     "Wine", 
     "Cocktails",
@@ -142,21 +135,14 @@ export default function ProfileEdit() {
                 />
               </div>
 
-              <div>
-                <Label htmlFor="school">School</Label>
-                <Select value={formData.school} onValueChange={(value) => handleInputChange("school", value)} required>
-                  <SelectTrigger data-testid="select-school">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {schools.map((school) => (
-                      <SelectItem key={school} value={school}>
-                        {school}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <SearchableCollegeSelect
+                value={formData.school}
+                onValueChange={(value) => handleInputChange("school", value)}
+                required
+                label="School"
+                placeholder="Search for your school..."
+                testId="select-school"
+              />
 
               <div>
                 <Label htmlFor="description">About You (1-2 sentences)</Label>

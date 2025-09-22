@@ -1,11 +1,8 @@
-import { useState } from "react";
 import { useLocation } from "wouter";
 import MessageList from "@/components/MessageList";
-import RatingModal from "@/components/RatingModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 // TODO: Remove mock conversations when implementing backend
 const mockConversations = [
