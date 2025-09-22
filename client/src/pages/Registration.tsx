@@ -10,6 +10,7 @@ import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
+import { compressImage, safeSaveToLocalStorage } from "@/lib/imageUtils";
 
 export default function Registration() {
   const [, setLocation] = useLocation();
@@ -45,14 +46,22 @@ export default function Registration() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setProfileImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Compress image to reduce storage size
+        const compressedImage = await compressImage(file, 400, 400, 0.7);
+        setProfileImage(compressedImage);
+      } catch (error) {
+        console.error('Failed to process image:', error);
+        // Fallback to original method but with smaller size
+        const reader = new FileReader();
+        reader.onload = () => {
+          setProfileImage(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -64,11 +73,19 @@ export default function Registration() {
     e.preventDefault();
     console.log('Registration data:', formData);
     
-    // Store user data in localStorage so other pages can access it
-    localStorage.setItem('currentUser', JSON.stringify({
+    // Store user data safely in localStorage
+    const userData = {
       ...formData,
-      profileImage
-    }));
+      profileImage,
+      galleryImages: [] // Initialize empty gallery
+    };
+    
+    const saved = safeSaveToLocalStorage('currentUser', userData);
+    
+    if (!saved) {
+      alert('Registration data is too large to save. Please try using a smaller profile image.');
+      return;
+    }
     
     // TODO: Submit to backend
     // For now, just redirect to home

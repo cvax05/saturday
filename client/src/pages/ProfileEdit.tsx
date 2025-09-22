@@ -10,6 +10,7 @@ import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArrowLeft, Upload, X, Plus } from "lucide-react";
+import { compressImage, safeSaveToLocalStorage } from "@/lib/imageUtils";
 
 export default function ProfileEdit() {
   const [, setLocation] = useLocation();
@@ -73,14 +74,22 @@ export default function ProfileEdit() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setFormData(prev => ({ ...prev, profileImage: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Compress image to reduce storage size
+        const compressedImage = await compressImage(file, 400, 400, 0.7);
+        setFormData(prev => ({ ...prev, profileImage: compressedImage }));
+      } catch (error) {
+        console.error('Failed to process image:', error);
+        // Fallback to original method
+        const reader = new FileReader();
+        reader.onload = () => {
+          setFormData(prev => ({ ...prev, profileImage: reader.result as string }));
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -88,22 +97,33 @@ export default function ProfileEdit() {
     fileInputRef.current?.click();
   };
 
-  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && formData.galleryImages.length < 5) {
       const remainingSlots = 5 - formData.galleryImages.length;
       const filesToProcess = Array.from(files).slice(0, remainingSlots);
       
-      filesToProcess.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = () => {
+      for (const file of filesToProcess) {
+        try {
+          // Compress gallery images to save space
+          const compressedImage = await compressImage(file, 600, 600, 0.8);
           setFormData(prev => ({
             ...prev,
-            galleryImages: [...prev.galleryImages, reader.result as string]
+            galleryImages: [...prev.galleryImages, compressedImage]
           }));
-        };
-        reader.readAsDataURL(file);
-      });
+        } catch (error) {
+          console.error('Failed to process gallery image:', error);
+          // Fallback to original method
+          const reader = new FileReader();
+          reader.onload = () => {
+            setFormData(prev => ({
+              ...prev,
+              galleryImages: [...prev.galleryImages, reader.result as string]
+            }));
+          };
+          reader.readAsDataURL(file);
+        }
+      }
     }
   };
 
@@ -122,8 +142,13 @@ export default function ProfileEdit() {
     e.preventDefault();
     console.log('Updated profile data:', formData);
     
-    // Update user data in localStorage
-    localStorage.setItem('currentUser', JSON.stringify(formData));
+    // Update user data safely in localStorage
+    const saved = safeSaveToLocalStorage('currentUser', formData);
+    
+    if (!saved) {
+      alert('Profile data is too large to save. Please try using smaller images or remove some gallery photos.');
+      return;
+    }
     
     // TODO: Submit to backend
     // For now, just redirect back to home
