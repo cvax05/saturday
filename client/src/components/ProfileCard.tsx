@@ -7,7 +7,7 @@ import { Star, Users, Wine, Clock } from "lucide-react";
 interface ProfileCardProps {
   id: string;
   name: string;
-  age: number;
+  groupSize: number;
   description: string;
   profileImage?: string;
   groupSizeMin: number;
@@ -24,7 +24,7 @@ interface ProfileCardProps {
 export default function ProfileCard({
   id,
   name,
-  age,
+  groupSize,
   description,
   profileImage,
   groupSizeMin,
@@ -66,8 +66,11 @@ export default function ProfileCard({
           <div className="flex items-start justify-between mb-2">
             <div>
               <h3 className="font-semibold text-lg" data-testid={`text-name-${id}`}>
-                {name}, {age}
+                {name}
               </h3>
+              <p className="text-sm text-muted-foreground">
+                {groupSize} members
+              </p>
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                 <span data-testid={`text-rating-${id}`}>

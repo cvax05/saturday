@@ -16,7 +16,7 @@ interface Review {
 interface UserProfileProps {
   id: string;
   name: string;
-  age: number;
+  groupSize: number;
   description: string;
   profileImage?: string;
   groupSizeMin: number;
@@ -36,7 +36,7 @@ interface UserProfileProps {
 export default function UserProfile({
   id,
   name,
-  age,
+  groupSize,
   description,
   profileImage,
   groupSizeMin,
@@ -88,8 +88,11 @@ export default function UserProfile({
             
             <div className="flex-1 text-center sm:text-left">
               <h2 className="text-3xl font-bold mb-2" data-testid={`text-name-${id}`}>
-                {name}, {age}
+                {name}
               </h2>
+              <p className="text-lg text-muted-foreground mb-2">
+                {groupSize} members
+              </p>
               
               <div className="flex items-center justify-center sm:justify-start gap-2 mb-4">
                 <MapPin className="h-4 w-4 text-muted-foreground" />

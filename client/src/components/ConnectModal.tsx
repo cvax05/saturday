@@ -9,7 +9,7 @@ interface ConnectModalProps {
   onConfirm: () => void;
   userName: string;
   userImage?: string;
-  userAge: number;
+  userGroupSize: number;
   groupSize: string;
   preferredAlcohol: string;
 }
@@ -20,7 +20,7 @@ export default function ConnectModal({
   onConfirm,
   userName,
   userImage,
-  userAge,
+  userGroupSize,
   groupSize,
   preferredAlcohol
 }: ConnectModalProps) {
@@ -47,8 +47,8 @@ export default function ConnectModal({
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-semibold text-lg">{userName}, {userAge}</p>
-              <p className="text-sm text-muted-foreground">Ready to pregame together?</p>
+              <p className="font-semibold text-lg">{userName}</p>
+              <p className="text-sm text-muted-foreground">{userGroupSize} members • Ready to pregame together?</p>
             </div>
           </div>
 

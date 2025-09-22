@@ -5,8 +5,8 @@ import UserProfile from "@/components/UserProfile";
 const mockUsers = [
   {
     id: "1",
-    name: "Alex Johnson",
-    age: 24,
+    name: "Alpha Sigma Beta",
+    groupSize: 24,
     description: "Love meeting new people and exploring the city's nightlife scene. Always down for a fun pregame with good vibes!",
     profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
     groupSizeMin: 4,
@@ -20,9 +20,9 @@ const mockUsers = [
   },
   {
     id: "2",
-    name: "Sarah Chen",
-    age: 26,
-    description: "Party photographer and social butterfly! I bring the energy and good music recommendations to every gathering.",
+    name: "Delta Phi Sorority",
+    groupSize: 32,
+    description: "Party photographers and social butterflies! We bring the energy and good music recommendations to every gathering.",
     profileImage: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
     groupSizeMin: 3,
     groupSizeMax: 6,
@@ -35,9 +35,9 @@ const mockUsers = [
   },
   {
     id: "3",
-    name: "Mike Rodriguez",
-    age: 22,
-    description: "College student who knows all the best spots in town. Let's make some unforgettable memories together!",
+    name: "Theta Chi House",
+    groupSize: 18,
+    description: "College fraternity that knows all the best spots in town. Let's make some unforgettable memories together!",
     profileImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
     groupSizeMin: 5,
     groupSizeMax: 10,

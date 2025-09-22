@@ -12,8 +12,8 @@ import { Settings, AlertTriangle } from "lucide-react";
 const mockUsers = [
   {
     id: "1",
-    name: "Alex Johnson",
-    age: 24,
+    name: "Alpha Sigma Beta",
+    groupSize: 24,
     description: "Love meeting new people and exploring the city's nightlife scene. Always down for a fun pregame with good vibes!",
     profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
     groupSizeMin: 4,
@@ -27,9 +27,9 @@ const mockUsers = [
   },
   {
     id: "2",
-    name: "Sarah Chen",
-    age: 26,
-    description: "Party photographer and social butterfly! I bring the energy and good music recommendations to every gathering.",
+    name: "Delta Phi Sorority",
+    groupSize: 32,
+    description: "Party photographers and social butterflies! We bring the energy and good music recommendations to every gathering.",
     profileImage: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
     groupSizeMin: 3,
     groupSizeMax: 6,
@@ -42,9 +42,9 @@ const mockUsers = [
   },
   {
     id: "3",
-    name: "Mike Rodriguez",
-    age: 22,
-    description: "College student who knows all the best spots in town. Let's make some unforgettable memories together!",
+    name: "Theta Chi House",
+    groupSize: 18,
+    description: "College fraternity that knows all the best spots in town. Let's make some unforgettable memories together!",
     profileImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
     groupSizeMin: 5,
     groupSizeMax: 10,
@@ -57,9 +57,9 @@ const mockUsers = [
   },
   {
     id: "4",
-    name: "Emma Wilson",
-    age: 25,
-    description: "Marketing professional who loves trying new cocktail bars and meeting creative people in the city.",
+    name: "Marketing Club",
+    groupSize: 12,
+    description: "Marketing professionals who love trying new cocktail bars and meeting creative people in the city.",
     profileImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
     groupSizeMin: 2,
     groupSizeMax: 5,
@@ -195,7 +195,7 @@ export default function Home() {
           onConfirm={handleConfirmConnect}
           userName={connectUser.name}
           userImage={connectUser.profileImage}
-          userAge={connectUser.age}
+          userGroupSize={connectUser.groupSize}
           groupSize={`${connectUser.groupSizeMin}-${connectUser.groupSizeMax}`}
           preferredAlcohol={connectUser.preferredAlcohol}
         />

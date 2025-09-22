@@ -6,7 +6,7 @@ import { RefreshCw } from "lucide-react";
 interface User {
   id: string;
   name: string;
-  age: number;
+  groupSize: number;
   description: string;
   profileImage?: string;
   groupSizeMin: number;

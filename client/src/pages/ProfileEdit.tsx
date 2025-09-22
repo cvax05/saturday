@@ -16,8 +16,8 @@ export default function ProfileEdit() {
   
   // TODO: Load current user data from backend
   const [formData, setFormData] = useState({
-    name: "Alex Johnson",
-    age: "24",
+    name: "Alpha Sigma Beta",
+    groupSize: "15",
     email: "alex@example.com",
     school: "University of Texas at Austin",
     description: "Love meeting new people and exploring the city's nightlife scene. Always down for a fun pregame with good vibes!",
@@ -99,7 +99,7 @@ export default function ProfileEdit() {
               {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="name">Name</Label>
+                  <Label htmlFor="name">Group/Organization</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -109,16 +109,15 @@ export default function ProfileEdit() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="age">Age</Label>
+                  <Label htmlFor="groupSize"># in Group/Organization</Label>
                   <Input
-                    id="age"
+                    id="groupSize"
                     type="number"
-                    min="18"
-                    max="30"
-                    value={formData.age}
-                    onChange={(e) => handleInputChange("age", e.target.value)}
+                    min="1"
+                    value={formData.groupSize}
+                    onChange={(e) => handleInputChange("groupSize", e.target.value)}
                     required
-                    data-testid="input-age"
+                    data-testid="input-group-size"
                   />
                 </div>
               </div>

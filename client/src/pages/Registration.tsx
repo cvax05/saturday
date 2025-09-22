@@ -14,7 +14,7 @@ export default function Registration() {
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState({
     name: "",
-    age: "",
+    groupSize: "",
     email: "",
     password: "",
     school: "",
@@ -83,7 +83,7 @@ export default function Registration() {
               {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="name">Name</Label>
+                  <Label htmlFor="name">Group/Organization</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -93,16 +93,15 @@ export default function Registration() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="age">Age</Label>
+                  <Label htmlFor="groupSize"># in Group/Organization</Label>
                   <Input
-                    id="age"
+                    id="groupSize"
                     type="number"
-                    min="18"
-                    max="30"
-                    value={formData.age}
-                    onChange={(e) => handleInputChange("age", e.target.value)}
+                    min="1"
+                    value={formData.groupSize}
+                    onChange={(e) => handleInputChange("groupSize", e.target.value)}
                     required
-                    data-testid="input-age"
+                    data-testid="input-group-size"
                   />
                 </div>
               </div>
