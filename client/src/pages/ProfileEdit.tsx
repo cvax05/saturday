@@ -60,14 +60,14 @@ export default function ProfileEdit() {
   // Schools list now handled by SearchableCollegeSelect component
 
   const alcoholOptions = [
-    "None",
     "Beer",
     "Wine", 
     "Cocktails",
     "Vodka",
     "Whiskey",
     "Wine & Cocktails",
-    "Anything"
+    "Anything",
+    "None"
   ];
 
   const handleInputChange = (field: string, value: string) => {

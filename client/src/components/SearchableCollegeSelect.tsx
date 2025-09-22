@@ -327,9 +327,6 @@ export default function SearchableCollegeSelect({
           </ScrollArea>
         </PopoverContent>
       </Popover>
-      {required && !value && (
-        <p className="text-sm text-destructive mt-1">Please select your school</p>
-      )}
     </div>
   );
 }

@@ -32,14 +32,14 @@ export default function Registration() {
   // Schools list now handled by SearchableCollegeSelect component
 
   const alcoholOptions = [
-    "None",
     "Beer",
     "Wine", 
     "Cocktails",
     "Vodka",
     "Whiskey",
     "Wine & Cocktails",
-    "Anything"
+    "Anything",
+    "None"
   ];
 
   const handleInputChange = (field: string, value: string) => {
@@ -152,7 +152,7 @@ export default function Registration() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="groupSize"># in Group/Organization</Label>
+                  <Label htmlFor="groupSize">~# in Group/Organization</Label>
                   <Input
                     id="groupSize"
                     type="number"
