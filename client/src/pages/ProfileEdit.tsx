@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,19 +15,43 @@ export default function ProfileEdit() {
   const [, setLocation] = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // TODO: Load current user data from backend
+  // Load current user data from localStorage (registration data)
   const [formData, setFormData] = useState({
-    name: "Alpha Sigma Beta",
-    groupSize: "15",
-    email: "alex@example.com",
-    school: "University of Texas at Austin",
-    description: "Love meeting new people and exploring the city's nightlife scene. Always down for a fun pregame with good vibes!",
-    groupSizeMin: "4",
-    groupSizeMax: "8",
-    preferredAlcohol: "Cocktails",
-    availability: "Weekends",
-    profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
+    name: "",
+    groupSize: "",
+    email: "",
+    school: "",
+    description: "",
+    groupSizeMin: "",
+    groupSizeMax: "",
+    preferredAlcohol: "",
+    availability: "",
+    profileImage: ""
   });
+
+  useEffect(() => {
+    // Load user data from localStorage
+    const storedUserData = localStorage.getItem('currentUser');
+    if (storedUserData) {
+      try {
+        const userData = JSON.parse(storedUserData);
+        setFormData({
+          name: userData.name || "",
+          groupSize: userData.groupSize || "",
+          email: userData.email || "",
+          school: userData.school || "",
+          description: userData.description || "",
+          groupSizeMin: userData.groupSizeMin || "",
+          groupSizeMax: userData.groupSizeMax || "",
+          preferredAlcohol: userData.preferredAlcohol || "",
+          availability: userData.availability || "",
+          profileImage: userData.profileImage || ""
+        });
+      } catch (e) {
+        console.error('Error loading user data:', e);
+      }
+    }
+  }, []);
 
   // Schools list now handled by SearchableCollegeSelect component
 
@@ -64,6 +88,9 @@ export default function ProfileEdit() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Updated profile data:', formData);
+    
+    // Update user data in localStorage
+    localStorage.setItem('currentUser', JSON.stringify(formData));
     
     // TODO: Submit to backend
     // For now, just redirect back to home
