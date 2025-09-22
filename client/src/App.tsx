@@ -8,6 +8,7 @@ import Registration from "@/pages/Registration";
 import Login from "@/pages/Login";
 import Home from "@/pages/Home";
 import Messages from "@/pages/Messages";
+import ChatView from "@/pages/ChatView";
 import ProfileEdit from "@/pages/ProfileEdit";
 import UserProfilePage from "@/pages/UserProfilePage";
 import NotFound from "@/pages/not-found";
@@ -23,6 +24,7 @@ function Router() {
       {/* Main app routes */}
       <Route path="/home" component={Home} />
       <Route path="/messages" component={Messages} />
+      <Route path="/messages/:id" component={ChatView} />
       <Route path="/profile/edit" component={ProfileEdit} />
       <Route path="/profile/:id" component={UserProfilePage} />
       
