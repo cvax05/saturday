@@ -81,7 +81,22 @@ export default function Home() {
   const [ratingUser, setRatingUser] = useState<{name: string, image?: string} | null>(null);
 
   // TODO: Get current user's school from backend
-  const currentUserSchool = "University of Texas at Austin";
+  // For now, get from localStorage or use a default
+  const getCurrentUserSchool = () => {
+    // Try to get from localStorage if user has registered
+    const storedFormData = localStorage.getItem('currentUser');
+    if (storedFormData) {
+      try {
+        const userData = JSON.parse(storedFormData);
+        return userData.school || "Your School";
+      } catch (e) {
+        return "Your School";
+      }
+    }
+    return "Your School";
+  };
+  
+  const currentUserSchool = getCurrentUserSchool();
   
   // Filter users by school
   const schoolUsers = mockUsers.filter(user => user.school === currentUserSchool);

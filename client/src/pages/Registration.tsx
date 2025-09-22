@@ -63,6 +63,12 @@ export default function Registration() {
     e.preventDefault();
     console.log('Registration data:', formData);
     
+    // Store user data in localStorage so other pages can access it
+    localStorage.setItem('currentUser', JSON.stringify({
+      ...formData,
+      profileImage
+    }));
+    
     // TODO: Submit to backend
     // For now, just redirect to home
     setLocation("/home");
