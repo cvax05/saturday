@@ -131,10 +131,10 @@ export default function RatingModal({
             </p>
           </div>
 
-          <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
-            <p className="text-sm text-destructive font-medium mb-1">⚠️ Important</p>
+          <div className="bg-primary/10 border border-primary/20 rounded-md p-3">
+            <p className="text-sm text-primary font-medium mb-1">💭 Optional Feedback</p>
             <p className="text-sm">
-              You must complete this rating to continue using the app. This helps keep our community safe and accountable.
+              Help others by sharing your experience! Your rating helps build a better pregame community.
             </p>
           </div>
 
@@ -143,9 +143,9 @@ export default function RatingModal({
               variant="outline" 
               onClick={onClose} 
               className="flex-1"
-              data-testid="button-cancel"
+              data-testid="button-skip"
             >
-              Cancel
+              Skip for Now
             </Button>
             <Button 
               onClick={handleSubmit} 

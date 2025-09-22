@@ -179,7 +179,6 @@ export default function Registration() {
                       id="groupSizeMin"
                       type="number"
                       min="2"
-                      max="20"
                       value={formData.groupSizeMin}
                       onChange={(e) => handleInputChange("groupSizeMin", e.target.value)}
                       required
@@ -192,7 +191,6 @@ export default function Registration() {
                       id="groupSizeMax"
                       type="number"
                       min="2"
-                      max="20"
                       value={formData.groupSizeMax}
                       onChange={(e) => handleInputChange("groupSizeMax", e.target.value)}
                       required
