@@ -110,7 +110,26 @@ export default function ChatView() {
     if (conversationId && mockConversations[conversationId as keyof typeof mockConversations]) {
       const conversation = mockConversations[conversationId as keyof typeof mockConversations];
       setParticipant(conversation.participant);
-      setMessages(conversation.messages);
+      
+      // Load stored messages from localStorage and merge with mock data
+      const storedMessages = localStorage.getItem(`conversation_${conversationId}`);
+      let allMessages = [...conversation.messages];
+      
+      if (storedMessages) {
+        try {
+          const parsedMessages = JSON.parse(storedMessages);
+          // Convert timestamp strings back to Date objects
+          const processedMessages = parsedMessages.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }));
+          allMessages = [...conversation.messages, ...processedMessages];
+        } catch (e) {
+          console.error('Error loading stored messages:', e);
+        }
+      }
+      
+      setMessages(allMessages);
     }
   }, [conversationId]);
 
@@ -130,7 +149,21 @@ export default function ChatView() {
       senderName: "Your Group"
     };
 
-    setMessages(prev => [...prev, message]);
+    setMessages(prev => {
+      const newMessages = [...prev, message];
+      
+      // Save new messages to localStorage (only user's messages to avoid duplicating mock data)
+      const userMessages = newMessages.filter(msg => msg.isFromUser);
+      const mockMessages = mockConversations[conversationId as keyof typeof mockConversations]?.messages || [];
+      const userOnlyMessages = userMessages.filter(msg => 
+        !mockMessages.find(mockMsg => mockMsg.id === msg.id)
+      );
+      
+      localStorage.setItem(`conversation_${conversationId}`, JSON.stringify(userOnlyMessages));
+      
+      return newMessages;
+    });
+    
     setNewMessage("");
 
     // TODO: Send message to backend
