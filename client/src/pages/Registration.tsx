@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload } from "lucide-react";
+import { SITE_NAME } from "@/lib/constants";
 
 export default function Registration() {
   const [, setLocation] = useLocation();
@@ -79,7 +80,7 @@ export default function Registration() {
       <div className="max-w-md mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-2">
-            PreGame Connect
+            {SITE_NAME}
           </h1>
           <p className="text-muted-foreground">Join your campus pregame community</p>
         </div>
@@ -255,7 +256,7 @@ export default function Registration() {
               </div>
 
               <Button type="submit" className="w-full" data-testid="button-register">
-                Join PreGame Connect
+                Join {SITE_NAME}
               </Button>
             </form>
           </CardContent>

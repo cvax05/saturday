@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SITE_NAME } from "@/lib/constants";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -30,7 +31,7 @@ export default function Login() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-2">
-            PreGame Connect
+            {SITE_NAME}
           </h1>
           <p className="text-muted-foreground">Welcome back!</p>
         </div>
