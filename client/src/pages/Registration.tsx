@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload } from "lucide-react";
 
 export default function Registration() {
@@ -24,6 +24,8 @@ export default function Registration() {
     preferredAlcohol: "",
     availability: ""
   });
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Schools list now handled by SearchableCollegeSelect component
 
@@ -40,6 +42,21 @@ export default function Registration() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setProfileImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -71,11 +88,29 @@ export default function Registration() {
               {/* Profile Picture */}
               <div className="flex flex-col items-center space-y-2">
                 <Avatar className="h-20 w-20">
-                  <AvatarFallback>
-                    <Upload className="h-8 w-8 text-muted-foreground" />
-                  </AvatarFallback>
+                  {profileImage ? (
+                    <AvatarImage src={profileImage} alt="Profile" />
+                  ) : (
+                    <AvatarFallback>
+                      <Upload className="h-8 w-8 text-muted-foreground" />
+                    </AvatarFallback>
+                  )}
                 </Avatar>
-                <Button type="button" variant="outline" size="sm" data-testid="button-upload-photo">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleUploadClick}
+                  data-testid="button-upload-photo"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
                   Upload Photo
                 </Button>
               </div>

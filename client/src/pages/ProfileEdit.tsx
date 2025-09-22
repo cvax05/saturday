@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { ArrowLeft, Upload } from "lucide-react";
 
 export default function ProfileEdit() {
   const [, setLocation] = useLocation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // TODO: Load current user data from backend
   const [formData, setFormData] = useState({
@@ -43,6 +44,21 @@ export default function ProfileEdit() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setFormData(prev => ({ ...prev, profileImage: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -90,7 +106,20 @@ export default function ProfileEdit() {
                     {formData.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
-                <Button type="button" variant="outline" size="sm" data-testid="button-upload-photo">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleUploadClick}
+                  data-testid="button-upload-photo"
+                >
                   <Upload className="h-4 w-4 mr-2" />
                   Change Photo
                 </Button>
