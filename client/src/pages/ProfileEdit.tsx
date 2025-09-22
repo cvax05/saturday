@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { ArrowLeft, Upload } from "lucide-react";
+import { ArrowLeft, Upload, X, Plus } from "lucide-react";
 
 export default function ProfileEdit() {
   const [, setLocation] = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   
   // Load current user data from localStorage (registration data)
   const [formData, setFormData] = useState({
@@ -26,7 +27,8 @@ export default function ProfileEdit() {
     groupSizeMax: "",
     preferredAlcohol: "",
     availability: "",
-    profileImage: ""
+    profileImage: "",
+    galleryImages: [] as string[]
   });
 
   useEffect(() => {
@@ -45,7 +47,8 @@ export default function ProfileEdit() {
           groupSizeMax: userData.groupSizeMax || "",
           preferredAlcohol: userData.preferredAlcohol || "",
           availability: userData.availability || "",
-          profileImage: userData.profileImage || ""
+          profileImage: userData.profileImage || "",
+          galleryImages: userData.galleryImages || []
         });
       } catch (e) {
         console.error('Error loading user data:', e);
@@ -83,6 +86,36 @@ export default function ProfileEdit() {
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && formData.galleryImages.length < 5) {
+      const remainingSlots = 5 - formData.galleryImages.length;
+      const filesToProcess = Array.from(files).slice(0, remainingSlots);
+      
+      filesToProcess.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setFormData(prev => ({
+            ...prev,
+            galleryImages: [...prev.galleryImages, reader.result as string]
+          }));
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      galleryImages: prev.galleryImages.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleGalleryUploadClick = () => {
+    galleryInputRef.current?.click();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -270,6 +303,56 @@ export default function ProfileEdit() {
                   onChange={(e) => handleInputChange("availability", e.target.value)}
                   required
                   data-testid="input-availability"
+                />
+              </div>
+
+              {/* Photo Gallery */}
+              <div>
+                <Label>Photo Gallery ({formData.galleryImages.length}/5)</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Add up to 5 photos that people can view when they visit your profile
+                </p>
+                
+                <div className="grid grid-cols-3 gap-3">
+                  {formData.galleryImages.map((image, index) => (
+                    <div key={index} className="relative group aspect-square">
+                      <img 
+                        src={image} 
+                        alt={`Gallery ${index + 1}`}
+                        className="w-full h-full object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeGalleryImage(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {formData.galleryImages.length < 5 && (
+                    <div 
+                      className="aspect-square border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                      onClick={handleGalleryUploadClick}
+                    >
+                      <div className="text-center">
+                        <Plus className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Add Photo</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <input
+                  type="file"
+                  ref={galleryInputRef}
+                  onChange={handleGalleryUpload}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
                 />
               </div>
 

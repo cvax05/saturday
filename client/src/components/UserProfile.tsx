@@ -19,6 +19,7 @@ interface UserProfileProps {
   groupSize: number;
   description: string;
   profileImage?: string;
+  galleryImages?: string[];
   groupSizeMin: number;
   groupSizeMax: number;
   preferredAlcohol: string;
@@ -39,6 +40,7 @@ export default function UserProfile({
   groupSize,
   description,
   profileImage,
+  galleryImages = [],
   groupSizeMin,
   groupSizeMax,
   preferredAlcohol,
@@ -177,6 +179,28 @@ export default function UserProfile({
           </div>
         </CardContent>
       </Card>
+
+      {galleryImages.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Photos ({galleryImages.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {galleryImages.map((image, index) => (
+                <div key={index} className="aspect-square overflow-hidden rounded-lg border">
+                  <img 
+                    src={image} 
+                    alt={`${name} photo ${index + 1}`}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                    data-testid={`gallery-image-${index}`}
+                  />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {reviews.length > 0 && (
         <Card>

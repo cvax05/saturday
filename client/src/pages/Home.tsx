@@ -16,6 +16,10 @@ const mockUsers = [
     groupSize: 24,
     description: "Love meeting new people and exploring the city's nightlife scene. Always down for a fun pregame with good vibes!",
     profileImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+    galleryImages: [
+      "https://images.unsplash.com/photo-1574391884720-bbc139ec0bcc?w=300&h=300&fit=crop&crop=center",
+      "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=300&h=300&fit=crop&crop=center"
+    ],
     groupSizeMin: 4,
     groupSizeMax: 8,
     preferredAlcohol: "Cocktails",
@@ -31,6 +35,9 @@ const mockUsers = [
     groupSize: 32,
     description: "Party photographers and social butterflies! We bring the energy and good music recommendations to every gathering.",
     profileImage: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+    galleryImages: [
+      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=300&h=300&fit=crop&crop=center"
+    ],
     groupSizeMin: 3,
     groupSizeMax: 6,
     preferredAlcohol: "Wine",
@@ -46,6 +53,11 @@ const mockUsers = [
     groupSize: 18,
     description: "College fraternity that knows all the best spots in town. Let's make some unforgettable memories together!",
     profileImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+    galleryImages: [
+      "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=300&h=300&fit=crop&crop=center",
+      "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=300&h=300&fit=crop&crop=center",
+      "https://images.unsplash.com/photo-1545987796-200677ee1011?w=300&h=300&fit=crop&crop=center"
+    ],
     groupSizeMin: 5,
     groupSizeMax: 10,
     preferredAlcohol: "Beer",
@@ -61,6 +73,7 @@ const mockUsers = [
     groupSize: 12,
     description: "Marketing professionals who love trying new cocktail bars and meeting creative people in the city.",
     profileImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+    galleryImages: [],
     groupSizeMin: 2,
     groupSizeMax: 5,
     preferredAlcohol: "Wine & Cocktails",
