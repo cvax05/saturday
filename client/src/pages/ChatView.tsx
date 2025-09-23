@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import SchedulePregameModal from "@/components/SchedulePregameModal";
 
 interface Message {
   id: string;
@@ -100,6 +101,7 @@ export default function ChatView() {
   const [newMessage, setNewMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [participant, setParticipant] = useState<ChatUser | null>(null);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -181,6 +183,56 @@ export default function ChatView() {
     setLocation("/messages");
   };
 
+  const handleSchedulePregame = (scheduleData: {
+    date: string;
+    time: string;
+    location?: string;
+    notes?: string;
+  }) => {
+    if (!participant) return;
+
+    // Create scheduled pregame object
+    const scheduledPregame = {
+      id: Date.now().toString(),
+      participantId: participant.id,
+      participantName: participant.name,
+      participantImage: participant.image,
+      date: scheduleData.date,
+      time: scheduleData.time,
+      location: scheduleData.location || "",
+      notes: scheduleData.notes || "",
+      createdAt: new Date().toISOString()
+    };
+
+    // Save to localStorage
+    const existingPregames = localStorage.getItem('scheduledPregames');
+    let pregames = [];
+    
+    if (existingPregames) {
+      try {
+        pregames = JSON.parse(existingPregames);
+      } catch (e) {
+        console.error('Error loading existing pregames:', e);
+      }
+    }
+
+    pregames.push(scheduledPregame);
+    localStorage.setItem('scheduledPregames', JSON.stringify(pregames));
+
+    console.log('Scheduled pregame:', scheduledPregame);
+    
+    // Add confirmation message to chat
+    const confirmationMessage: Message = {
+      id: Date.now().toString() + "_system",
+      content: `Pregame scheduled for ${scheduleData.date} at ${scheduleData.time}${scheduleData.location ? ` at ${scheduleData.location}` : ''}`,
+      timestamp: new Date(),
+      isFromUser: true,
+      senderName: "System"
+    };
+
+    setMessages(prev => [...prev, confirmationMessage]);
+  };
+
   if (!participant) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -219,6 +271,17 @@ export default function ChatView() {
             </h1>
             <p className="text-sm text-muted-foreground">Active now</p>
           </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowScheduleModal(true)}
+            className="gap-2"
+            data-testid="button-schedule-pregame"
+          >
+            <Calendar className="h-4 w-4" />
+            Schedule Pregame
+          </Button>
         </div>
       </header>
 
@@ -276,6 +339,17 @@ export default function ChatView() {
           </div>
         </div>
       </main>
+
+      {/* Schedule Pregame Modal */}
+      {showScheduleModal && participant && (
+        <SchedulePregameModal
+          isOpen={showScheduleModal}
+          onClose={() => setShowScheduleModal(false)}
+          participantName={participant.name}
+          participantImage={participant.image}
+          onSchedule={handleSchedulePregame}
+        />
+      )}
     </div>
   );
 }

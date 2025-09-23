@@ -208,6 +208,13 @@ export default function Home() {
             <span className="text-xs font-medium">Messages</span>
           </button>
           <button
+            onClick={() => setLocation("/calendar")}
+            className="flex flex-col items-center py-2 px-4 rounded-lg text-muted-foreground hover:text-foreground"
+            data-testid="nav-calendar"
+          >
+            <span className="text-xs font-medium">Calendar</span>
+          </button>
+          <button
             onClick={() => setLocation("/profile/edit")}
             className="flex flex-col items-center py-2 px-4 rounded-lg text-muted-foreground hover:text-foreground"
             data-testid="nav-profile"
