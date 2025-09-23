@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Settings, AlertTriangle } from "lucide-react";
+import { SITE_NAME } from "@/lib/constants";
 
 // TODO: Remove mock data when implementing backend
 const mockUsers = [
@@ -163,7 +164,7 @@ export default function Home() {
         <div className="flex items-center justify-between p-4 max-w-2xl mx-auto">
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              PreGame Connect
+              {SITE_NAME}
             </h1>
             <p className="text-sm text-muted-foreground">{currentUserSchool}</p>
           </div>
