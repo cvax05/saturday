@@ -25,18 +25,12 @@ export default function RatingModal({
   const [hoveredRating, setHoveredRating] = useState<number>(0);
 
   const handleSubmit = () => {
-    if (rating === 0) {
-      alert("Please select a rating");
-      return;
+    // Only submit if user has provided some input
+    if (rating > 0 || comment.trim().length > 0) {
+      console.log(`Rating submitted: ${rating} stars for ${userName}`);
+      console.log(`Comment: ${comment}`);
+      onSubmitRating(rating, comment);
     }
-    if (comment.trim().length < 10) {
-      alert("Please write at least 10 characters in your review");
-      return;
-    }
-    
-    console.log(`Rating submitted: ${rating} stars for ${userName}`);
-    console.log(`Comment: ${comment}`);
-    onSubmitRating(rating, comment);
     
     // Reset form
     setRating(0);
@@ -116,7 +110,7 @@ export default function RatingModal({
 
           <div>
             <label htmlFor="comment" className="block text-sm font-medium mb-2">
-              Tell us about your experience (required)
+              Tell us about your experience (optional)
             </label>
             <Textarea
               id="comment"
@@ -127,14 +121,14 @@ export default function RatingModal({
               data-testid="textarea-comment"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              {comment.length}/500 characters (minimum 10)
+              {comment.length}/500 characters
             </p>
           </div>
 
           <div className="bg-primary/10 border border-primary/20 rounded-md p-3">
-            <p className="text-sm text-primary font-medium mb-1">💭 Optional Feedback</p>
+            <p className="text-sm text-primary font-medium mb-1">💭 Completely Optional</p>
             <p className="text-sm">
-              Help others by sharing your experience! Your rating helps build a better pregame community.
+              Rating is optional! You can skip this entirely or share your experience to help others.
             </p>
           </div>
 
@@ -145,15 +139,14 @@ export default function RatingModal({
               className="flex-1"
               data-testid="button-skip"
             >
-              Skip for Now
+              Skip Rating
             </Button>
             <Button 
               onClick={handleSubmit} 
               className="flex-1"
               data-testid="button-submit"
-              disabled={rating === 0 || comment.trim().length < 10}
             >
-              Submit Rating
+              {rating > 0 || comment.trim() ? 'Submit Rating' : 'Continue'}
             </Button>
           </div>
         </div>
