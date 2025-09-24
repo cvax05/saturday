@@ -87,6 +87,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add sample organizations for testing (development only)
+  app.post("/api/organizations/seed", async (req, res) => {
+    try {
+      const sampleOrgs = [
+        {
+          name: "Alpha Phi Alpha",
+          school: "University of California, Berkeley",
+          description: "The first intercollegiate historically African American fraternity, focused on scholarship, fellowship, good character, and the uplift of humanity.",
+          memberCount: 45,
+          groupType: "Fraternity",
+          establishedYear: 1906,
+          contactEmail: "alpha@berkeley.edu",
+          socialMedia: JSON.stringify({ instagram: "@alphaphiberkeley", twitter: "@aplhaberkeley" }),
+          profileImage: "/api/placeholder/100/100?text=AΦA"
+        },
+        {
+          name: "Delta Sigma Theta",
+          school: "University of California, Berkeley", 
+          description: "A sisterhood committed to academic excellence, political awareness, and community service.",
+          memberCount: 38,
+          groupType: "Sorority",
+          establishedYear: 1913,
+          contactEmail: "dst@berkeley.edu",
+          socialMedia: JSON.stringify({ instagram: "@deltasigmathetaberkeley" }),
+          profileImage: "/api/placeholder/100/100?text=ΔΣΘ"
+        },
+        {
+          name: "Engineering Student Council",
+          school: "University of California, Berkeley",
+          description: "Student government representing all engineering students, organizing events and advocating for student interests.",
+          memberCount: 125,
+          groupType: "Student Government",
+          establishedYear: 1965,
+          contactEmail: "esc@berkeley.edu",
+          socialMedia: JSON.stringify({ website: "engineering.berkeley.edu/esc" }),
+          profileImage: "/api/placeholder/100/100?text=ESC"
+        },
+        {
+          name: "Kappa Alpha Psi",
+          school: "Stanford University",
+          description: "A fraternity built on the four cardinal principles: training for leadership, promoting scholarship, encouraging good character, and fostering fellowship.",
+          memberCount: 28,
+          groupType: "Fraternity", 
+          establishedYear: 1911,
+          contactEmail: "kappa@stanford.edu",
+          socialMedia: JSON.stringify({ instagram: "@kappaalphasistanford" }),
+          profileImage: "/api/placeholder/100/100?text=ΚΑΨ"
+        },
+        {
+          name: "Zeta Phi Beta",
+          school: "Stanford University",
+          description: "A sorority founded on the principles of scholarship, service, sisterhood, and finer womanhood.",
+          memberCount: 22,
+          groupType: "Sorority",
+          establishedYear: 1920,
+          contactEmail: "zpb@stanford.edu", 
+          socialMedia: JSON.stringify({ instagram: "@zetaphibetastanford" }),
+          profileImage: "/api/placeholder/100/100?text=ΖΦΒ"
+        }
+      ];
+
+      const createdOrgs = [];
+      for (const org of sampleOrgs) {
+        const created = await storage.createOrganization(org);
+        createdOrgs.push(created);
+      }
+
+      res.status(201).json({ message: "Sample organizations created", organizations: createdOrgs });
+    } catch (error) {
+      console.error("Error seeding organizations:", error);
+      res.status(500).json({ message: "Failed to seed organizations" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
