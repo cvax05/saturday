@@ -60,6 +60,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get organizations by school
+  app.get("/api/organizations/school/:school", async (req, res) => {
+    try {
+      const { school } = req.params;
+      const organizations = await storage.getOrganizationsBySchool(school);
+      res.status(200).json({ organizations });
+    } catch (error) {
+      console.error("Error fetching organizations:", error);
+      res.status(500).json({ message: "Failed to fetch organizations" });
+    }
+  });
+
+  // Get organization details by ID
+  app.get("/api/organizations/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const organization = await storage.getOrganization(id);
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      res.status(200).json({ organization });
+    } catch (error) {
+      console.error("Error fetching organization:", error);
+      res.status(500).json({ message: "Failed to fetch organization" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
