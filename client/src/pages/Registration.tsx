@@ -71,11 +71,13 @@ export default function Registration() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Registration data:', formData);
+    // Log registration data without sensitive information
+    const { password, ...safeFormData } = formData;
+    console.log('Registration data:', safeFormData);
     
-    // Store user data safely in localStorage
+    // Store user data safely in localStorage (exclude password for security)
     const userData = {
-      ...formData,
+      ...safeFormData,
       profileImage,
       galleryImages: [] // Initialize empty gallery
     };

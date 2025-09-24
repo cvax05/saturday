@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Users, Calendar, Mail, Trophy, ChevronRight } from "lucide-react";
+import { Users, Calendar, Mail, Trophy, ChevronRight, Award, Medal } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 
 interface Organization {
@@ -62,10 +62,10 @@ export default function Leaderboard() {
   };
 
   const getRankIcon = (index: number) => {
-    if (index === 0) return "🥇";
-    if (index === 1) return "🥈";
-    if (index === 2) return "🥉";
-    return `#${index + 1}`;
+    if (index === 0) return <Trophy className="h-6 w-6 text-yellow-500" />;
+    if (index === 1) return <Award className="h-6 w-6 text-gray-400" />;
+    if (index === 2) return <Medal className="h-6 w-6 text-amber-600" />;
+    return <span className="text-2xl font-bold">#{index + 1}</span>;
   };
 
   const getGroupTypeColor = (groupType: string) => {
