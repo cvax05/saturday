@@ -20,12 +20,31 @@ interface Organization {
   profileImage: string;
 }
 
-interface LeaderboardProps {
-  userSchool?: string;
-}
-
-export default function Leaderboard({ userSchool = "University of California, Berkeley" }: LeaderboardProps) {
+export default function Leaderboard() {
   const [, setLocation] = useLocation();
+  const [userSchool, setUserSchool] = useState<string>("");
+
+  // Get user's school from localStorage
+  useEffect(() => {
+    try {
+      const userData = localStorage.getItem('currentUser');
+      if (userData) {
+        const user = JSON.parse(userData);
+        if (user.school) {
+          setUserSchool(user.school);
+        } else {
+          // Default school if user doesn't have one set
+          setUserSchool("University of California, Berkeley");
+        }
+      } else {
+        // Default school if no user data
+        setUserSchool("University of California, Berkeley");
+      }
+    } catch (error) {
+      console.error("Error getting user school:", error);
+      setUserSchool("University of California, Berkeley");
+    }
+  }, []);
 
   const { data: organizationsData, isLoading, error } = useQuery({
     queryKey: ['organizations', userSchool],

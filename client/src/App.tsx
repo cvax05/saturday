@@ -12,6 +12,8 @@ import ChatView from "@/pages/ChatView";
 import Calendar from "@/pages/Calendar";
 import ProfileEdit from "@/pages/ProfileEdit";
 import UserProfilePage from "@/pages/UserProfilePage";
+import Leaderboard from "@/pages/Leaderboard";
+import OrganizationProfile from "@/pages/OrganizationProfile";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -24,6 +26,8 @@ function Router() {
       
       {/* Main app routes */}
       <Route path="/home" component={Home} />
+      <Route path="/leaderboard" component={Leaderboard} />
+      <Route path="/organization/:id" component={OrganizationProfile} />
       <Route path="/messages" component={Messages} />
       <Route path="/messages/:id" component={ChatView} />
       <Route path="/calendar" component={Calendar} />
