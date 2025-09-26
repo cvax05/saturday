@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import MessageDialog from "@/components/MessageDialog";
 import { 
   User, 
   Mail, 
@@ -153,10 +154,10 @@ export default function UserProfileDetail() {
                   <span data-testid="profile-school">{userProfile.school}</span>
                 </div>
 
-                <Button size="sm" data-testid="button-message">
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Send Message
-                </Button>
+                <MessageDialog 
+                  recipientName={userProfile.name} 
+                  recipientEmail={userProfile.email}
+                />
               </div>
             </div>
           </CardHeader>

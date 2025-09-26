@@ -14,6 +14,7 @@ import Calendar from "@/pages/Calendar";
 import ProfileEdit from "@/pages/ProfileEdit";
 import UserProfilePage from "@/pages/UserProfilePage";
 import People from "@/pages/People";
+import Groups from "@/pages/Groups";
 import UserProfileDetail from "@/pages/UserProfileDetail";
 import Leaderboard from "@/pages/Leaderboard";
 import OrganizationProfile from "@/pages/OrganizationProfile";
@@ -29,6 +30,7 @@ function Router() {
       
       {/* Main app routes */}
       <Route path="/people" component={People} />
+      <Route path="/groups" component={Groups} />
       <Route path="/profile/:email" component={UserProfileDetail} />
       <Route path="/home" component={Home} />
       <Route path="/leaderboard" component={Leaderboard} />

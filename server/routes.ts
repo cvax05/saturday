@@ -2,18 +2,23 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
-import { insertUserSchema } from "@shared/schema";
+import { insertUserSchema, insertMessageSchema, registerSchema, loginSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Registration endpoint
   app.post("/api/register", async (req, res) => {
     try {
-      const { username, password } = insertUserSchema.parse(req.body);
+      const { username, email, password, school } = registerSchema.parse(req.body);
       
-      // Check if user already exists
+      // Check if user already exists (by username or email)
       const existingUser = await storage.getUserByUsername(username);
       if (existingUser) {
         return res.status(409).json({ message: "Username already exists" });
+      }
+
+      const existingUserByEmail = await storage.getUserByEmail(email);
+      if (existingUserByEmail) {
+        return res.status(409).json({ message: "Email already exists" });
       }
       
       // Hash password before storing
@@ -22,7 +27,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create user with hashed password
       const user = await storage.createUser({
         username,
-        password: hashedPassword
+        email,
+        password: hashedPassword,
+        school: school || null
       });
       
       // Return user without password
@@ -37,7 +44,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Login endpoint
   app.post("/api/login", async (req, res) => {
     try {
-      const { username, password } = insertUserSchema.parse(req.body);
+      const { username, password } = loginSchema.parse(req.body);
       
       // Find user by username
       const user = await storage.getUserByUsername(username);
@@ -158,6 +165,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error seeding organizations:", error);
       res.status(500).json({ message: "Failed to seed organizations" });
+    }
+  });
+
+  // Message endpoints
+  app.post("/api/messages/send", async (req, res) => {
+    try {
+      const { recipientEmail, content } = insertMessageSchema.parse(req.body);
+      
+      // TODO: In a real app, get senderEmail from authenticated session/JWT
+      // For MVP, we'll accept it from request body as a temporary stub
+      // but validate it exists in the database to prevent spoofing non-existent users
+      const { senderEmail } = req.body;
+      
+      if (!senderEmail) {
+        return res.status(400).json({ message: "Sender email is required" });
+      }
+      
+      // Validate that sender and recipient exist in users table
+      const sender = await storage.getUserByEmail(senderEmail);
+      if (!sender) {
+        return res.status(401).json({ message: "Sender not authenticated" });
+      }
+      
+      const recipient = await storage.getUserByEmail(recipientEmail);
+      if (!recipient) {
+        return res.status(404).json({ message: "Recipient not found" });
+      }
+      
+      const message = await storage.sendMessage({
+        senderEmail,
+        recipientEmail,
+        content,
+        isRead: 0
+      });
+      
+      res.status(201).json({ message: "Message sent", data: message });
+    } catch (error) {
+      console.error("Error sending message:", error);
+      res.status(400).json({ message: "Failed to send message" });
+    }
+  });
+
+  app.get("/api/messages/:userEmail", async (req, res) => {
+    try {
+      const { userEmail } = req.params;
+      
+      // Validate that the user exists
+      const user = await storage.getUserByEmail(userEmail);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // TODO: In a real app, verify that the requesting user is authenticated 
+      // and is authorized to access these messages (either the user themselves or admin)
+      
+      const messages = await storage.getMessagesForUser(userEmail);
+      res.json({ messages });
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  app.get("/api/messages/conversation/:userEmail1/:userEmail2", async (req, res) => {
+    try {
+      const { userEmail1, userEmail2 } = req.params;
+      
+      // Validate that both users exist
+      const user1 = await storage.getUserByEmail(userEmail1);
+      const user2 = await storage.getUserByEmail(userEmail2);
+      
+      if (!user1 || !user2) {
+        return res.status(404).json({ message: "One or both users not found" });
+      }
+      
+      // TODO: In a real app, verify that the requesting user is authenticated 
+      // and is one of the participants in this conversation
+      
+      const messages = await storage.getMessagesBetweenUsers(userEmail1, userEmail2);
+      res.json({ messages });
+    } catch (error) {
+      console.error("Error fetching conversation:", error);
+      res.status(500).json({ message: "Failed to fetch conversation" });
     }
   });
 

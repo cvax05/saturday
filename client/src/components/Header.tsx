@@ -104,6 +104,14 @@ export default function Header() {
             <Button 
               variant="ghost" 
               size="sm"
+              onClick={() => setLocation("/groups")}
+              data-testid="nav-groups"
+            >
+              Groups
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
               onClick={() => setLocation("/leaderboard")}
               data-testid="nav-organizations"
             >
