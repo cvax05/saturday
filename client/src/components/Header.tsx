@@ -13,9 +13,9 @@ import { LogOut, User, Users } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
 
 interface UserData {
-  name: string;
+  username: string;
   email: string;
-  profileImage: string | null;
+  profileImages?: string[];
 }
 
 export default function Header() {
@@ -126,9 +126,9 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full" data-testid="user-menu">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={currentUser.profileImage || ""} alt={currentUser.name} />
+                  <AvatarImage src={currentUser.profileImages?.[0] || ""} alt={currentUser.username} />
                   <AvatarFallback>
-                    {currentUser.name.split(' ').map(word => word[0]).join('').slice(0, 2)}
+                    {currentUser.username.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -136,7 +136,7 @@ export default function Header() {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <div className="flex items-center justify-start gap-2 p-2">
                 <div className="flex flex-col space-y-1 leading-none">
-                  <p className="font-medium">{currentUser.name}</p>
+                  <p className="font-medium">{currentUser.username}</p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {currentUser.email}
                   </p>

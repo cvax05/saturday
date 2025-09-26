@@ -17,13 +17,39 @@ export default function Login() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login data:', formData);
     
-    // TODO: Submit to backend
-    // For now, just redirect to home
-    setLocation("/home");
+    try {
+      // Submit to backend
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.email, // Using email as username for now  
+          password: formData.password,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.message || 'Login failed');
+        return;
+      }
+      
+      const result = await response.json();
+      
+      // Store user data in localStorage for session management
+      localStorage.setItem('currentUser', JSON.stringify(result.user));
+      
+      // Redirect to people page
+      setLocation("/people");
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('Login failed. Please try again.');
+    }
   };
 
   return (
