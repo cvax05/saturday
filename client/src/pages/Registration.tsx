@@ -16,6 +16,7 @@ export default function Registration() {
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState({
     name: "",
+    groupSize: "",
     email: "",
     password: "",
     school: "",
@@ -162,15 +163,29 @@ export default function Registration() {
               </div>
 
               {/* Basic Info */}
-              <div>
-                <Label htmlFor="name">Your Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange("name", e.target.value)}
-                  required
-                  data-testid="input-name"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="name">Group/Organization</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    required
+                    data-testid="input-name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="groupSize">~# in Group/Organization</Label>
+                  <Input
+                    id="groupSize"
+                    type="number"
+                    min="1"
+                    value={formData.groupSize}
+                    onChange={(e) => handleInputChange("groupSize", e.target.value)}
+                    required
+                    data-testid="input-group-size"
+                  />
+                </div>
               </div>
 
               <div>
@@ -223,7 +238,7 @@ export default function Registration() {
               </div>
 
               <div>
-                <Label>Ideal Pregame Group Size</Label>
+                <Label>Ideal Group/Organization Size</Label>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="groupSizeMin" className="text-sm">Min People</Label>
