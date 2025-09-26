@@ -90,8 +90,8 @@ export default function Registration() {
     }
     
     // TODO: Submit to backend
-    // For now, redirect to leaderboard to see organizations from their school
-    setLocation("/leaderboard");
+    // For now, redirect to people page to see other users from their school
+    setLocation("/people");
   };
 
   return (

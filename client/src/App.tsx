@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import Header from "@/components/Header";
 import Registration from "@/pages/Registration";
 import Login from "@/pages/Login";
 import Home from "@/pages/Home";
@@ -12,6 +13,8 @@ import ChatView from "@/pages/ChatView";
 import Calendar from "@/pages/Calendar";
 import ProfileEdit from "@/pages/ProfileEdit";
 import UserProfilePage from "@/pages/UserProfilePage";
+import People from "@/pages/People";
+import UserProfileDetail from "@/pages/UserProfileDetail";
 import Leaderboard from "@/pages/Leaderboard";
 import OrganizationProfile from "@/pages/OrganizationProfile";
 import NotFound from "@/pages/not-found";
@@ -25,6 +28,8 @@ function Router() {
       <Route path="/login" component={Login} />
       
       {/* Main app routes */}
+      <Route path="/people" component={People} />
+      <Route path="/profile/:email" component={UserProfileDetail} />
       <Route path="/home" component={Home} />
       <Route path="/leaderboard" component={Leaderboard} />
       <Route path="/organization/:id" component={OrganizationProfile} />
@@ -45,8 +50,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="pregame-ui-theme">
         <TooltipProvider>
-          <Toaster />
+          <Header />
           <Router />
+          <Toaster />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
