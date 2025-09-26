@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   school: text("school"),
   email: text("email").notNull().unique(),
+  profileImages: text("profile_images").array(),
 });
 
 export const organizations = pgTable("organizations", {
@@ -38,6 +39,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   password: true,
   school: true,
+  profileImages: true,
 });
 
 export const registerSchema = createInsertSchema(users).pick({
@@ -45,6 +47,13 @@ export const registerSchema = createInsertSchema(users).pick({
   email: true,
   password: true,
   school: true,
+  profileImages: true,
+}).extend({
+  profileImages: z.array(
+    z.string()
+      .regex(/^data:image\/(jpeg|jpg|png|gif|webp);base64,/, "Must be a valid image data URL")
+      .max(2000000, "Image size too large (max 2MB per image)")
+  ).max(5, "Maximum 5 images allowed").optional(),
 });
 
 export const loginSchema = createInsertSchema(users).pick({

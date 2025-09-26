@@ -8,7 +8,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registration endpoint
   app.post("/api/register", async (req, res) => {
     try {
-      const { username, email, password, school } = registerSchema.parse(req.body);
+      const { username, email, password, school, profileImages } = registerSchema.parse(req.body);
       
       // Check if user already exists (by username or email)
       const existingUser = await storage.getUserByUsername(username);
@@ -29,7 +29,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username,
         email,
         password: hashedPassword,
-        school: school || null
+        school: school || null,
+        profileImages: profileImages || []
       });
       
       // Return user without password

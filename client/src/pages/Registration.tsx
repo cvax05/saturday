@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
 import { compressImage, safeSaveToLocalStorage } from "@/lib/imageUtils";
 
@@ -26,7 +26,7 @@ export default function Registration() {
     preferredAlcohol: "",
     availability: ""
   });
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImages, setProfileImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Schools list now handled by SearchableCollegeSelect component
@@ -47,21 +47,42 @@ export default function Registration() {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    // Check if adding these files would exceed the 5 image limit
+    if (profileImages.length + files.length > 5) {
+      alert('You can only upload up to 5 images of your group/organization.');
+      return;
+    }
+    
+    const processFile = async (file: File): Promise<string> => {
       try {
         // Compress image to reduce storage size
-        const compressedImage = await compressImage(file, 400, 400, 0.7);
-        setProfileImage(compressedImage);
+        return await compressImage(file, 400, 400, 0.7);
       } catch (error) {
         console.error('Failed to process image:', error);
-        // Fallback to original method but with smaller size
-        const reader = new FileReader();
-        reader.onload = () => {
-          setProfileImage(reader.result as string);
-        };
-        reader.readAsDataURL(file);
+        // Fallback to original method but with proper Promise handling
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error('Failed to read file'));
+          reader.readAsDataURL(file);
+        });
       }
+    };
+    
+    try {
+      const newImages = await Promise.all(files.map(processFile));
+      setProfileImages(prev => [...prev, ...newImages]);
+    } catch (error) {
+      console.error('Failed to process one or more images:', error);
+      alert('Failed to process some images. Please try again.');
+    }
+    
+    // Clear the input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -69,7 +90,11 @@ export default function Registration() {
     fileInputRef.current?.click();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const removeImage = (index: number) => {
+    setProfileImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate group size min/max
@@ -81,38 +106,52 @@ export default function Registration() {
       return;
     }
     
-    // Log registration data without sensitive information
-    const { password, ...safeFormData } = formData;
-    console.log('Registration data:', safeFormData);
-    
-    // Store user data safely in localStorage (exclude password for security)
-    const userData = {
-      ...safeFormData,
-      profileImage,
-      galleryImages: [], // Initialize empty gallery
-      id: `user_${Date.now()}` // Simple unique ID for demo purposes
-    };
-    
-    // Save current user
-    const saved = safeSaveToLocalStorage('currentUser', userData);
-    
-    if (!saved) {
-      alert('Registration data is too large to save. Please try using a smaller profile image.');
-      return;
-    }
-
-    // Add user to the users list for multi-user functionality
     try {
-      const existingUsers = JSON.parse(localStorage.getItem('allUsers') || '[]');
-      const updatedUsers = [...existingUsers.filter((u: any) => u.email !== userData.email), userData];
-      localStorage.setItem('allUsers', JSON.stringify(updatedUsers));
+      // Submit to backend API
+      const registrationData = {
+        username: formData.name, // Using name as username for now
+        email: formData.email,
+        password: formData.password,
+        school: formData.school,
+        profileImages: profileImages
+      };
+      
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registrationData),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.message || 'Registration failed');
+        return;
+      }
+      
+      const result = await response.json();
+      
+      // Store user data in localStorage for session management
+      const userData = {
+        ...result.user,
+        // Add additional form data that's not stored in backend yet
+        groupSize: formData.groupSize,
+        description: formData.description,
+        groupSizeMin: formData.groupSizeMin,
+        groupSizeMax: formData.groupSizeMax,
+        preferredAlcohol: formData.preferredAlcohol,
+        availability: formData.availability
+      };
+      
+      safeSaveToLocalStorage('currentUser', userData);
+      
+      // Redirect to people page
+      setLocation("/people");
     } catch (error) {
-      console.error('Error updating users list:', error);
+      console.error('Registration error:', error);
+      alert('Registration failed. Please try again.');
     }
-    
-    // TODO: Submit to backend
-    // For now, redirect to people page to see other users from their school
-    setLocation("/people");
   };
 
   return (
@@ -132,34 +171,65 @@ export default function Registration() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               
-              {/* Profile Picture */}
-              <div className="flex flex-col items-center space-y-2">
-                <Avatar className="h-20 w-20">
-                  {profileImage ? (
-                    <AvatarImage src={profileImage} alt="Profile" />
-                  ) : (
-                    <AvatarFallback>
-                      <Upload className="h-8 w-8 text-muted-foreground" />
-                    </AvatarFallback>
+              {/* Group/Organization Images */}
+              <div className="space-y-3">
+                <Label>Group/Organization Images (up to 5)</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {profileImages.map((image, index) => (
+                    <div key={index} className="relative">
+                      <div className="aspect-square rounded-lg overflow-hidden border">
+                        <img
+                          src={image}
+                          alt={`Group image ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                        onClick={() => removeImage(index)}
+                        data-testid={`button-remove-image-${index}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {profileImages.length < 5 && (
+                    <div 
+                      className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                      onClick={handleUploadClick}
+                    >
+                      <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                      <span className="text-xs text-muted-foreground text-center">Add Image</span>
+                    </div>
                   )}
-                </Avatar>
+                </div>
+                
                 <input
                   type="file"
                   ref={fileInputRef}
                   onChange={handleFileUpload}
                   accept="image/*"
+                  multiple
                   className="hidden"
                 />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleUploadClick}
-                  data-testid="button-upload-photo"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Photo
-                </Button>
+                
+                {profileImages.length < 5 && (
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleUploadClick}
+                    className="w-full"
+                    data-testid="button-upload-photo"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Add Images ({profileImages.length}/5)
+                  </Button>
+                )}
               </div>
 
               {/* Basic Info */}

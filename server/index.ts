@@ -3,8 +3,8 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '15mb' })); // Allow up to 15MB for multiple images (5 images * ~2-3MB each)
+app.use(express.urlencoded({ extended: false, limit: '15mb' }));
 
 app.use((req, res, next) => {
   const start = Date.now();
