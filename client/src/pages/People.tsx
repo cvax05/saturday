@@ -25,16 +25,24 @@ export default function People() {
   const [schoolmates, setSchoolmates] = useState<UserProfile[]>([]);
 
   useEffect(() => {
-    // Get current user's school
+    // Get current user's school and load all users from the same school
     try {
-      const userData = localStorage.getItem('currentUser');
-      if (userData) {
-        const user = JSON.parse(userData);
-        setCurrentUserSchool(user.school || "");
+      const currentUserData = localStorage.getItem('currentUser');
+      const allUsersData = localStorage.getItem('allUsers');
+      
+      if (currentUserData) {
+        const currentUser = JSON.parse(currentUserData);
+        const userSchool = currentUser.school || "";
+        setCurrentUserSchool(userSchool);
         
-        // For now, since we're using localStorage, we'll just show the current user
-        // In a real app, this would fetch all users from the same school from the database
-        setSchoolmates([user]);
+        if (allUsersData && userSchool) {
+          const allUsers = JSON.parse(allUsersData);
+          // Filter users by school and exclude current user
+          const schoolUsers = allUsers.filter((user: UserProfile) => 
+            user.school === userSchool && user.email !== currentUser.email
+          );
+          setSchoolmates(schoolUsers);
+        }
       }
     } catch (error) {
       console.error("Error loading user data:", error);

@@ -21,19 +21,42 @@ interface UserData {
 export default function Header() {
   const [, setLocation] = useLocation();
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
+  const [location] = useLocation();
 
   useEffect(() => {
     // Load current user data
-    try {
-      const userData = localStorage.getItem('currentUser');
-      if (userData) {
-        const user = JSON.parse(userData);
-        setCurrentUser(user);
+    const loadUserData = () => {
+      try {
+        const userData = localStorage.getItem('currentUser');
+        if (userData) {
+          const user = JSON.parse(userData);
+          setCurrentUser(user);
+        } else {
+          setCurrentUser(null);
+        }
+      } catch (error) {
+        console.error("Error loading user data:", error);
+        setCurrentUser(null);
       }
-    } catch (error) {
-      console.error("Error loading user data:", error);
-    }
-  }, []);
+    };
+
+    // Load user data initially
+    loadUserData();
+
+    // Listen for localStorage changes (for when user signs in/out in the same tab)
+    const handleStorageChange = () => {
+      loadUserData();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check on location changes (for when user navigates after registration)
+    loadUserData();
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [location]); // Re-run when location changes
 
   const handleSignOut = () => {
     // Clear user data from localStorage

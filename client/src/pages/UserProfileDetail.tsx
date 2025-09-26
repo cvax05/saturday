@@ -37,14 +37,27 @@ export default function UserProfileDetail() {
 
   useEffect(() => {
     if (params?.email) {
-      // For now, we're getting the user from localStorage
-      // In a real app, this would fetch from a database by email/id
       try {
-        const userData = localStorage.getItem('currentUser');
-        if (userData) {
-          const user = JSON.parse(userData);
-          if (user.email === decodeURIComponent(params.email)) {
-            setUserProfile(user);
+        const targetEmail = decodeURIComponent(params.email);
+        
+        // First check if it's the current user
+        const currentUserData = localStorage.getItem('currentUser');
+        if (currentUserData) {
+          const currentUser = JSON.parse(currentUserData);
+          if (currentUser.email === targetEmail) {
+            setUserProfile(currentUser);
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // Otherwise, look for the user in the all users list
+        const allUsersData = localStorage.getItem('allUsers');
+        if (allUsersData) {
+          const allUsers = JSON.parse(allUsersData);
+          const targetUser = allUsers.find((user: UserProfile) => user.email === targetEmail);
+          if (targetUser) {
+            setUserProfile(targetUser);
           }
         }
       } catch (error) {

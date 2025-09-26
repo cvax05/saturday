@@ -16,7 +16,6 @@ export default function Registration() {
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState({
     name: "",
-    groupSize: "",
     email: "",
     password: "",
     school: "",
@@ -71,6 +70,16 @@ export default function Registration() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate group size min/max
+    const minSize = parseInt(formData.groupSizeMin);
+    const maxSize = parseInt(formData.groupSizeMax);
+    
+    if (minSize && maxSize && minSize > maxSize) {
+      alert('Minimum group size cannot be larger than maximum group size.');
+      return;
+    }
+    
     // Log registration data without sensitive information
     const { password, ...safeFormData } = formData;
     console.log('Registration data:', safeFormData);
@@ -79,14 +88,25 @@ export default function Registration() {
     const userData = {
       ...safeFormData,
       profileImage,
-      galleryImages: [] // Initialize empty gallery
+      galleryImages: [], // Initialize empty gallery
+      id: `user_${Date.now()}` // Simple unique ID for demo purposes
     };
     
+    // Save current user
     const saved = safeSaveToLocalStorage('currentUser', userData);
     
     if (!saved) {
       alert('Registration data is too large to save. Please try using a smaller profile image.');
       return;
+    }
+
+    // Add user to the users list for multi-user functionality
+    try {
+      const existingUsers = JSON.parse(localStorage.getItem('allUsers') || '[]');
+      const updatedUsers = [...existingUsers.filter((u: any) => u.email !== userData.email), userData];
+      localStorage.setItem('allUsers', JSON.stringify(updatedUsers));
+    } catch (error) {
+      console.error('Error updating users list:', error);
     }
     
     // TODO: Submit to backend
@@ -142,29 +162,15 @@ export default function Registration() {
               </div>
 
               {/* Basic Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Group/Organization</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    required
-                    data-testid="input-name"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="groupSize">~# in Group/Organization</Label>
-                  <Input
-                    id="groupSize"
-                    type="number"
-                    min="1"
-                    value={formData.groupSize}
-                    onChange={(e) => handleInputChange("groupSize", e.target.value)}
-                    required
-                    data-testid="input-group-size"
-                  />
-                </div>
+              <div>
+                <Label htmlFor="name">Your Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  required
+                  data-testid="input-name"
+                />
               </div>
 
               <div>
@@ -217,7 +223,7 @@ export default function Registration() {
               </div>
 
               <div>
-                <Label>Group Size Preference</Label>
+                <Label>Ideal Pregame Group Size</Label>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="groupSizeMin" className="text-sm">Min People</Label>
@@ -225,6 +231,7 @@ export default function Registration() {
                       id="groupSizeMin"
                       type="number"
                       min="2"
+                      placeholder="e.g., 3"
                       value={formData.groupSizeMin}
                       onChange={(e) => handleInputChange("groupSizeMin", e.target.value)}
                       required
@@ -237,6 +244,7 @@ export default function Registration() {
                       id="groupSizeMax"
                       type="number"
                       min="2"
+                      placeholder="e.g., 8"
                       value={formData.groupSizeMax}
                       onChange={(e) => handleInputChange("groupSizeMax", e.target.value)}
                       required
