@@ -133,9 +133,9 @@ export default function UserProfileDetail() {
           <CardHeader>
             <div className="flex items-start gap-6">
               <Avatar className="h-24 w-24">
-                <AvatarImage src={userProfile.profileImage || ""} alt={userProfile.name} />
+                <AvatarImage src={userProfile.profileImage || ""} alt={userProfile.name || ""} />
                 <AvatarFallback className="text-2xl font-bold">
-                  {userProfile.name.split(' ').map(word => word[0]).join('').slice(0, 2)}
+                  {(userProfile.name || "").split(' ').map((word: string) => word[0]).join('').slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               

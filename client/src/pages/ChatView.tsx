@@ -60,18 +60,52 @@ export default function ChatView() {
   useEffect(() => {
     if (!partnerEmail || !currentUserEmail) return;
 
+    console.log('ChatView: Setting up participant for', partnerEmail);
+
+    // Check if this is a self-conversation
+    if (partnerEmail === currentUserEmail) {
+      console.log('ChatView: Self-conversation detected');
+      const currentUserData = localStorage.getItem('currentUser');
+      if (currentUserData) {
+        const currentUser = JSON.parse(currentUserData);
+        setParticipant({
+          email: currentUser.email,
+          name: currentUser.name || currentUser.username || 'You',
+          image: currentUser.profileImage || currentUser.profileImages?.[0]
+        });
+      }
+      return;
+    }
+
     // Get partner user data from localStorage
     const allUsersData = localStorage.getItem('allUsers');
     if (allUsersData) {
       const allUsers = JSON.parse(allUsersData);
       const partner = allUsers.find((user: any) => user.email === partnerEmail);
+      console.log('ChatView: Found partner in allUsers:', !!partner);
       if (partner) {
         setParticipant({
           email: partner.email,
           name: partner.name || partner.username,
           image: partner.profileImage || partner.profileImages?.[0]
         });
+      } else {
+        // Create a fallback participant if not found in allUsers
+        console.log('ChatView: Partner not found in allUsers, creating fallback');
+        setParticipant({
+          email: partnerEmail,
+          name: partnerEmail.split('@')[0], // Use email prefix as name fallback
+          image: undefined
+        });
       }
+    } else {
+      // No allUsers data, create fallback participant
+      console.log('ChatView: No allUsers data, creating fallback participant');
+      setParticipant({
+        email: partnerEmail,
+        name: partnerEmail.split('@')[0],
+        image: undefined
+      });
     }
 
     // Process messages if available
