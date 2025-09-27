@@ -43,12 +43,16 @@ export default function Messages() {
 
   // Process messages into conversation summaries
   useEffect(() => {
-    if (!messagesData?.messages || !currentUserEmail) return;
+    if (!messagesData || !currentUserEmail) return;
+    
+    // Handle different possible response structures
+    const messages = (messagesData as any)?.messages || messagesData || [];
+    if (!Array.isArray(messages)) return;
 
     const conversationMap = new Map<string, ConversationSummary>();
     
     // Group messages by conversation partner
-    messagesData.messages.forEach((message: any) => {
+    messages.forEach((message: any) => {
       const partnerEmail = message.senderEmail === currentUserEmail 
         ? message.recipientEmail 
         : message.senderEmail;
@@ -86,7 +90,7 @@ export default function Messages() {
 
     // Calculate unread counts
     conversationMap.forEach((conversation, partnerEmail) => {
-      const unreadCount = messagesData.messages.filter((msg: any) => 
+      const unreadCount = messages.filter((msg: any) => 
         msg.senderEmail === partnerEmail && 
         msg.recipientEmail === currentUserEmail && 
         msg.isRead === 0
