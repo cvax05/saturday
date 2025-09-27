@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useParams } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,83 +19,10 @@ interface Message {
 }
 
 interface ChatUser {
-  id: string;
+  email: string;
   name: string;
   image?: string;
 }
-
-// TODO: Remove mock data when implementing backend
-const mockConversations = {
-  "1": {
-    participant: {
-      id: "2",
-      name: "Delta Phi Sorority",
-      image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
-    },
-    messages: [
-      {
-        id: "1",
-        content: "Hey! I saw your group profile and would love to coordinate a pregame before the basketball game this Friday!",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-        isFromUser: false,
-        senderName: "Delta Phi Sorority"
-      },
-      {
-        id: "2", 
-        content: "That sounds amazing! We're definitely interested. What time were you thinking?",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60),
-        isFromUser: true,
-        senderName: "Your Group"
-      },
-      {
-        id: "3",
-        content: "Perfect! How about 6 PM at our house? We can provide the space and some drinks if you guys want to bring snacks and music?",
-        timestamp: new Date(Date.now() - 1000 * 60 * 30),
-        isFromUser: false,
-        senderName: "Delta Phi Sorority"
-      }
-    ]
-  },
-  "2": {
-    participant: {
-      id: "3",
-      name: "Theta Chi House",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
-    },
-    messages: [
-      {
-        id: "4",
-        content: "Thanks for the great pregame last night! Your group knows how to party 🎉",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12),
-        isFromUser: false,
-        senderName: "Theta Chi House"
-      },
-      {
-        id: "5",
-        content: "Had such a blast! You guys are awesome. Let's definitely do it again soon!",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 11),
-        isFromUser: true,
-        senderName: "Your Group"
-      }
-    ]
-  },
-  "3": {
-    participant: {
-      id: "4", 
-      name: "Marketing Club",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
-    },
-    messages: [
-      {
-        id: "6",
-        content: "Hey! I saw your profile and would love to connect. Are you free this weekend for a pregame?",
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2),
-        isFromUser: false,
-        senderName: "Marketing Club"
-      }
-    ]
-  }
-};
 
 export default function ChatView() {
   const params = useParams();
@@ -102,38 +31,88 @@ export default function ChatView() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [participant, setParticipant] = useState<ChatUser | null>(null);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const conversationId = params.id;
+  const partnerEmail = params.id; // Using email as conversation ID
 
+  // Get current user email
   useEffect(() => {
-    // Load conversation data
-    if (conversationId && mockConversations[conversationId as keyof typeof mockConversations]) {
-      const conversation = mockConversations[conversationId as keyof typeof mockConversations];
-      setParticipant(conversation.participant);
-      
-      // Load stored messages from localStorage and merge with mock data
-      const storedMessages = localStorage.getItem(`conversation_${conversationId}`);
-      let allMessages = [...conversation.messages];
-      
-      if (storedMessages) {
-        try {
-          const parsedMessages = JSON.parse(storedMessages);
-          // Convert timestamp strings back to Date objects
-          const processedMessages = parsedMessages.map((msg: any) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp)
-          }));
-          allMessages = [...conversation.messages, ...processedMessages];
-        } catch (e) {
-          console.error('Error loading stored messages:', e);
-        }
+    try {
+      const currentUserData = localStorage.getItem('currentUser');
+      if (currentUserData) {
+        const currentUser = JSON.parse(currentUserData);
+        setCurrentUserEmail(currentUser.email || "");
       }
-      
-      setMessages(allMessages);
+    } catch (error) {
+      console.error("Error loading current user:", error);
     }
-  }, [conversationId]);
+  }, []);
+
+  // Fetch conversation messages between current user and partner
+  const { data: conversationData, isLoading } = useQuery({
+    queryKey: ['/api/messages/conversation', currentUserEmail, partnerEmail],
+    enabled: !!currentUserEmail && !!partnerEmail,
+  });
+
+  // Set up participant data and process messages
+  useEffect(() => {
+    if (!partnerEmail || !currentUserEmail) return;
+
+    // Get partner user data from localStorage
+    const allUsersData = localStorage.getItem('allUsers');
+    if (allUsersData) {
+      const allUsers = JSON.parse(allUsersData);
+      const partner = allUsers.find((user: any) => user.email === partnerEmail);
+      if (partner) {
+        setParticipant({
+          email: partner.email,
+          name: partner.name || partner.username,
+          image: partner.profileImage || partner.profileImages?.[0]
+        });
+      }
+    }
+
+    // Process messages if available
+    if (conversationData?.messages) {
+      const processedMessages: Message[] = conversationData.messages.map((msg: any) => ({
+        id: msg.id,
+        content: msg.content,
+        timestamp: new Date(msg.createdAt),
+        isFromUser: msg.senderEmail === currentUserEmail,
+        senderName: msg.senderEmail === currentUserEmail ? "You" : (participant?.name || "Partner")
+      })).sort((a: Message, b: Message) => a.timestamp.getTime() - b.timestamp.getTime());
+      
+      setMessages(processedMessages);
+    }
+  }, [conversationData, partnerEmail, currentUserEmail, participant?.name]);
+
+  // Mutation for sending messages
+  const sendMessageMutation = useMutation({
+    mutationFn: async (messageData: { recipientEmail: string; content: string; senderEmail: string }) => {
+      return apiRequest(`/api/messages/send`, {
+        method: 'POST',
+        body: JSON.stringify(messageData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    },
+    onSuccess: () => {
+      // Refetch the conversation to get the updated messages
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/messages/conversation', currentUserEmail, partnerEmail]
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['/api/messages', currentUserEmail]
+      });
+    },
+    onError: (error) => {
+      console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
+    },
+  });
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -141,35 +120,16 @@ export default function ChatView() {
   }, [messages]);
 
   const handleSendMessage = () => {
-    if (!newMessage.trim() || !participant) return;
+    if (!newMessage.trim() || !partnerEmail || !currentUserEmail) return;
 
-    const message: Message = {
-      id: Date.now().toString(),
-      content: newMessage,
-      timestamp: new Date(),
-      isFromUser: true,
-      senderName: "Your Group"
-    };
-
-    setMessages(prev => {
-      const newMessages = [...prev, message];
-      
-      // Save new messages to localStorage (only user's messages to avoid duplicating mock data)
-      const userMessages = newMessages.filter(msg => msg.isFromUser);
-      const mockMessages = mockConversations[conversationId as keyof typeof mockConversations]?.messages || [];
-      const userOnlyMessages = userMessages.filter(msg => 
-        !mockMessages.find(mockMsg => mockMsg.id === msg.id)
-      );
-      
-      localStorage.setItem(`conversation_${conversationId}`, JSON.stringify(userOnlyMessages));
-      
-      return newMessages;
+    // Send message via API
+    sendMessageMutation.mutate({
+      recipientEmail: partnerEmail,
+      content: newMessage.trim(),
+      senderEmail: currentUserEmail
     });
     
     setNewMessage("");
-
-    // TODO: Send message to backend
-    console.log('Sending message:', message);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
