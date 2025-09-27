@@ -44,8 +44,8 @@ export default function Login() {
       // Store user data in localStorage for session management
       localStorage.setItem('currentUser', JSON.stringify(result.user));
       
-      // Redirect to people page
-      setLocation("/people");
+      // Redirect to groups page
+      setLocation("/groups");
     } catch (error) {
       console.error('Login error:', error);
       alert('Login failed. Please try again.');

@@ -84,7 +84,7 @@ export default function Header() {
         <div className="flex items-center gap-6">
           <h1 
             className="text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent cursor-pointer"
-            onClick={() => setLocation("/people")}
+            onClick={() => setLocation("/groups")}
             data-testid="logo"
           >
             {SITE_NAME}
@@ -95,18 +95,10 @@ export default function Header() {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => setLocation("/people")}
-              data-testid="nav-people"
-            >
-              <Users className="h-4 w-4 mr-2" />
-              People
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
               onClick={() => setLocation("/groups")}
               data-testid="nav-groups"
             >
+              <Users className="h-4 w-4 mr-2" />
               Groups
             </Button>
             <Button 

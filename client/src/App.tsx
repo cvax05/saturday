@@ -29,7 +29,12 @@ function Router() {
       <Route path="/login" component={Login} />
       
       {/* Main app routes */}
-      <Route path="/people" component={People} />
+      <Route path="/people">
+        {() => {
+          window.location.replace('/groups');
+          return null;
+        }}
+      </Route>
       <Route path="/groups" component={Groups} />
       <Route path="/profile/:email" component={UserProfileDetail} />
       <Route path="/home" component={Home} />

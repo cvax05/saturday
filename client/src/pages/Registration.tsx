@@ -146,8 +146,8 @@ export default function Registration() {
       
       safeSaveToLocalStorage('currentUser', userData);
       
-      // Redirect to people page
-      setLocation("/people");
+      // Redirect to groups page
+      setLocation("/groups");
     } catch (error) {
       console.error('Registration error:', error);
       alert('Registration failed. Please try again.');
