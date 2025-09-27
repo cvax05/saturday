@@ -1,50 +1,112 @@
 import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import MessageList from "@/components/MessageList";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
-// TODO: Remove mock conversations when implementing backend
-const mockConversations = [
-  {
-    id: "1",
-    participantName: "Sarah Chen",
-    participantImage: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-    lastMessage: "Sounds great! What time should we meet up?",
-    lastMessageTime: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-    unreadCount: 2,
-    hasUnreadPendingRating: false
-  },
-  {
-    id: "2", 
-    participantName: "Mike Rodriguez",
-    participantImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-    lastMessage: "Thanks for the great pregame last night!",
-    lastMessageTime: new Date(Date.now() - 1000 * 60 * 60 * 12), // 12 hours ago
-    unreadCount: 0,
-    hasUnreadPendingRating: true
-  },
-  {
-    id: "3",
-    participantName: "Emma Wilson", 
-    participantImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-    lastMessage: "Hey! I saw your profile and would love to connect",
-    lastMessageTime: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-    unreadCount: 1,
-    hasUnreadPendingRating: false
-  }
-];
+interface ConversationSummary {
+  id: string;
+  participantName: string;
+  participantEmail: string;
+  participantImage?: string;
+  lastMessage: string;
+  lastMessageTime: Date;
+  unreadCount: number;
+  hasUnreadPendingRating: boolean;
+}
 
 export default function Messages() {
   const [, setLocation] = useLocation();
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+
+  // Get current user email
+  useEffect(() => {
+    try {
+      const currentUserData = localStorage.getItem('currentUser');
+      if (currentUserData) {
+        const currentUser = JSON.parse(currentUserData);
+        setCurrentUserEmail(currentUser.email || "");
+      }
+    } catch (error) {
+      console.error("Error loading current user:", error);
+    }
+  }, []);
+
+  // Fetch all messages for current user
+  const { data: messagesData, isLoading } = useQuery({
+    queryKey: ['/api/messages', currentUserEmail],
+    enabled: !!currentUserEmail,
+  });
+
+  // Process messages into conversation summaries
+  useEffect(() => {
+    if (!messagesData?.messages || !currentUserEmail) return;
+
+    const conversationMap = new Map<string, ConversationSummary>();
+    
+    // Group messages by conversation partner
+    messagesData.messages.forEach((message: any) => {
+      const partnerEmail = message.senderEmail === currentUserEmail 
+        ? message.recipientEmail 
+        : message.senderEmail;
+      
+      const existing = conversationMap.get(partnerEmail);
+      const messageTime = new Date(message.createdAt);
+      
+      if (!existing || messageTime > existing.lastMessageTime) {
+        // Get user data for this partner (from localStorage for now)
+        const allUsersData = localStorage.getItem('allUsers');
+        let partnerName = partnerEmail.split('@')[0]; // fallback
+        let partnerImage = undefined;
+        
+        if (allUsersData) {
+          const allUsers = JSON.parse(allUsersData);
+          const partner = allUsers.find((user: any) => user.email === partnerEmail);
+          if (partner) {
+            partnerName = partner.name || partner.username || partnerName;
+            partnerImage = partner.profileImage || partner.profileImages?.[0];
+          }
+        }
+
+        conversationMap.set(partnerEmail, {
+          id: partnerEmail, // Use email as conversation ID
+          participantName: partnerName,
+          participantEmail: partnerEmail,
+          participantImage: partnerImage,
+          lastMessage: message.content,
+          lastMessageTime: messageTime,
+          unreadCount: existing?.unreadCount || 0,
+          hasUnreadPendingRating: false
+        });
+      }
+    });
+
+    // Calculate unread counts
+    conversationMap.forEach((conversation, partnerEmail) => {
+      const unreadCount = messagesData.messages.filter((msg: any) => 
+        msg.senderEmail === partnerEmail && 
+        msg.recipientEmail === currentUserEmail && 
+        msg.isRead === 0
+      ).length;
+      conversation.unreadCount = unreadCount;
+    });
+
+    // Convert to array and sort by last message time
+    const conversationArray = Array.from(conversationMap.values())
+      .sort((a, b) => b.lastMessageTime.getTime() - a.lastMessageTime.getTime());
+    
+    setConversations(conversationArray);
+  }, [messagesData, currentUserEmail]);
 
   const handleConversationClick = (conversationId: string) => {
-    console.log('Opening conversation:', conversationId);
     setLocation(`/messages/${conversationId}`);
   };
 
   const handleBack = () => {
-    setLocation("/home");
+    setLocation("/groups");
   };
 
   return (
@@ -67,10 +129,30 @@ export default function Messages() {
       </header>
 
       <main className="max-w-2xl mx-auto p-4">
-        <MessageList
-          conversations={mockConversations}
-          onConversationClick={handleConversationClick}
-        />
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="text-muted-foreground">Loading conversations...</div>
+          </div>
+        ) : conversations.length > 0 ? (
+          <MessageList
+            conversations={conversations}
+            onConversationClick={handleConversationClick}
+          />
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-muted-foreground">No messages yet</div>
+            <div className="text-sm text-muted-foreground mt-2">
+              Start chatting with groups from your school!
+            </div>
+            <Button 
+              onClick={() => setLocation("/groups")} 
+              className="mt-4"
+              data-testid="button-browse-groups"
+            >
+              Browse Groups
+            </Button>
+          </div>
+        )}
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
