@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,7 +15,7 @@ import { mockAllPregames } from "@/lib/constants";
 
 interface ScheduledPregame {
   id: string;
-  participantId: string;
+  participantEmail: string;
   participantName: string;
   participantImage?: string;
   date: string;
@@ -25,33 +27,80 @@ interface ScheduledPregame {
 
 export default function Calendar() {
   const [, setLocation] = useLocation();
-  const [scheduledPregames, setScheduledPregames] = useState<ScheduledPregame[]>([]);
   const [editingPregame, setEditingPregame] = useState<ScheduledPregame | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
 
+  // Get current user email
   useEffect(() => {
-    loadScheduledPregames();
+    try {
+      const currentUserData = localStorage.getItem('currentUser');
+      if (currentUserData) {
+        const currentUser = JSON.parse(currentUserData);
+        setCurrentUserEmail(currentUser.email || "");
+      }
+    } catch (error) {
+      console.error("Error loading current user:", error);
+    }
   }, []);
 
-  const loadScheduledPregames = () => {
-    const stored = localStorage.getItem('scheduledPregames');
-    if (stored) {
-      try {
-        const pregames = JSON.parse(stored);
-        // Sort by date and time
-        const sorted = pregames.sort((a: ScheduledPregame, b: ScheduledPregame) => {
-          return compareAsc(
-            parseISO(`${a.date}T${a.time}`),
-            parseISO(`${b.date}T${b.time}`)
-          );
-        });
-        setScheduledPregames(sorted);
-      } catch (e) {
-        console.error('Error loading scheduled pregames:', e);
-        setScheduledPregames([]);
-      }
+  // Fetch pregames for current user from API
+  const { data: pregamesData, isLoading } = useQuery({
+    queryKey: ['/api/pregames', currentUserEmail],
+    enabled: !!currentUserEmail,
+  });
+
+  // Transform API data to match component structure
+  const scheduledPregames: ScheduledPregame[] = pregamesData?.pregames?.map((pregame: any) => {
+    // Check if current user is creator or participant to determine the "other" person
+    const isCreator = pregame.creatorEmail === currentUserEmail;
+    const otherUserEmail = isCreator ? pregame.participantEmail : pregame.creatorEmail;
+    
+    // Get participant data from localStorage
+    const allUsersData = localStorage.getItem('allUsers');
+    const allOrganizationsData = localStorage.getItem('allOrganizations');
+    
+    let participant = null;
+    
+    // First check in users
+    if (allUsersData) {
+      const allUsers = JSON.parse(allUsersData);
+      participant = allUsers.find((user: any) => user.email === otherUserEmail);
     }
-  };
+    
+    // If not found in users, check in organizations
+    if (!participant && allOrganizationsData) {
+      const allOrganizations = JSON.parse(allOrganizationsData);
+      participant = allOrganizations.find((org: any) => org.contactEmail === otherUserEmail);
+    }
+    
+    // Create fallback name if participant not found
+    const participantName = participant ? 
+      (participant.name || participant.username || 'Unknown') :
+      (otherUserEmail.includes('@') ? 
+        otherUserEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').trim() : 
+        'Unknown User');
+    
+    return {
+      id: pregame.id,
+      participantEmail: otherUserEmail,
+      participantName,
+      participantImage: participant?.profileImage || participant?.profileImages?.[0],
+      date: pregame.date,
+      time: pregame.time,
+      location: pregame.location || "",
+      notes: pregame.notes || "",
+      createdAt: pregame.createdAt
+    };
+  }) || [];
+
+  // Sort by date and time
+  const sortedPregames = scheduledPregames.sort((a: ScheduledPregame, b: ScheduledPregame) => {
+    return compareAsc(
+      parseISO(`${a.date}T${a.time}`),
+      parseISO(`${b.date}T${b.time}`)
+    );
+  });
 
   const handleBack = () => {
     setLocation("/home");
@@ -62,6 +111,34 @@ export default function Calendar() {
     setShowEditModal(true);
   };
 
+  // Mutation for updating pregames
+  const updatePregameMutation = useMutation({
+    mutationFn: async ({ pregameId, updates }: { pregameId: string; updates: any }) => {
+      return apiRequest('PUT', `/api/pregames/${pregameId}`, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/pregames', currentUserEmail] });
+      setEditingPregame(null);
+      setShowEditModal(false);
+    },
+    onError: (error) => {
+      console.error('Error updating pregame:', error);
+    }
+  });
+
+  // Mutation for deleting pregames
+  const deletePregameMutation = useMutation({
+    mutationFn: async (pregameId: string) => {
+      return apiRequest('DELETE', `/api/pregames/${pregameId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/pregames', currentUserEmail] });
+    },
+    onError: (error) => {
+      console.error('Error deleting pregame:', error);
+    }
+  });
+
   const handleUpdatePregame = (scheduleData: {
     date: string;
     time: string;
@@ -70,35 +147,25 @@ export default function Calendar() {
   }) => {
     if (!editingPregame) return;
 
-    const updatedPregame = {
-      ...editingPregame,
-      date: scheduleData.date,
-      time: scheduleData.time,
-      location: scheduleData.location || "",
-      notes: scheduleData.notes || ""
-    };
-
-    const updatedPregames = scheduledPregames.map(p => 
-      p.id === editingPregame.id ? updatedPregame : p
-    );
-
-    setScheduledPregames(updatedPregames);
-    localStorage.setItem('scheduledPregames', JSON.stringify(updatedPregames));
-    
-    setEditingPregame(null);
-    setShowEditModal(false);
+    updatePregameMutation.mutate({
+      pregameId: editingPregame.id,
+      updates: {
+        date: scheduleData.date,
+        time: scheduleData.time,
+        location: scheduleData.location || "",
+        notes: scheduleData.notes || ""
+      }
+    });
   };
 
   const handleDeletePregame = (pregameId: string) => {
     if (confirm('Are you sure you want to delete this scheduled pregame?')) {
-      const updatedPregames = scheduledPregames.filter(p => p.id !== pregameId);
-      setScheduledPregames(updatedPregames);
-      localStorage.setItem('scheduledPregames', JSON.stringify(updatedPregames));
+      deletePregameMutation.mutate(pregameId);
     }
   };
 
   const handleMessageParticipant = (pregame: ScheduledPregame) => {
-    setLocation(`/messages/${pregame.participantId}`);
+    setLocation(`/messages/${pregame.participantEmail}`);
   };
 
   const groupPregamesByDate = (pregames: ScheduledPregame[]) => {
@@ -116,7 +183,7 @@ export default function Calendar() {
   };
 
   // Process personal pregames
-  const personalGroupedPregames = groupPregamesByDate(scheduledPregames);
+  const personalGroupedPregames = groupPregamesByDate(sortedPregames);
   const personalDates = Object.keys(personalGroupedPregames).sort();
   
   // Process all pregames (mock data) - create copy to avoid mutation
@@ -168,7 +235,11 @@ export default function Calendar() {
 
           {/* Your Pregames Tab */}
           <TabsContent value="your-pregames" className="space-y-6">
-            {scheduledPregames.length === 0 ? (
+            {isLoading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Loading pregames...</p>
+              </div>
+            ) : sortedPregames.length === 0 ? (
               <div className="text-center py-12">
                 <CalendarIcon className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h2 className="text-xl font-semibold mb-2">No Scheduled Pregames</h2>

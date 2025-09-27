@@ -1,4 +1,4 @@
-import { users, organizations, messages, type User, type InsertUser, type Organization, type InsertOrganization, type Message, type InsertMessage } from "@shared/schema";
+import { users, organizations, messages, pregames, type User, type InsertUser, type Organization, type InsertOrganization, type Message, type InsertMessage, type Pregame, type InsertPregame } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, desc } from "drizzle-orm";
 
@@ -13,9 +13,13 @@ export interface IStorage {
   getOrganizationsBySchool(school: string): Promise<Organization[]>;
   getOrganization(id: string): Promise<Organization | undefined>;
   createOrganization(organization: InsertOrganization): Promise<Organization>;
-  sendMessage(message: InsertMessage): Promise<Message>;
+  sendMessage(message: InsertMessage, senderEmail: string): Promise<Message>;
   getMessagesBetweenUsers(userEmail1: string, userEmail2: string): Promise<Message[]>;
   getMessagesForUser(userEmail: string): Promise<Message[]>;
+  createPregame(pregame: InsertPregame, creatorEmail: string): Promise<Pregame>;
+  getPregamesForUser(userEmail: string): Promise<Pregame[]>;
+  deletePregame(id: string): Promise<void>;
+  updatePregame(id: string, updates: Partial<InsertPregame>): Promise<Pregame>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -60,10 +64,10 @@ export class DatabaseStorage implements IStorage {
     return org;
   }
 
-  async sendMessage(insertMessage: InsertMessage): Promise<Message> {
+  async sendMessage(insertMessage: InsertMessage, senderEmail: string): Promise<Message> {
     const [message] = await db
       .insert(messages)
-      .values(insertMessage)
+      .values({ ...insertMessage, senderEmail })
       .returning();
     return message;
   }
@@ -89,6 +93,36 @@ export class DatabaseStorage implements IStorage {
       .where(or(eq(messages.senderEmail, userEmail), eq(messages.recipientEmail, userEmail)))
       .orderBy(desc(messages.createdAt));
     return messageList;
+  }
+
+  async createPregame(insertPregame: InsertPregame, creatorEmail: string): Promise<Pregame> {
+    const [pregame] = await db
+      .insert(pregames)
+      .values({ ...insertPregame, creatorEmail })
+      .returning();
+    return pregame;
+  }
+
+  async getPregamesForUser(userEmail: string): Promise<Pregame[]> {
+    const pregameList = await db
+      .select()
+      .from(pregames)
+      .where(or(eq(pregames.creatorEmail, userEmail), eq(pregames.participantEmail, userEmail)))
+      .orderBy(desc(pregames.createdAt));
+    return pregameList;
+  }
+
+  async deletePregame(id: string): Promise<void> {
+    await db.delete(pregames).where(eq(pregames.id, id));
+  }
+
+  async updatePregame(id: string, updates: Partial<InsertPregame>): Promise<Pregame> {
+    const [pregame] = await db
+      .update(pregames)
+      .set(updates)
+      .where(eq(pregames.id, id))
+      .returning();
+    return pregame;
   }
 }
 

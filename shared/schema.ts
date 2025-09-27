@@ -34,6 +34,17 @@ export const messages = pgTable("messages", {
   isRead: integer("is_read").default(0).notNull(), // 0 for false, 1 for true
 });
 
+export const pregames = pgTable("pregames", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  creatorEmail: text("creator_email").notNull(),
+  participantEmail: text("participant_email").notNull(),
+  date: text("date").notNull(), // Format: YYYY-MM-DD
+  time: text("time").notNull(), // Format: HH:MM
+  location: text("location"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   email: true,
@@ -71,9 +82,17 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   senderEmail: true, // Remove senderEmail from client input - will be derived server-side
 });
 
+export const insertPregameSchema = createInsertSchema(pregames).omit({
+  id: true,
+  createdAt: true,
+  creatorEmail: true, // Remove creatorEmail from client input - will be derived server-side
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
 export type Organization = typeof organizations.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
+export type InsertPregame = z.infer<typeof insertPregameSchema>;
+export type Pregame = typeof pregames.$inferSelect;

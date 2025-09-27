@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
-import { insertUserSchema, insertMessageSchema, registerSchema, loginSchema } from "@shared/schema";
+import { insertUserSchema, insertMessageSchema, insertPregameSchema, registerSchema, loginSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Registration endpoint
@@ -199,11 +199,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const message = await storage.sendMessage({
-        senderEmail,
         recipientEmail,
         content,
         isRead: 0
-      });
+      }, senderEmail);
       
       res.status(201).json({ message: "Message sent", data: message });
     } catch (error) {
@@ -253,6 +252,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching conversation:", error);
       res.status(500).json({ message: "Failed to fetch conversation" });
+    }
+  });
+
+  // Pregame endpoints
+  app.post("/api/pregames", async (req, res) => {
+    try {
+      const { participantEmail, date, time, location, notes } = insertPregameSchema.parse(req.body);
+      
+      // TODO: In a real app, get creatorEmail from authenticated session/JWT
+      // For MVP, we'll accept it from request body as a temporary stub
+      const { creatorEmail } = req.body;
+      
+      if (!creatorEmail) {
+        return res.status(400).json({ message: "Creator email is required" });
+      }
+      
+      // Validate that creator and participant exist in users table
+      const creator = await storage.getUserByEmail(creatorEmail);
+      if (!creator) {
+        return res.status(401).json({ message: "Creator not authenticated" });
+      }
+      
+      const participant = await storage.getUserByEmail(participantEmail);
+      if (!participant) {
+        return res.status(404).json({ message: "Participant not found" });
+      }
+      
+      const pregame = await storage.createPregame({
+        participantEmail,
+        date,
+        time,
+        location,
+        notes
+      }, creatorEmail);
+      
+      res.status(201).json({ message: "Pregame scheduled", data: pregame });
+    } catch (error) {
+      console.error("Error creating pregame:", error);
+      res.status(400).json({ message: "Failed to create pregame" });
+    }
+  });
+
+  app.get("/api/pregames/:userEmail", async (req, res) => {
+    try {
+      const { userEmail } = req.params;
+      
+      // Validate that the user exists
+      const user = await storage.getUserByEmail(userEmail);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // TODO: In a real app, verify that the requesting user is authenticated 
+      // and is authorized to access these pregames
+      
+      const pregames = await storage.getPregamesForUser(userEmail);
+      res.json({ pregames });
+    } catch (error) {
+      console.error("Error fetching pregames:", error);
+      res.status(500).json({ message: "Failed to fetch pregames" });
+    }
+  });
+
+  app.delete("/api/pregames/:pregameId", async (req, res) => {
+    try {
+      const { pregameId } = req.params;
+      
+      // TODO: In a real app, verify that the requesting user is authenticated 
+      // and is authorized to delete this pregame (creator only)
+      
+      await storage.deletePregame(pregameId);
+      res.status(200).json({ message: "Pregame deleted" });
+    } catch (error) {
+      console.error("Error deleting pregame:", error);
+      res.status(500).json({ message: "Failed to delete pregame" });
+    }
+  });
+
+  app.put("/api/pregames/:pregameId", async (req, res) => {
+    try {
+      const { pregameId } = req.params;
+      const updates = insertPregameSchema.partial().parse(req.body);
+      
+      // TODO: In a real app, verify that the requesting user is authenticated 
+      // and is authorized to update this pregame (creator only)
+      
+      const pregame = await storage.updatePregame(pregameId, updates);
+      res.status(200).json({ message: "Pregame updated", data: pregame });
+    } catch (error) {
+      console.error("Error updating pregame:", error);
+      res.status(500).json({ message: "Failed to update pregame" });
     }
   });
 

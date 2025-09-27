@@ -22,6 +22,7 @@ interface ChatUser {
   email: string;
   name: string;
   image?: string;
+  isOrganization?: boolean;
 }
 
 export default function ChatView() {
@@ -82,6 +83,7 @@ export default function ChatView() {
     const allOrganizationsData = localStorage.getItem('allOrganizations');
     
     let partner = null;
+    let isOrganization = false;
     
     // First check in users
     if (allUsersData) {
@@ -93,15 +95,17 @@ export default function ChatView() {
     if (!partner && allOrganizationsData) {
       const allOrganizations = JSON.parse(allOrganizationsData);
       partner = allOrganizations.find((org: any) => org.contactEmail === partnerEmail);
+      isOrganization = !!partner;
     }
     
-    console.log('ChatView: Found partner:', !!partner);
+    console.log('ChatView: Found partner:', !!partner, 'isOrganization:', isOrganization);
     
     if (partner) {
       setParticipant({
         email: partnerEmail,
         name: partner.name || partner.username || 'Unknown',
-        image: partner.profileImage || partner.profileImages?.[0]
+        image: partner.profileImage || partner.profileImages?.[0],
+        isOrganization
       });
     } else {
       // Create a fallback participant with a better default name
@@ -113,7 +117,8 @@ export default function ChatView() {
       setParticipant({
         email: partnerEmail,
         name: fallbackName,
-        image: undefined
+        image: undefined,
+        isOrganization: false
       });
     }
   }, [partnerEmail, currentUserEmail]);
@@ -140,7 +145,7 @@ export default function ChatView() {
   // Mutation for sending messages
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: { recipientEmail: string; content: string; senderEmail: string }) => {
-      return apiRequest(`/api/messages/send`, 'POST', messageData);
+      return apiRequest('POST', `/api/messages/send`, messageData);
     },
     onSuccess: () => {
       // Refetch the conversation to get the updated messages
@@ -186,54 +191,54 @@ export default function ChatView() {
     setLocation("/messages");
   };
 
+  const schedulePregameMutation = useMutation({
+    mutationFn: async (scheduleData: {
+      date: string;
+      time: string;
+      location?: string;
+      notes?: string;
+    }) => {
+      if (!participant || !currentUserEmail) throw new Error("Missing participant or current user");
+      
+      return apiRequest('POST', `/api/pregames`, {
+        creatorEmail: currentUserEmail,
+        participantEmail: participant.email,
+        date: scheduleData.date,
+        time: scheduleData.time,
+        location: scheduleData.location || "",
+        notes: scheduleData.notes || ""
+      });
+    },
+    onSuccess: (data, variables) => {
+      console.log('Pregame scheduled successfully:', data);
+      
+      // Invalidate calendar queries to refresh pregame list
+      queryClient.invalidateQueries({ queryKey: ['/api/pregames', currentUserEmail] });
+      
+      // Add confirmation message to chat
+      const confirmationMessage: Message = {
+        id: Date.now().toString() + "_system",
+        content: `Pregame scheduled for ${variables.date} at ${variables.time}${variables.location ? ` at ${variables.location}` : ''}`,
+        timestamp: new Date(),
+        isFromUser: true,
+        senderName: "System"
+      };
+
+      setMessages(prev => [...prev, confirmationMessage]);
+    },
+    onError: (error) => {
+      console.error('Error scheduling pregame:', error);
+      // Could add error message to chat or show toast
+    }
+  });
+
   const handleSchedulePregame = (scheduleData: {
     date: string;
     time: string;
     location?: string;
     notes?: string;
   }) => {
-    if (!participant) return;
-
-    // Create scheduled pregame object
-    const scheduledPregame = {
-      id: Date.now().toString(),
-      participantEmail: participant.email,
-      participantName: participant.name,
-      participantImage: participant.image,
-      date: scheduleData.date,
-      time: scheduleData.time,
-      location: scheduleData.location || "",
-      notes: scheduleData.notes || "",
-      createdAt: new Date().toISOString()
-    };
-
-    // Save to localStorage
-    const existingPregames = localStorage.getItem('scheduledPregames');
-    let pregames = [];
-    
-    if (existingPregames) {
-      try {
-        pregames = JSON.parse(existingPregames);
-      } catch (e) {
-        console.error('Error loading existing pregames:', e);
-      }
-    }
-
-    pregames.push(scheduledPregame);
-    localStorage.setItem('scheduledPregames', JSON.stringify(pregames));
-
-    console.log('Scheduled pregame:', scheduledPregame);
-    
-    // Add confirmation message to chat
-    const confirmationMessage: Message = {
-      id: Date.now().toString() + "_system",
-      content: `Pregame scheduled for ${scheduleData.date} at ${scheduleData.time}${scheduleData.location ? ` at ${scheduleData.location}` : ''}`,
-      timestamp: new Date(),
-      isFromUser: true,
-      senderName: "System"
-    };
-
-    setMessages(prev => [...prev, confirmationMessage]);
+    schedulePregameMutation.mutate(scheduleData);
   };
 
   if (!participant) {
@@ -275,16 +280,18 @@ export default function ChatView() {
             <p className="text-sm text-muted-foreground">Active now</p>
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowScheduleModal(true)}
-            className="gap-2"
-            data-testid="button-schedule-pregame"
-          >
-            <Calendar className="h-4 w-4" />
-            Schedule Pregame
-          </Button>
+          {!participant.isOrganization && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowScheduleModal(true)}
+              className="gap-2"
+              data-testid="button-schedule-pregame"
+            >
+              <Calendar className="h-4 w-4" />
+              Schedule Pregame
+            </Button>
+          )}
         </div>
       </header>
 

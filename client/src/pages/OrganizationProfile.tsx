@@ -51,7 +51,7 @@ export default function OrganizationProfile() {
 
   const handleContactOrganization = () => {
     // In a real app, this would open a messaging interface
-    setLocation(`/messages?contact=${organization?.contactEmail}`);
+    setLocation(`/messages/${encodeURIComponent(organization?.contactEmail || '')}`);
   };
 
   const handleJoinRequest = () => {
