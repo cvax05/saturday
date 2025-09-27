@@ -184,10 +184,14 @@ export default function ProfileEdit() {
             <form onSubmit={handleSubmit} className="space-y-4">
               
               {/* Profile Picture */}
-              <div className="flex flex-col items-center space-y-2">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={formData.profileImage} alt={formData.name} />
-                  <AvatarFallback>
+              <div className="flex flex-col items-center space-y-3">
+                <Avatar className="h-28 w-28 border-2 border-border">
+                  <AvatarImage 
+                    src={formData.profileImage} 
+                    alt={formData.name}
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="text-2xl font-bold bg-muted">
                     {formData.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>

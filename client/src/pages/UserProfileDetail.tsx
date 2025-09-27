@@ -14,7 +14,8 @@ import {
   Calendar, 
   Wine,
   ArrowLeft,
-  MessageCircle
+  MessageCircle,
+  Edit
 } from "lucide-react";
 
 interface UserProfile {
@@ -35,6 +36,8 @@ export default function UserProfileDetail() {
   const [, params] = useRoute("/profile/:email");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -46,14 +49,19 @@ export default function UserProfileDetail() {
       try {
         const targetEmail = decodeURIComponent(params.email);
         
-        // First check if it's the current user
+        // Load current user data and check if this is their own profile
         const currentUserData = localStorage.getItem('currentUser');
         if (currentUserData) {
-          const currentUser = JSON.parse(currentUserData);
-          if (currentUser.email === targetEmail) {
-            setUserProfile(currentUser);
+          const currentUserInfo = JSON.parse(currentUserData);
+          setCurrentUser(currentUserInfo);
+          
+          if (currentUserInfo.email === targetEmail) {
+            setUserProfile(currentUserInfo);
+            setIsOwnProfile(true);
             setLoading(false);
             return;
+          } else {
+            setIsOwnProfile(false);
           }
         }
         
@@ -156,32 +164,56 @@ export default function UserProfileDetail() {
         <Card>
           <CardHeader>
             <div className="flex items-start gap-6">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={userProfile.profileImage || ""} alt={userProfile.name || ""} />
-                <AvatarFallback className="text-2xl font-bold">
+              <Avatar className="h-32 w-32 border-2 border-border">
+                <AvatarImage 
+                  src={userProfile.profileImage || ""} 
+                  alt={userProfile.name || ""} 
+                  className="object-cover"
+                />
+                <AvatarFallback className="text-3xl font-bold bg-muted">
                   {(userProfile.name || "").split(' ').map((word: string) => word[0]).join('').slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               
               <div className="flex-1">
-                <CardTitle className="text-2xl mb-2" data-testid="profile-name">
-                  {userProfile.name}
-                </CardTitle>
-                
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <Mail className="h-4 w-4" />
-                  <span data-testid="profile-email">{userProfile.email}</span>
-                </div>
-                
-                <div className="flex items-center gap-2 text-muted-foreground mb-4">
-                  <GraduationCap className="h-4 w-4" />
-                  <span data-testid="profile-school">{userProfile.school}</span>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-2xl mb-2" data-testid="profile-name">
+                      {userProfile.name}
+                    </CardTitle>
+                    
+                    <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                      <Mail className="h-4 w-4" />
+                      <span data-testid="profile-email">{userProfile.email}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                      <GraduationCap className="h-4 w-4" />
+                      <span data-testid="profile-school">{userProfile.school}</span>
+                    </div>
+                  </div>
+                  
+                  {/* Edit button - only show for own profile */}
+                  {isOwnProfile && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setLocation("/profile/edit")}
+                      data-testid="button-edit-profile"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                  )}
                 </div>
 
-                <MessageDialog 
-                  recipientName={userProfile.name} 
-                  recipientEmail={userProfile.email}
-                />
+                {/* Message button - only show for other users' profiles */}
+                {!isOwnProfile && (
+                  <MessageDialog 
+                    recipientName={userProfile.name} 
+                    recipientEmail={userProfile.email}
+                  />
+                )}
               </div>
             </div>
           </CardHeader>

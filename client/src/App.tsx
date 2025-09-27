@@ -36,6 +36,7 @@ function Router() {
         }}
       </Route>
       <Route path="/groups" component={Groups} />
+      <Route path="/profile/edit" component={ProfileEdit} />
       <Route path="/profile/:email" component={UserProfileDetail} />
       <Route path="/home" component={Home} />
       <Route path="/leaderboard" component={Leaderboard} />
@@ -43,7 +44,6 @@ function Router() {
       <Route path="/messages" component={Messages} />
       <Route path="/messages/:id" component={ChatView} />
       <Route path="/calendar" component={Calendar} />
-      <Route path="/profile/edit" component={ProfileEdit} />
       <Route path="/profile/:id" component={UserProfilePage} />
       
       {/* Fallback to 404 */}
