@@ -129,8 +129,6 @@ export default function Groups() {
                           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                             <Users className="h-3 w-3" />
                             <span>{group.groupSize} members</span>
-                            <Mail className="h-3 w-3 ml-2" />
-                            <span>{group.email}</span>
                           </div>
                         </div>
                       </div>
