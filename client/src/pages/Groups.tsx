@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Users, GraduationCap, Mail, ChevronRight, Building } from "lucide-react";
+import { Users, GraduationCap, MessageCircle, ChevronRight, Building } from "lucide-react";
 
 interface GroupProfile {
   name: string;
@@ -52,6 +52,10 @@ export default function Groups() {
 
   const handleViewProfile = (userEmail: string) => {
     setLocation(`/profile/${encodeURIComponent(userEmail)}`);
+  };
+
+  const handleStartMessage = (userEmail: string) => {
+    setLocation(`/messages/${encodeURIComponent(userEmail)}`);
   };
 
   const getPreferredAlcoholColor = (alcohol: string) => {
@@ -163,17 +167,27 @@ export default function Groups() {
                     </div>
                   </div>
 
-                  {/* View Profile Button */}
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleViewProfile(group.email)}
-                    className="shrink-0"
-                    data-testid={`button-view-group-${index}`}
-                  >
-                    View Profile
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 shrink-0">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleStartMessage(group.email)}
+                      data-testid={`button-message-group-${index}`}
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      Message
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewProfile(group.email)}
+                      data-testid={`button-view-group-${index}`}
+                    >
+                      View Profile
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
