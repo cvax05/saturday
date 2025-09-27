@@ -77,40 +77,55 @@ export default function ChatView() {
       return;
     }
 
-    // Get partner user data from localStorage
+    // Get partner user data from localStorage - check both users and organizations
     const allUsersData = localStorage.getItem('allUsers');
+    const allOrganizationsData = localStorage.getItem('allOrganizations');
+    
+    let partner = null;
+    
+    // First check in users
     if (allUsersData) {
       const allUsers = JSON.parse(allUsersData);
-      const partner = allUsers.find((user: any) => user.email === partnerEmail);
-      console.log('ChatView: Found partner in allUsers:', !!partner);
-      if (partner) {
-        setParticipant({
-          email: partner.email,
-          name: partner.name || partner.username,
-          image: partner.profileImage || partner.profileImages?.[0]
-        });
-      } else {
-        // Create a fallback participant if not found in allUsers
-        console.log('ChatView: Partner not found in allUsers, creating fallback');
-        setParticipant({
-          email: partnerEmail,
-          name: partnerEmail.split('@')[0], // Use email prefix as name fallback
-          image: undefined
-        });
-      }
-    } else {
-      // No allUsers data, create fallback participant
-      console.log('ChatView: No allUsers data, creating fallback participant');
+      partner = allUsers.find((user: any) => user.email === partnerEmail);
+    }
+    
+    // If not found in users, check in organizations
+    if (!partner && allOrganizationsData) {
+      const allOrganizations = JSON.parse(allOrganizationsData);
+      partner = allOrganizations.find((org: any) => org.contactEmail === partnerEmail);
+    }
+    
+    console.log('ChatView: Found partner:', !!partner);
+    
+    if (partner) {
       setParticipant({
         email: partnerEmail,
-        name: partnerEmail.split('@')[0],
+        name: partner.name || partner.username || 'Unknown',
+        image: partner.profileImage || partner.profileImages?.[0]
+      });
+    } else {
+      // Create a fallback participant with a better default name
+      console.log('ChatView: Partner not found, creating fallback');
+      const fallbackName = partnerEmail.includes('@') ? 
+        partnerEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').trim() : 
+        'Unknown User';
+      
+      setParticipant({
+        email: partnerEmail,
+        name: fallbackName,
         image: undefined
       });
     }
+  }, [partnerEmail, currentUserEmail]);
 
-    // Process messages if available
-    if (conversationData?.messages) {
-      const processedMessages: Message[] = conversationData.messages.map((msg: any) => ({
+  // Process messages in a separate useEffect
+  useEffect(() => {
+    if (!conversationData || !currentUserEmail) return;
+    
+    // Handle different possible response structures
+    const messages = (conversationData as any)?.messages || conversationData || [];
+    if (Array.isArray(messages)) {
+      const processedMessages: Message[] = messages.map((msg: any) => ({
         id: msg.id,
         content: msg.content,
         timestamp: new Date(msg.createdAt),
@@ -120,18 +135,12 @@ export default function ChatView() {
       
       setMessages(processedMessages);
     }
-  }, [conversationData, partnerEmail, currentUserEmail, participant?.name]);
+  }, [conversationData, currentUserEmail, participant?.name]);
 
   // Mutation for sending messages
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: { recipientEmail: string; content: string; senderEmail: string }) => {
-      return apiRequest(`/api/messages/send`, {
-        method: 'POST',
-        body: JSON.stringify(messageData),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      return apiRequest(`/api/messages/send`, 'POST', messageData);
     },
     onSuccess: () => {
       // Refetch the conversation to get the updated messages
@@ -188,7 +197,7 @@ export default function ChatView() {
     // Create scheduled pregame object
     const scheduledPregame = {
       id: Date.now().toString(),
-      participantId: participant.id,
+      participantEmail: participant.email,
       participantName: participant.name,
       participantImage: participant.image,
       date: scheduleData.date,

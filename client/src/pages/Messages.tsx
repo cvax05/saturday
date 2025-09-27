@@ -61,18 +61,34 @@ export default function Messages() {
       const messageTime = new Date(message.createdAt);
       
       if (!existing || messageTime > existing.lastMessageTime) {
-        // Get user data for this partner (from localStorage for now)
+        // Get user data for this partner - check both users and organizations
         const allUsersData = localStorage.getItem('allUsers');
-        let partnerName = partnerEmail.split('@')[0]; // fallback
+        const allOrganizationsData = localStorage.getItem('allOrganizations');
+        
+        let partner = null;
+        let partnerName = 'Unknown';
         let partnerImage = undefined;
         
+        // First check in users
         if (allUsersData) {
           const allUsers = JSON.parse(allUsersData);
-          const partner = allUsers.find((user: any) => user.email === partnerEmail);
-          if (partner) {
-            partnerName = partner.name || partner.username || partnerName;
-            partnerImage = partner.profileImage || partner.profileImages?.[0];
-          }
+          partner = allUsers.find((user: any) => user.email === partnerEmail);
+        }
+        
+        // If not found in users, check in organizations
+        if (!partner && allOrganizationsData) {
+          const allOrganizations = JSON.parse(allOrganizationsData);
+          partner = allOrganizations.find((org: any) => org.contactEmail === partnerEmail);
+        }
+        
+        if (partner) {
+          partnerName = partner.name || partner.username || 'Unknown';
+          partnerImage = partner.profileImage || partner.profileImages?.[0];
+        } else {
+          // Create a better fallback name
+          partnerName = partnerEmail.includes('@') ? 
+            partnerEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').trim() : 
+            'Unknown User';
         }
 
         conversationMap.set(partnerEmail, {
