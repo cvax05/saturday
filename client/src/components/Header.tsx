@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User, Users } from "lucide-react";
+import { LogOut, User, Users, MessageCircle } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
 
 interface UserData {
@@ -104,10 +104,11 @@ export default function Header() {
             <Button 
               variant="ghost" 
               size="sm"
-              onClick={() => setLocation("/leaderboard")}
-              data-testid="nav-organizations"
+              onClick={() => setLocation("/messages")}
+              data-testid="nav-messages"
             >
-              Organizations
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Messages
             </Button>
           </nav>
         </div>
