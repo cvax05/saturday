@@ -78,49 +78,81 @@ export default function ChatView() {
       return;
     }
 
-    // Get partner user data from localStorage - check both users and organizations
-    const allUsersData = localStorage.getItem('allUsers');
-    const allOrganizationsData = localStorage.getItem('allOrganizations');
-    
-    let partner = null;
-    let isOrganization = false;
-    
-    // First check in users
-    if (allUsersData) {
-      const allUsers = JSON.parse(allUsersData);
-      partner = allUsers.find((user: any) => user.email === partnerEmail);
-    }
-    
-    // If not found in users, check in organizations
-    if (!partner && allOrganizationsData) {
-      const allOrganizations = JSON.parse(allOrganizationsData);
-      partner = allOrganizations.find((org: any) => org.contactEmail === partnerEmail);
-      isOrganization = !!partner;
-    }
-    
-    console.log('ChatView: Found partner:', !!partner, 'isOrganization:', isOrganization);
-    
-    if (partner) {
-      setParticipant({
-        email: partnerEmail,
-        name: partner.name || partner.username || 'Unknown',
-        image: partner.profileImage || partner.profileImages?.[0],
-        isOrganization
-      });
-    } else {
-      // Create a fallback participant with a better default name
-      console.log('ChatView: Partner not found, creating fallback');
-      const fallbackName = partnerEmail.includes('@') ? 
-        partnerEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').trim() : 
-        'Unknown User';
+    const findPartnerData = async () => {
+      // Get partner user data from localStorage - check both users and organizations
+      const allUsersData = localStorage.getItem('allUsers');
+      const allOrganizationsData = localStorage.getItem('allOrganizations');
       
-      setParticipant({
-        email: partnerEmail,
-        name: fallbackName,
-        image: undefined,
-        isOrganization: false
-      });
-    }
+      let partner = null;
+      let isOrganization = false;
+      
+      // First check in users
+      if (allUsersData) {
+        const allUsers = JSON.parse(allUsersData);
+        partner = allUsers.find((user: any) => user.email === partnerEmail);
+      }
+      
+      // If not found in users, check in organizations
+      if (!partner && allOrganizationsData) {
+        const allOrganizations = JSON.parse(allOrganizationsData);
+        partner = allOrganizations.find((org: any) => org.contactEmail === partnerEmail);
+        isOrganization = !!partner;
+      }
+      
+      console.log('ChatView: Found partner in localStorage:', !!partner, 'isOrganization:', isOrganization);
+      
+      // If not found in localStorage, try fetching from API
+      if (!partner) {
+        console.log('ChatView: Partner not found in localStorage, fetching from API');
+        try {
+          // Try to fetch as user first
+          const userResponse = await fetch(`/api/users/email/${encodeURIComponent(partnerEmail)}`);
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            partner = userData.user;
+            isOrganization = false;
+            console.log('ChatView: Found partner via user API:', partner.name);
+          } else {
+            // If not found as user, try as organization
+            const orgResponse = await fetch(`/api/organizations/email/${encodeURIComponent(partnerEmail)}`);
+            if (orgResponse.ok) {
+              const orgData = await orgResponse.json();
+              partner = orgData.organization;
+              isOrganization = true;
+              console.log('ChatView: Found partner via organization API:', partner.name);
+            } else {
+              console.log('ChatView: Partner not found via any API, using fallback');
+            }
+          }
+        } catch (error) {
+          console.error('ChatView: Error fetching partner data:', error);
+        }
+      }
+      
+      if (partner) {
+        setParticipant({
+          email: partnerEmail,
+          name: partner.name || partner.username || 'Unknown',
+          image: partner.profileImage || partner.profileImages?.[0],
+          isOrganization
+        });
+      } else {
+        // Create a fallback participant with a better default name
+        console.log('ChatView: Using fallback participant name');
+        const fallbackName = partnerEmail.includes('@') ? 
+          partnerEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').trim() : 
+          'Unknown User';
+        
+        setParticipant({
+          email: partnerEmail,
+          name: fallbackName,
+          image: undefined,
+          isOrganization: false
+        });
+      }
+    };
+
+    findPartnerData();
   }, [partnerEmail, currentUserEmail]);
 
   // Process messages in a separate useEffect

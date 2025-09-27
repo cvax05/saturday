@@ -37,7 +37,12 @@ export default function UserProfileDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (params?.email) {
+    const fetchUserProfile = async () => {
+      if (!params?.email) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const targetEmail = decodeURIComponent(params.email);
         
@@ -59,13 +64,32 @@ export default function UserProfileDetail() {
           const targetUser = allUsers.find((user: UserProfile) => user.email === targetEmail);
           if (targetUser) {
             setUserProfile(targetUser);
+            setLoading(false);
+            return;
           }
+        }
+
+        // If not found in localStorage, try fetching from API
+        console.log('UserProfileDetail: User not found in localStorage, fetching from API');
+        try {
+          const userResponse = await fetch(`/api/users/email/${encodeURIComponent(targetEmail)}`);
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            setUserProfile(userData.user);
+            console.log('UserProfileDetail: Found user via API:', userData.user.username);
+          } else {
+            console.log('UserProfileDetail: User not found via API');
+          }
+        } catch (error) {
+          console.error('UserProfileDetail: Error fetching user data:', error);
         }
       } catch (error) {
         console.error("Error loading user profile:", error);
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    fetchUserProfile();
   }, [params?.email]);
 
   const getPreferredAlcoholColor = (alcohol: string) => {

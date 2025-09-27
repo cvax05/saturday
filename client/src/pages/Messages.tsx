@@ -43,82 +43,113 @@ export default function Messages() {
 
   // Process messages into conversation summaries
   useEffect(() => {
-    if (!messagesData || !currentUserEmail) return;
-    
-    // Handle different possible response structures
-    const messages = (messagesData as any)?.messages || messagesData || [];
-    if (!Array.isArray(messages)) return;
-
-    const conversationMap = new Map<string, ConversationSummary>();
-    
-    // Group messages by conversation partner
-    messages.forEach((message: any) => {
-      const partnerEmail = message.senderEmail === currentUserEmail 
-        ? message.recipientEmail 
-        : message.senderEmail;
+    const processMessages = async () => {
+      if (!messagesData || !currentUserEmail) return;
       
-      const existing = conversationMap.get(partnerEmail);
-      const messageTime = new Date(message.createdAt);
-      
-      if (!existing || messageTime > existing.lastMessageTime) {
-        // Get user data for this partner - check both users and organizations
-        const allUsersData = localStorage.getItem('allUsers');
-        const allOrganizationsData = localStorage.getItem('allOrganizations');
-        
-        let partner = null;
-        let partnerName = 'Unknown';
-        let partnerImage = undefined;
-        
-        // First check in users
-        if (allUsersData) {
-          const allUsers = JSON.parse(allUsersData);
-          partner = allUsers.find((user: any) => user.email === partnerEmail);
-        }
-        
-        // If not found in users, check in organizations
-        if (!partner && allOrganizationsData) {
-          const allOrganizations = JSON.parse(allOrganizationsData);
-          partner = allOrganizations.find((org: any) => org.contactEmail === partnerEmail);
-        }
-        
-        if (partner) {
-          partnerName = partner.name || partner.username || 'Unknown';
-          partnerImage = partner.profileImage || partner.profileImages?.[0];
-        } else {
-          // Create a better fallback name
-          partnerName = partnerEmail.includes('@') ? 
-            partnerEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').trim() : 
-            'Unknown User';
-        }
+      // Handle different possible response structures
+      const messages = (messagesData as any)?.messages || messagesData || [];
+      if (!Array.isArray(messages)) return;
 
-        conversationMap.set(partnerEmail, {
-          id: partnerEmail, // Use email as conversation ID
-          participantName: partnerName,
-          participantEmail: partnerEmail,
-          participantImage: partnerImage,
-          lastMessage: message.content,
-          lastMessageTime: messageTime,
-          unreadCount: existing?.unreadCount || 0,
-          hasUnreadPendingRating: false
-        });
+      const conversationMap = new Map<string, ConversationSummary>();
+      
+      // Group messages by conversation partner
+      for (const message of messages) {
+        const partnerEmail = message.senderEmail === currentUserEmail 
+          ? message.recipientEmail 
+          : message.senderEmail;
+        
+        const existing = conversationMap.get(partnerEmail);
+        const messageTime = new Date(message.createdAt);
+        
+        if (!existing || messageTime > existing.lastMessageTime) {
+          // Get user data for this partner - check both users and organizations
+          const allUsersData = localStorage.getItem('allUsers');
+          const allOrganizationsData = localStorage.getItem('allOrganizations');
+          
+          let partner = null;
+          let partnerName = 'Unknown';
+          let partnerImage = undefined;
+          
+          // First check in users
+          if (allUsersData) {
+            const allUsers = JSON.parse(allUsersData);
+            partner = allUsers.find((user: any) => user.email === partnerEmail);
+          }
+          
+          // If not found in users, check in organizations
+          if (!partner && allOrganizationsData) {
+            const allOrganizations = JSON.parse(allOrganizationsData);
+            partner = allOrganizations.find((org: any) => org.contactEmail === partnerEmail);
+          }
+          
+          if (partner) {
+            partnerName = partner.name || partner.username || 'Unknown';
+            partnerImage = partner.profileImage || partner.profileImages?.[0];
+          } else {
+            // If not found in localStorage, try fetching from API
+            console.log('Messages: Partner not found in localStorage, fetching from API:', partnerEmail);
+            try {
+              const userResponse = await fetch(`/api/users/email/${encodeURIComponent(partnerEmail)}`);
+              if (userResponse.ok) {
+                const userData = await userResponse.json();
+                partnerName = userData.user.username || userData.user.name || 'Unknown';
+                partnerImage = userData.user.profileImage || userData.user.profileImages?.[0];
+                console.log('Messages: Found user via API:', partnerName);
+              } else {
+                // Try organizations API
+                const orgResponse = await fetch(`/api/organizations/email/${encodeURIComponent(partnerEmail)}`);
+                if (orgResponse.ok) {
+                  const orgData = await orgResponse.json();
+                  partnerName = orgData.organization.name || 'Unknown Organization';
+                  partnerImage = orgData.organization.profileImage;
+                  console.log('Messages: Found organization via API:', partnerName);
+                } else {
+                  // Create a better fallback name
+                  partnerName = partnerEmail.includes('@') ? 
+                    partnerEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').trim() : 
+                    'Unknown User';
+                  console.log('Messages: Using fallback name:', partnerName);
+                }
+              }
+            } catch (error) {
+              console.error('Messages: Error fetching partner data:', error);
+              partnerName = partnerEmail.includes('@') ? 
+                partnerEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').trim() : 
+                'Unknown User';
+            }
+          }
+
+          conversationMap.set(partnerEmail, {
+            id: partnerEmail, // Use email as conversation ID
+            participantName: partnerName,
+            participantEmail: partnerEmail,
+            participantImage: partnerImage,
+            lastMessage: message.content,
+            lastMessageTime: messageTime,
+            unreadCount: existing?.unreadCount || 0,
+            hasUnreadPendingRating: false
+          });
+        }
       }
-    });
 
-    // Calculate unread counts
-    conversationMap.forEach((conversation, partnerEmail) => {
-      const unreadCount = messages.filter((msg: any) => 
-        msg.senderEmail === partnerEmail && 
-        msg.recipientEmail === currentUserEmail && 
-        msg.isRead === 0
-      ).length;
-      conversation.unreadCount = unreadCount;
-    });
+      // Calculate unread counts
+      conversationMap.forEach((conversation, partnerEmail) => {
+        const unreadCount = messages.filter((msg: any) => 
+          msg.senderEmail === partnerEmail && 
+          msg.recipientEmail === currentUserEmail && 
+          msg.isRead === 0
+        ).length;
+        conversation.unreadCount = unreadCount;
+      });
 
-    // Convert to array and sort by last message time
-    const conversationArray = Array.from(conversationMap.values())
-      .sort((a, b) => b.lastMessageTime.getTime() - a.lastMessageTime.getTime());
-    
-    setConversations(conversationArray);
+      // Convert to array and sort by last message time
+      const conversationArray = Array.from(conversationMap.values())
+        .sort((a, b) => b.lastMessageTime.getTime() - a.lastMessageTime.getTime());
+      
+      setConversations(conversationArray);
+    };
+
+    processMessages();
   }, [messagesData, currentUserEmail]);
 
   const handleConversationClick = (conversationId: string) => {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,33 +22,30 @@ interface UserProfile {
 
 export default function People() {
   const [, setLocation] = useLocation();
-  const [currentUserSchool, setCurrentUserSchool] = useState<string>("");
-  const [schoolmates, setSchoolmates] = useState<UserProfile[]>([]);
+  const [currentUser, setCurrentUser] = useState<{ email: string; school: string } | null>(null);
 
+  // Get current user from localStorage
   useEffect(() => {
-    // Get current user's school and load all users from the same school
     try {
       const currentUserData = localStorage.getItem('currentUser');
-      const allUsersData = localStorage.getItem('allUsers');
-      
       if (currentUserData) {
-        const currentUser = JSON.parse(currentUserData);
-        const userSchool = currentUser.school || "";
-        setCurrentUserSchool(userSchool);
-        
-        if (allUsersData && userSchool) {
-          const allUsers = JSON.parse(allUsersData);
-          // Filter users by school and exclude current user
-          const schoolUsers = allUsers.filter((user: UserProfile) => 
-            user.school === userSchool && user.email !== currentUser.email
-          );
-          setSchoolmates(schoolUsers);
-        }
+        const userData = JSON.parse(currentUserData);
+        setCurrentUser({ email: userData.email, school: userData.school || "" });
       }
     } catch (error) {
-      console.error("Error loading user data:", error);
+      console.error("Error loading current user data:", error);
     }
   }, []);
+
+  // Fetch users from the same school via API
+  const { data: schoolUsersData, isLoading } = useQuery({
+    queryKey: ['/api/users/school', currentUser?.school],
+    enabled: !!currentUser?.school,
+  });
+
+  const schoolmates = (schoolUsersData as any)?.users?.filter((user: UserProfile) => 
+    user.email !== currentUser?.email
+  ) || [];
 
   const handleViewProfile = (userEmail: string) => {
     setLocation(`/profile/${encodeURIComponent(userEmail)}`);
@@ -66,7 +64,7 @@ export default function People() {
     }
   };
 
-  if (!currentUserSchool) {
+  if (!currentUser?.school) {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto">
@@ -96,7 +94,7 @@ export default function People() {
           </h1>
           <div className="flex items-center justify-center gap-2 text-muted-foreground mb-2">
             <GraduationCap className="h-4 w-4" />
-            <span>{currentUserSchool}</span>
+            <span>{currentUser?.school}</span>
           </div>
           <Badge variant="secondary" className="mt-2">
             {schoolmates.length} Person{schoolmates.length !== 1 ? 's' : ''}
@@ -105,7 +103,7 @@ export default function People() {
 
         {/* People List */}
         <div className="space-y-4">
-          {schoolmates.map((person, index) => (
+          {schoolmates.map((person: any, index: number) => (
             <Card key={person.email} className="hover-elevate" data-testid={`person-card-${index}`}>
               <CardContent className="p-6">
                 <div className="flex items-start justify-between gap-4">
@@ -114,7 +112,7 @@ export default function People() {
                     <Avatar className="h-16 w-16">
                       <AvatarImage src={person.profileImage || ""} alt={person.name} />
                       <AvatarFallback className="text-lg font-bold">
-                        {person.name.split(' ').map(word => word[0]).join('').slice(0, 2)}
+                        {person.name.split(' ').map((word: string) => word[0]).join('').slice(0, 2)}
                       </AvatarFallback>
                     </Avatar>
 
@@ -190,7 +188,7 @@ export default function People() {
             <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">No People Found</h2>
             <p className="text-muted-foreground mb-4">
-              No other students have registered from {currentUserSchool} yet.
+              No other students have registered from {currentUser?.school} yet.
             </p>
             <p className="text-sm text-muted-foreground">
               Be the first to connect with pregame groups at your school!

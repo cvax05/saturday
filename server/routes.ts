@@ -33,6 +33,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         profileImages: profileImages || []
       });
       
+      console.log(`[API] User registered successfully: ${user.username} (${user.email})`);
+      
       // Return user without password
       const { password: _, ...userWithoutPassword } = user;
       res.status(201).json({ user: userWithoutPassword });
@@ -69,6 +71,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Login error:", error);
       res.status(400).json({ message: "Login failed" });
+    }
+  });
+
+  // User profile endpoint
+  app.get("/api/users/email/:email", async (req, res) => {
+    try {
+      const { email } = req.params;
+      const decodedEmail = decodeURIComponent(email);
+      console.log(`[API] Looking up user by email. Original: ${email}, Decoded: ${decodedEmail}`);
+      
+      const user = await storage.getUserByEmail(decodedEmail);
+      if (!user) {
+        console.log(`[API] User not found for email: ${decodedEmail}`);
+        return res.status(404).json({ message: "User not found" });
+      }
+      console.log(`[API] Found user: ${user.username} (${user.email})`);
+      
+      // Return user without password
+      const { password: _, ...userWithoutPassword } = user;
+      res.status(200).json({ user: userWithoutPassword });
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Get users by school
+  app.get("/api/users/school/:school", async (req, res) => {
+    try {
+      const { school } = req.params;
+      const users = await storage.getUsersBySchool(school);
+      // Return users without passwords
+      const usersWithoutPasswords = users.map(({ password: _, ...user }) => user);
+      res.status(200).json({ users: usersWithoutPasswords });
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Organization profile endpoint
+  app.get("/api/organizations/email/:email", async (req, res) => {
+    try {
+      const { email } = req.params;
+      const organization = await storage.getOrganizationByEmail(email);
+      if (!organization) {
+        return res.status(404).json({ message: "Organization not found" });
+      }
+      res.status(200).json({ organization });
+    } catch (error) {
+      console.error("Error fetching organization:", error);
+      res.status(500).json({ message: "Failed to fetch organization" });
     }
   });
 

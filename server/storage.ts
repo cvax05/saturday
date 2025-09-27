@@ -9,9 +9,11 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUsersBySchool(school: string): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   getOrganizationsBySchool(school: string): Promise<Organization[]>;
   getOrganization(id: string): Promise<Organization | undefined>;
+  getOrganizationByEmail(contactEmail: string): Promise<Organization | undefined>;
   createOrganization(organization: InsertOrganization): Promise<Organization>;
   sendMessage(message: InsertMessage, senderEmail: string): Promise<Message>;
   getMessagesBetweenUsers(userEmail1: string, userEmail2: string): Promise<Message[]>;
@@ -38,6 +40,11 @@ export class DatabaseStorage implements IStorage {
     return user || undefined;
   }
 
+  async getUsersBySchool(school: string): Promise<User[]> {
+    const userList = await db.select().from(users).where(eq(users.school, school));
+    return userList;
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
@@ -53,6 +60,11 @@ export class DatabaseStorage implements IStorage {
 
   async getOrganization(id: string): Promise<Organization | undefined> {
     const [org] = await db.select().from(organizations).where(eq(organizations.id, id));
+    return org || undefined;
+  }
+
+  async getOrganizationByEmail(contactEmail: string): Promise<Organization | undefined> {
+    const [org] = await db.select().from(organizations).where(eq(organizations.contactEmail, contactEmail));
     return org || undefined;
   }
 
