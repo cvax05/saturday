@@ -47,46 +47,75 @@ export default function UserProfileDetail() {
       }
 
       try {
-        const targetEmail = decodeURIComponent(params.email);
+        const targetParam = decodeURIComponent(params.email);
         
-        // Load current user data and check if this is their own profile
+        // Check if the parameter is a user ID (UUID format) or email
+        const isUserId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetParam);
+        
+        // Load current user data for authentication context
         const currentUserData = localStorage.getItem('currentUser');
         if (currentUserData) {
           const currentUserInfo = JSON.parse(currentUserData);
           setCurrentUser(currentUserInfo);
           
-          if (currentUserInfo.email === targetEmail) {
-            setUserProfile(currentUserInfo);
-            setIsOwnProfile(true);
-            setLoading(false);
-            return;
-          } else {
-            setIsOwnProfile(false);
-          }
-        }
-        
-        // Otherwise, look for the user in the all users list
-        const allUsersData = localStorage.getItem('allUsers');
-        if (allUsersData) {
-          const allUsers = JSON.parse(allUsersData);
-          const targetUser = allUsers.find((user: UserProfile) => user.email === targetEmail);
-          if (targetUser) {
-            setUserProfile(targetUser);
+          // Check if this is the user's own profile
+          const isOwn = isUserId ? currentUserInfo.id === targetParam : currentUserInfo.email === targetParam;
+          setIsOwnProfile(isOwn);
+          
+          if (isOwn) {
+            // Transform current user data to match UserProfile interface
+            const profileData = {
+              name: currentUserInfo.username || currentUserInfo.displayName || currentUserInfo.name,
+              email: currentUserInfo.email,
+              school: currentUserInfo.school || 'Unknown School',
+              description: currentUserInfo.bio || currentUserInfo.description || '',
+              profileImage: currentUserInfo.avatarUrl || currentUserInfo.profileImage,
+              groupSize: '1',
+              groupSizeMin: '1',
+              groupSizeMax: '1',
+              preferredAlcohol: '',
+              availability: ''
+            };
+            setUserProfile(profileData);
             setLoading(false);
             return;
           }
         }
 
-        // If not found in localStorage, try fetching from API
-        console.log('UserProfileDetail: User not found in localStorage, fetching from API');
+        // Fetch from API based on parameter type
+        console.log('UserProfileDetail: Fetching user profile via API for:', targetParam);
         try {
-          const userResponse = await fetch(`/api/users/email/${encodeURIComponent(targetEmail)}`);
+          let apiUrl;
+          if (isUserId) {
+            // Use the new user ID endpoint for direct user lookup
+            apiUrl = `/api/users/${encodeURIComponent(targetParam)}`;
+          } else {
+            // Use email endpoint for email lookup
+            apiUrl = `/api/users/email/${encodeURIComponent(targetParam)}`;
+          }
+          
+          const userResponse = await fetch(apiUrl);
           if (userResponse.ok) {
             const userData = await userResponse.json();
-            setUserProfile(userData.user);
+            
+            // Transform the API response to match the UserProfile interface
+            const profileData = {
+              name: userData.user.username || userData.user.displayName || 'Student',
+              email: userData.user.email,
+              school: userData.schools?.[0]?.name || userData.user.school || 'Unknown School',
+              description: userData.user.bio || '',
+              profileImage: userData.user.avatarUrl || userData.user.profileImages?.[0] || null,
+              groupSize: '1',
+              groupSizeMin: '1', 
+              groupSizeMax: '1',
+              preferredAlcohol: '',
+              availability: ''
+            };
+            
+            setUserProfile(profileData);
             console.log('UserProfileDetail: Found user via API:', userData.user.username);
           } else {
-            console.log('UserProfileDetail: User not found via API');
+            console.log('UserProfileDetail: User not found via API:', userResponse.status);
           }
         } catch (error) {
           console.error('UserProfileDetail: Error fetching user data:', error);
