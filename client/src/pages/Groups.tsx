@@ -75,8 +75,8 @@ export default function Groups() {
           <div className="flex items-center gap-3">
             <UserIcon className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-3xl font-bold" data-testid="groups-title">School Roster</h1>
-              <p className="text-muted-foreground">{currentUser?.school || "Your School"}</p>
+              <h1 className="text-3xl font-bold" data-testid="groups-title">{currentUser?.school || "School"} Roster</h1>
+              <p className="text-muted-foreground">Browse students at your school</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
