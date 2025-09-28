@@ -7,6 +7,7 @@ import {
   schoolMemberships,
   conversations,
   conversationParticipants,
+  userPhotos,
   type User, 
   type InsertUser, 
   type Organization, 
@@ -22,7 +23,8 @@ import {
   type Conversation,
   type InsertConversation,
   type ConversationParticipant,
-  type InsertConversationParticipant
+  type InsertConversationParticipant,
+  type UserPhoto
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, desc, inArray, sql, gt } from "drizzle-orm";
@@ -38,6 +40,7 @@ export interface IStorage {
   getUserByEmailInSchool(email: string, schoolId: string): Promise<User | undefined>;
   getUsersBySchool(school: string): Promise<User[]>; // Legacy method
   getUsersBySchoolId(schoolId: string): Promise<User[]>;
+  getUserWithPhotosAndSchools(id: string): Promise<{ user: User; photos: UserPhoto[]; schools: School[] } | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
   // School methods
@@ -119,11 +122,14 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: users.id,
         username: users.username,
-        password: users.password,
+        password: sql<string>`''`.as('password'), // Empty password for security
         school: users.school,
         email: users.email,
         profileImages: users.profileImages,
         displayName: users.displayName,
+        avatarUrl: users.avatarUrl,
+        bio: users.bio,
+        classYear: users.classYear,
         createdAt: users.createdAt,
       })
       .from(users)
@@ -137,17 +143,44 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: users.id,
         username: users.username,
-        password: users.password,
+        password: sql<string>`''`.as('password'), // Empty password for security
         school: users.school,
         email: users.email,
         profileImages: users.profileImages,
         displayName: users.displayName,
+        avatarUrl: users.avatarUrl,
+        bio: users.bio,
+        classYear: users.classYear,
         createdAt: users.createdAt,
       })
       .from(users)
       .innerJoin(schoolMemberships, eq(users.id, schoolMemberships.userId))
       .where(eq(schoolMemberships.schoolId, schoolId));
     return userList;
+  }
+
+  async getUserWithPhotosAndSchools(id: string): Promise<{ user: User; photos: UserPhoto[]; schools: School[] } | undefined> {
+    // Get the user
+    const user = await this.getUser(id);
+    if (!user) {
+      return undefined;
+    }
+
+    // Get user photos
+    const photos = await db
+      .select()
+      .from(userPhotos)
+      .where(eq(userPhotos.userId, id))
+      .orderBy(desc(userPhotos.createdAt));
+
+    // Get user's schools
+    const schoolList = await this.getUserSchools(id);
+
+    return {
+      user,
+      photos,
+      schools: schoolList
+    };
   }
 
   // School membership methods
@@ -164,11 +197,14 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: users.id,
         username: users.username,
-        password: users.password,
+        password: sql<string>`''`.as('password'), // Empty password for security
         school: users.school,
         email: users.email,
         profileImages: users.profileImages,
         displayName: users.displayName,
+        avatarUrl: users.avatarUrl,
+        bio: users.bio,
+        classYear: users.classYear,
         createdAt: users.createdAt,
       })
       .from(users)
@@ -327,11 +363,14 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: users.id,
         username: users.username,
-        password: users.password,
+        password: sql<string>`''`.as('password'), // Empty password for security
         school: users.school,
         email: users.email,
         profileImages: users.profileImages,
         displayName: users.displayName,
+        avatarUrl: users.avatarUrl,
+        bio: users.bio,
+        classYear: users.classYear,
         createdAt: users.createdAt,
       })
       .from(users)

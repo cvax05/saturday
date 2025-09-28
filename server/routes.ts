@@ -271,6 +271,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get individual user profile by ID with photos and schools - JWT protected, school-scoped
+  app.get("/api/users/:id", authenticateJWT, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // SECURITY: Verify the requested user is in the same school as the requester
+      const membership = await storage.getUserSchoolMembership(id, req.user!.school_id);
+      if (!membership) {
+        return res.status(403).json({ message: "Access denied - user not in your school" });
+      }
+      
+      const userProfile = await storage.getUserWithPhotosAndSchools(id);
+      
+      if (!userProfile) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Return user without password and filter schools to current school only
+      const { password: _, ...userWithoutPassword } = userProfile.user;
+      const currentSchool = userProfile.schools.find(s => s.id === req.user!.school_id);
+      
+      res.status(200).json({
+        user: userWithoutPassword,
+        photos: userProfile.photos,
+        schools: currentSchool ? [currentSchool] : []
+      });
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({ message: "Failed to fetch user profile" });
+    }
+  });
+
   // Organization profile endpoint - JWT protected, school-scoped
   app.get("/api/organizations/email/:email", authenticateJWT, async (req, res) => {
     try {
