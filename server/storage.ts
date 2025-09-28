@@ -350,11 +350,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getConversationMessages(conversationId: string, afterTimestamp?: Date): Promise<Message[]> {
-    let whereCondition = eq(messages.conversationId, conversationId);
-
-    if (afterTimestamp) {
-      whereCondition = and(eq(messages.conversationId, conversationId), eq(messages.createdAt, afterTimestamp));
-    }
+    const baseCondition = eq(messages.conversationId, conversationId);
+    const whereCondition = afterTimestamp 
+      ? and(baseCondition, eq(messages.createdAt, afterTimestamp))
+      : baseCondition;
 
     const messageList = await db
       .select()

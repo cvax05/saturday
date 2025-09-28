@@ -2,10 +2,237 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
-import { insertUserSchema, insertMessageSchema, insertPregameSchema, registerSchema, loginSchema } from "@shared/schema";
+import { insertUserSchema, insertMessageSchema, insertPregameSchema, registerSchema, loginSchema, type AuthResponse, type AuthUser } from "@shared/schema";
+import { signJWT } from "./auth/jwt";
+import { authenticateJWT, optionalAuth } from "./auth/middleware";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Registration endpoint
+  // JWT Authentication endpoints
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { username, email, password, displayName, schoolSlug, profileImages } = registerSchema.parse(req.body);
+      
+      // Check if user already exists (by username or email)
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(409).json({ error: "Username already exists" });
+      }
+
+      const existingUserByEmail = await storage.getUserByEmail(email);
+      if (existingUserByEmail) {
+        return res.status(409).json({ error: "Email already exists" });
+      }
+      
+      // Hash password before storing
+      const hashedPassword = await bcrypt.hash(password, 12);
+      
+      // Register user with school using transaction
+      try {
+        const { user, school } = await storage.registerUserWithSchool({
+          username,
+          email,
+          password: hashedPassword,
+          displayName: displayName || username,
+          profileImages: profileImages || [],
+          school: null, // Will be set after we get school info
+        }, schoolSlug);
+        
+        // Update user with school name for backward compatibility
+        user.school = school.name;
+        
+        console.log(`[AUTH] User registered successfully: ${user.username} (${user.email}) at ${school.name}`);
+        
+        // Create JWT token
+        const token = signJWT({
+          user_id: user.id,
+          school_id: school.id,
+          school_slug: school.slug,
+          email: user.email,
+          username: user.username,
+        });
+
+        // Set httpOnly cookie
+        res.cookie('auth_token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+        
+        // Return user and schools
+        const userSchools = await storage.getUserSchools(user.id);
+        const authResponse: AuthResponse = {
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            displayName: user.displayName,
+            profileImages: user.profileImages,
+            school: user.school,
+          },
+          schools: userSchools.map(s => ({
+            id: s.id,
+            slug: s.slug,
+            name: s.name,
+          })),
+        };
+        
+        res.status(201).json(authResponse);
+      } catch (error) {
+        console.error("Registration error:", error);
+        if (error instanceof Error && error.message.includes('not found')) {
+          return res.status(400).json({ error: "Invalid school selection" });
+        }
+        throw error;
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(400).json({ error: "Registration failed" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password, schoolSlug } = loginSchema.parse(req.body);
+      
+      // Find user by username or email (try username first, then email)
+      let user = await storage.getUserByUsername(username);
+      if (!user) {
+        user = await storage.getUserByEmail(username); // Try email if username fails
+      }
+      
+      if (!user) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      // Get user's schools
+      const userSchools = await storage.getUserSchools(user.id);
+      
+      if (userSchools.length === 0) {
+        return res.status(403).json({ error: "User is not a member of any school" });
+      }
+      
+      // If multiple schools and no specific school requested, return schools for selection
+      if (userSchools.length > 1 && !schoolSlug) {
+        const authResponse: AuthResponse = {
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            displayName: user.displayName,
+            profileImages: user.profileImages,
+            school: user.school,
+          },
+          schools: userSchools.map(s => ({
+            id: s.id,
+            slug: s.slug,
+            name: s.name,
+          })),
+        };
+        return res.status(200).json({ requiresSchoolSelection: true, ...authResponse });
+      }
+      
+      // Determine which school to use
+      let selectedSchool = userSchools[0]; // Default to first school
+      if (schoolSlug) {
+        const requestedSchool = userSchools.find(s => s.slug === schoolSlug);
+        if (!requestedSchool) {
+          return res.status(403).json({ error: "User is not a member of the requested school" });
+        }
+        selectedSchool = requestedSchool;
+      }
+      
+      // Create JWT token
+      const token = signJWT({
+        user_id: user.id,
+        school_id: selectedSchool.id,
+        school_slug: selectedSchool.slug,
+        email: user.email,
+        username: user.username,
+      });
+
+      // Set httpOnly cookie
+      res.cookie('auth_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+      
+      const authResponse: AuthResponse = {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          displayName: user.displayName,
+          profileImages: user.profileImages,
+          school: user.school,
+        },
+        schools: userSchools.map(s => ({
+          id: s.id,
+          slug: s.slug,
+          name: s.name,
+        })),
+      };
+      
+      res.status(200).json(authResponse);
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(400).json({ error: "Login failed" });
+    }
+  });
+
+  app.get("/api/auth/me", authenticateJWT, async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Get fresh user data
+      const user = await storage.getUser(req.user.user_id);
+      if (!user) {
+        res.clearCookie('auth_token');
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      // Get user's schools
+      const userSchools = await storage.getUserSchools(user.id);
+      
+      const authResponse: AuthResponse = {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          displayName: user.displayName,
+          profileImages: user.profileImages,
+          school: user.school,
+        },
+        schools: userSchools.map(s => ({
+          id: s.id,
+          slug: s.slug,
+          name: s.name,
+        })),
+      };
+      
+      res.status(200).json(authResponse);
+    } catch (error) {
+      console.error("Auth me error:", error);
+      res.status(500).json({ error: "Failed to get user info" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    res.clearCookie('auth_token');
+    res.status(200).json({ message: "Logged out successfully" });
+  });
+
+  // Legacy Registration endpoint (maintain backward compatibility)
   app.post("/api/register", async (req, res) => {
     try {
       const { username, email, password, school, profileImages } = registerSchema.parse(req.body);
