@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import DiscoverFeed from "@/components/DiscoverFeed";
 import ConnectModal from "@/components/ConnectModal";
 import RatingModal from "@/components/RatingModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Settings, AlertTriangle } from "lucide-react";
+import { Settings, Loader2, Users } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
+import type { AuthResponse } from "@shared/schema";
 
-// TODO: Remove mock data when implementing backend
+// Mock data for now - will be replaced with actual API data later
 const mockUsers = [
   {
     id: "1",
@@ -88,31 +89,20 @@ const mockUsers = [
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [showConnectModal, setShowConnectModal] = useState(false);
-  const [connectUser, setConnectUser] = useState<typeof mockUsers[0] | null>(null);
+  const [connectUser, setConnectUser] = useState<any>(null);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [ratingUser, setRatingUser] = useState<{name: string, image?: string} | null>(null);
 
-  // TODO: Get current user's school from backend
-  // For now, get from localStorage or use a default
-  const getCurrentUserSchool = () => {
-    // Try to get from localStorage if user has registered
-    const storedFormData = localStorage.getItem('currentUser');
-    if (storedFormData) {
-      try {
-        const userData = JSON.parse(storedFormData);
-        return userData.school || "Your School";
-      } catch (e) {
-        return "Your School";
-      }
-    }
-    return "Your School";
-  };
+  // Get current user and authentication status
+  const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
+    queryKey: ['/api/auth/me'],
+  });
+
+  const currentUser = authData?.user;
+  const currentUserSchool = currentUser?.school || "Your School";
   
-  const currentUserSchool = getCurrentUserSchool();
-  
-  // Filter users by school
+  // Filter users by school (will be replaced by API call later)
   const schoolUsers = mockUsers.filter(user => user.school === currentUserSchool);
 
   const handleViewProfile = (userId: string) => {
@@ -158,6 +148,40 @@ export default function Home() {
     console.log('Refreshing discover feed...');
   };
 
+  // Loading states
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center py-12">
+            <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-4 animate-spin" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated
+  if (!authData?.user) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center py-12">
+            <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Welcome to {SITE_NAME}</h2>
+            <p className="text-muted-foreground mb-4">
+              Connect with your school community for pregame activities.
+            </p>
+            <Button onClick={() => setLocation("/login")} data-testid="button-login">
+              Log In
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
@@ -202,50 +226,42 @@ export default function Home() {
           </button>
           <button
             onClick={() => setLocation("/messages")}
-            className="flex flex-col items-center py-2 px-4 rounded-lg text-muted-foreground hover:text-foreground"
+            className="flex flex-col items-center py-2 px-4 rounded-lg hover-elevate"
             data-testid="nav-messages"
           >
             <span className="text-xs font-medium">Messages</span>
           </button>
           <button
             onClick={() => setLocation("/calendar")}
-            className="flex flex-col items-center py-2 px-4 rounded-lg text-muted-foreground hover:text-foreground"
+            className="flex flex-col items-center py-2 px-4 rounded-lg hover-elevate"
             data-testid="nav-calendar"
           >
             <span className="text-xs font-medium">Calendar</span>
           </button>
           <button
-            onClick={() => setLocation("/profile/edit")}
-            className="flex flex-col items-center py-2 px-4 rounded-lg text-muted-foreground hover:text-foreground"
-            data-testid="nav-profile"
+            onClick={() => setLocation("/groups")}
+            className="flex flex-col items-center py-2 px-4 rounded-lg hover-elevate"
+            data-testid="nav-groups"
           >
-            <span className="text-xs font-medium">Profile</span>
+            <span className="text-xs font-medium">Groups</span>
           </button>
         </div>
       </nav>
 
-      {showConnectModal && connectUser && (
-        <ConnectModal
-          isOpen={showConnectModal}
-          onClose={() => setShowConnectModal(false)}
-          onConfirm={handleConfirmConnect}
-          userName={connectUser.name}
-          userImage={connectUser.profileImage}
-          userGroupSize={connectUser.groupSize}
-          groupSize={`${connectUser.groupSizeMin}-${connectUser.groupSizeMax}`}
-          preferredAlcohol={connectUser.preferredAlcohol}
-        />
-      )}
-
-      {showRatingModal && ratingUser && (
-        <RatingModal
-          isOpen={showRatingModal}
-          onClose={() => setShowRatingModal(false)}
-          userName={ratingUser.name}
-          userImage={ratingUser.image}
-          onSubmitRating={handleSubmitRating}
-        />
-      )}
+      {/* Modals */}
+      <ConnectModal
+        isOpen={showConnectModal}
+        onClose={() => setShowConnectModal(false)}
+        user={connectUser}
+        onConfirm={handleConfirmConnect}
+      />
+      
+      <RatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        user={ratingUser}
+        onSubmit={handleSubmitRating}
+      />
     </div>
   );
 }

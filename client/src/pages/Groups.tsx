@@ -1,54 +1,28 @@
-import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Users, GraduationCap, MessageCircle, ChevronRight, Building } from "lucide-react";
-
-interface GroupProfile {
-  name: string;
-  groupSize: string;
-  email: string;
-  school: string;
-  description: string;
-  groupSizeMin: string;
-  groupSizeMax: string;
-  preferredAlcohol: string;
-  availability: string;
-  profileImage: string | null;
-  id?: string;
-}
+import { Users, GraduationCap, MessageCircle, ChevronRight, Loader2 } from "lucide-react";
+import type { AuthResponse, User } from "@shared/schema";
 
 export default function Groups() {
   const [, setLocation] = useLocation();
-  const [currentUserSchool, setCurrentUserSchool] = useState<string>("");
-  const [schoolGroups, setSchoolGroups] = useState<GroupProfile[]>([]);
 
-  useEffect(() => {
-    // Get current user's school and load all groups from the same school
-    try {
-      const currentUserData = localStorage.getItem('currentUser');
-      const allUsersData = localStorage.getItem('allUsers');
-      
-      if (currentUserData) {
-        const currentUser = JSON.parse(currentUserData);
-        const userSchool = currentUser.school || "";
-        setCurrentUserSchool(userSchool);
-        
-        if (allUsersData && userSchool) {
-          const allUsers = JSON.parse(allUsersData);
-          // Filter users by school - include ALL groups/organizations from same school
-          const schoolUsers = allUsers.filter((user: GroupProfile) => 
-            user.school === userSchool
-          );
-          setSchoolGroups(schoolUsers);
-        }
-      }
-    } catch (error) {
-      console.error("Error loading groups data:", error);
-    }
-  }, []);
+  // Get current user and authentication status
+  const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
+    queryKey: ['/api/auth/me'],
+  });
+
+  // Get school users (groups/organizations in the same school)
+  const { data: schoolUsersData, isLoading: usersLoading } = useQuery<{ users: User[] }>({
+    queryKey: ['/api/users/school'],
+    enabled: !!authData?.user,
+  });
+
+  const currentUser = authData?.user;
+  const schoolGroups = schoolUsersData?.users || [];
 
   const handleViewProfile = (userEmail: string) => {
     setLocation(`/profile/${encodeURIComponent(userEmail)}`);
@@ -71,18 +45,33 @@ export default function Groups() {
     }
   };
 
-  if (!currentUserSchool) {
+  // Loading states
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
-            <Building className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">No School Information</h2>
+            <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-4 animate-spin" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated
+  if (!authData?.user) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center py-12">
+            <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
             <p className="text-muted-foreground mb-4">
-              Please complete your registration to see groups from your school.
+              Please log in to view groups at your school.
             </p>
-            <Button onClick={() => setLocation("/register")} data-testid="button-register">
-              Complete Registration
+            <Button onClick={() => setLocation("/login")} data-testid="button-login">
+              Log In
             </Button>
           </div>
         </div>
@@ -91,120 +80,147 @@ export default function Groups() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 pb-20">
-      <main className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-background">
+      <main className="max-w-4xl mx-auto p-4">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2 flex items-center justify-center gap-2">
-            <Building className="h-8 w-8 text-primary" />
-            Groups & Organizations
-          </h1>
-          <div className="flex items-center justify-center gap-2 text-muted-foreground mb-2">
-            <GraduationCap className="h-4 w-4" />
-            <span>{currentUserSchool}</span>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Users className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold" data-testid="groups-title">Groups</h1>
+              <p className="text-muted-foreground">{currentUser?.school || "Your School"}</p>
+            </div>
           </div>
-          <Badge variant="secondary" className="mt-2">
-            {schoolGroups.length} Group{schoolGroups.length !== 1 ? 's' : ''}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <GraduationCap className="h-5 w-5 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              {schoolGroups.length} groups found
+            </span>
+          </div>
         </div>
 
-        {/* Groups List */}
-        <div className="space-y-4">
-          {schoolGroups.map((group, index) => (
-            <Card key={group.email} className="hover-elevate" data-testid={`group-card-${index}`}>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4 flex-1">
-                    {/* Group Avatar */}
-                    <Avatar className="h-16 w-16">
-                      <AvatarImage src={group.profileImage || ""} alt={group.name} />
-                      <AvatarFallback className="text-lg font-bold">
-                        {group.name.split(' ').map(word => word[0]).join('').slice(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
+        {/* Loading state */}
+        {usersLoading && (
+          <div className="text-center py-8">
+            <Loader2 className="h-6 w-6 text-muted-foreground mx-auto mb-2 animate-spin" />
+            <p className="text-muted-foreground">Loading groups...</p>
+          </div>
+        )}
 
-                    {/* Group Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <div>
-                          <h3 className="text-xl font-bold mb-1" data-testid={`group-name-${index}`}>
-                            {group.name}
-                          </h3>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                            <Users className="h-3 w-3" />
-                            <span>{group.groupSize} members</span>
+        {/* Groups Grid */}
+        {!usersLoading && (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {schoolGroups.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No Groups Found</h3>
+                <p className="text-muted-foreground">
+                  There are no other groups at {currentUser?.school || "your school"} yet.
+                </p>
+              </div>
+            ) : (
+              schoolGroups
+                .filter(group => group.email !== currentUser?.email) // Exclude current user
+                .map((group) => (
+                  <Card 
+                    key={group.id || group.email} 
+                    className="hover-elevate cursor-pointer transition-shadow"
+                    data-testid={`group-card-${group.email}`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-4">
+                        {/* Profile Image */}
+                        <Avatar className="h-12 w-12 border-2 border-border">
+                          <AvatarImage 
+                            src={group.profileImages?.[0] || ""} 
+                            alt={group.username}
+                            className="object-cover"
+                          />
+                          <AvatarFallback className="text-sm font-semibold">
+                            {(group.username || group.email).slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+
+                        {/* Group Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <h3 className="font-semibold text-sm truncate" data-testid={`group-name-${group.email}`}>
+                              {group.username || 'Group'}
+                            </h3>
+                            <Badge variant="secondary" className="text-xs shrink-0">
+                              <Users className="h-3 w-3 mr-1" />
+                              {(group as any).groupSize || '1'}
+                            </Badge>
+                          </div>
+                          
+                          {/* Description */}
+                          {(group as any).description && (
+                            <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                              {(group as any).description}
+                            </p>
+                          )}
+
+                          {/* Group Details */}
+                          <div className="space-y-2 mb-3">
+                            {(group as any).groupSizeMin && (group as any).groupSizeMax && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">Group Size:</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {(group as any).groupSizeMin}-{(group as any).groupSizeMax} people
+                                </Badge>
+                              </div>
+                            )}
+                            
+                            {(group as any).preferredAlcohol && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">Preferred:</span>
+                                <Badge 
+                                  variant="outline" 
+                                  className={`text-xs ${getPreferredAlcoholColor((group as any).preferredAlcohol)}`}
+                                >
+                                  {(group as any).preferredAlcohol}
+                                </Badge>
+                              </div>
+                            )}
+                            
+                            {(group as any).availability && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">Available:</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {(group as any).availability}
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1 text-xs h-7"
+                              onClick={() => handleViewProfile(group.email)}
+                              data-testid={`button-view-profile-${group.email}`}
+                            >
+                              <ChevronRight className="h-3 w-3 mr-1" />
+                              Profile
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="flex-1 text-xs h-7"
+                              onClick={() => handleStartMessage(group.email)}
+                              data-testid={`button-message-${group.email}`}
+                            >
+                              <MessageCircle className="h-3 w-3 mr-1" />
+                              Message
+                            </Button>
                           </div>
                         </div>
                       </div>
-
-                      {/* Description */}
-                      {group.description && (
-                        <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                          {group.description}
-                        </p>
-                      )}
-
-                      {/* Attributes */}
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {group.preferredAlcohol && (
-                          <Badge variant="outline" className={getPreferredAlcoholColor(group.preferredAlcohol)}>
-                            {group.preferredAlcohol}
-                          </Badge>
-                        )}
-                        {group.availability && (
-                          <Badge variant="outline">
-                            {group.availability}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Group Size Range */}
-                      {(group.groupSizeMin || group.groupSizeMax) && (
-                        <div className="text-sm text-muted-foreground mb-2">
-                          Looking for groups of {group.groupSizeMin || '?'} - {group.groupSizeMax || '?'} people
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 shrink-0">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleStartMessage(group.email)}
-                      data-testid={`button-message-group-${index}`}
-                    >
-                      <MessageCircle className="h-4 w-4 mr-1" />
-                      Message
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleViewProfile(group.email)}
-                      data-testid={`button-view-group-${index}`}
-                    >
-                      View Profile
-                      <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {schoolGroups.length === 0 && (
-          <div className="text-center py-12">
-            <Building className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">No Groups Found</h2>
-            <p className="text-muted-foreground mb-4">
-              No groups or organizations have registered from {currentUserSchool} yet.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Be the first to create connections with pregame groups at your school!
-            </p>
+                    </CardContent>
+                  </Card>
+                ))
+            )}
           </div>
         )}
       </main>

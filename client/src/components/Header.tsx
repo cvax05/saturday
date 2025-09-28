@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { 
@@ -9,60 +9,40 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User, Users, MessageCircle, Calendar } from "lucide-react";
+import { LogOut, User, Users, MessageCircle, Calendar, Loader2 } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
-
-interface UserData {
-  username: string;
-  email: string;
-  profileImages?: string[];
-}
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import type { AuthResponse } from "@shared/schema";
 
 export default function Header() {
   const [, setLocation] = useLocation();
-  const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const [location] = useLocation();
 
-  useEffect(() => {
-    // Load current user data
-    const loadUserData = () => {
-      try {
-        const userData = localStorage.getItem('currentUser');
-        if (userData) {
-          const user = JSON.parse(userData);
-          setCurrentUser(user);
-        } else {
-          setCurrentUser(null);
-        }
-      } catch (error) {
-        console.error("Error loading user data:", error);
-        setCurrentUser(null);
-      }
-    };
+  // Get current user and authentication status
+  const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
+    queryKey: ['/api/auth/me'],
+  });
 
-    // Load user data initially
-    loadUserData();
+  const currentUser = authData?.user;
 
-    // Listen for localStorage changes (for when user signs in/out in the same tab)
-    const handleStorageChange = () => {
-      loadUserData();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also check on location changes (for when user navigates after registration)
-    loadUserData();
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [location]); // Re-run when location changes
+  // Logout mutation
+  const logoutMutation = useMutation({
+    mutationFn: () => apiRequest('/api/auth/logout', 'POST'),
+    onSuccess: () => {
+      // Clear all query cache after logout
+      queryClient.clear();
+      setLocation('/login');
+    },
+    onError: (error) => {
+      console.error('Logout error:', error);
+      // Even if logout fails, clear cache and redirect
+      queryClient.clear();
+      setLocation('/login');
+    }
+  });
 
   const handleSignOut = () => {
-    // Clear user data from localStorage
-    localStorage.removeItem('currentUser');
-    setCurrentUser(null);
-    setLocation('/register');
+    logoutMutation.mutate();
   };
 
   const handleViewProfile = () => {
@@ -71,7 +51,7 @@ export default function Header() {
     }
   };
 
-  // Don't show header on auth pages
+  // Don't show header on auth pages and home page
   const currentPath = window.location.pathname;
   if (currentPath === '/' || currentPath === '/register' || currentPath === '/login') {
     return null;
@@ -90,40 +70,47 @@ export default function Header() {
             {SITE_NAME}
           </h1>
           
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => setLocation("/groups")}
-              data-testid="nav-groups"
-            >
-              <Users className="h-4 w-4 mr-2" />
-              Groups
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => setLocation("/calendar")}
-              data-testid="nav-calendar"
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              Calendar
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => setLocation("/messages")}
-              data-testid="nav-messages"
-            >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Messages
-            </Button>
-          </nav>
+          {/* Navigation - only show when authenticated */}
+          {currentUser && (
+            <nav className="hidden md:flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setLocation("/groups")}
+                data-testid="nav-groups"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Groups
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setLocation("/calendar")}
+                data-testid="nav-calendar"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                Calendar
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setLocation("/messages")}
+                data-testid="nav-messages"
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Messages
+              </Button>
+            </nav>
+          )}
         </div>
 
         {/* User Menu */}
-        {currentUser ? (
+        {authLoading ? (
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Loading...</span>
+          </div>
+        ) : currentUser ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full" data-testid="user-menu">
@@ -134,7 +121,7 @@ export default function Header() {
                     className="object-cover"
                   />
                   <AvatarFallback className="text-xs font-semibold">
-                    {currentUser.username.slice(0, 2).toUpperCase()}
+                    {currentUser.username?.slice(0, 2).toUpperCase() || currentUser.email?.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -142,10 +129,15 @@ export default function Header() {
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <div className="flex items-center justify-start gap-2 p-2">
                 <div className="flex flex-col space-y-1 leading-none">
-                  <p className="font-medium">{currentUser.username}</p>
+                  <p className="font-medium">{currentUser.username || 'User'}</p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {currentUser.email}
                   </p>
+                  {currentUser.school && (
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {currentUser.school}
+                    </p>
+                  )}
                 </div>
               </div>
               <DropdownMenuSeparator />
@@ -154,15 +146,19 @@ export default function Header() {
                 <span>Profile</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} data-testid="menu-sign-out">
+              <DropdownMenuItem 
+                onClick={handleSignOut} 
+                disabled={logoutMutation.isPending}
+                data-testid="menu-sign-out"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Sign out</span>
+                <span>{logoutMutation.isPending ? 'Signing out...' : 'Sign out'}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
           <Button 
-            onClick={() => setLocation('/register')}
+            onClick={() => setLocation('/login')}
             size="sm"
             data-testid="button-sign-in"
           >
