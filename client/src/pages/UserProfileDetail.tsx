@@ -179,48 +179,50 @@ export default function UserProfileDetail() {
 
   return (
     <div className="min-h-screen bg-background p-4">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Back Button */}
         <Button 
           variant="ghost" 
           size="sm" 
-          onClick={() => setLocation("/people")}
+          onClick={() => setLocation("/groups")}
           className="mb-6"
           data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to People
+          Back to Roster
         </Button>
 
-        {/* Profile Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-start gap-6">
-              <Avatar className="h-32 w-32 border-2 border-border">
+        {/* Profile Card - Horizontal Layout */}
+        <Card className="mb-6">
+          <CardHeader className="pb-6">
+            <div className="flex items-start gap-8">
+              {/* Larger Avatar */}
+              <Avatar className="h-48 w-48 border-4 border-border">
                 <AvatarImage 
                   src={userProfile.profileImage || ""} 
                   alt={userProfile.name || ""} 
                   className="object-cover"
                 />
-                <AvatarFallback className="text-3xl font-bold bg-muted">
+                <AvatarFallback className="text-6xl font-bold bg-muted">
                   {(userProfile.name || "").split(' ').map((word: string) => word[0]).join('').slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               
-              <div className="flex-1">
-                <div className="flex items-start justify-between">
+              {/* Main Profile Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between mb-6">
                   <div className="flex-1">
-                    <CardTitle className="text-2xl mb-2" data-testid="profile-name">
+                    <CardTitle className="text-4xl mb-3" data-testid="profile-name">
                       {userProfile.name}
                     </CardTitle>
                     
-                    <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                      <Mail className="h-4 w-4" />
+                    <div className="flex items-center gap-2 text-lg text-muted-foreground mb-2">
+                      <Mail className="h-5 w-5" />
                       <span data-testid="profile-email">{userProfile.email}</span>
                     </div>
                     
-                    <div className="flex items-center gap-2 text-muted-foreground mb-4">
-                      <GraduationCap className="h-4 w-4" />
+                    <div className="flex items-center gap-2 text-lg text-muted-foreground mb-4">
+                      <GraduationCap className="h-5 w-5" />
                       <span data-testid="profile-school">{userProfile.school}</span>
                     </div>
                   </div>
@@ -229,7 +231,6 @@ export default function UserProfileDetail() {
                   {isOwnProfile && (
                     <Button 
                       variant="outline" 
-                      size="sm"
                       onClick={() => setLocation("/profile/edit")}
                       data-testid="button-edit-profile"
                     >
@@ -238,6 +239,16 @@ export default function UserProfileDetail() {
                     </Button>
                   )}
                 </div>
+
+                {/* About Section in Header */}
+                {userProfile.description && (
+                  <div className="mb-4">
+                    <h3 className="text-xl font-semibold mb-3">About</h3>
+                    <p className="text-muted-foreground text-lg leading-relaxed" data-testid="profile-description">
+                      {userProfile.description}
+                    </p>
+                  </div>
+                )}
 
                 {/* Message button - only show for other users' profiles */}
                 {!isOwnProfile && (
@@ -250,29 +261,23 @@ export default function UserProfileDetail() {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-6">
-            {/* Description */}
-            {userProfile.description && (
-              <div>
-                <h3 className="font-semibold mb-2">About</h3>
-                <p className="text-muted-foreground" data-testid="profile-description">
-                  {userProfile.description}
-                </p>
-              </div>
-            )}
+        </Card>
 
-            <Separator />
-
+        {/* Content Grid - More Horizontal Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column */}
+          <div className="space-y-6">
             {/* Pregame Preferences */}
-            <div>
-              <h3 className="font-semibold mb-4">Pregame Preferences</h3>
-              
-              <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <h3 className="text-xl font-semibold">Pregame Preferences</h3>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 {/* Preferred Alcohol */}
                 {userProfile.preferredAlcohol && (
                   <div className="flex items-center gap-3">
-                    <Wine className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Preferred Drinks:</span>
+                    <Wine className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium">Preferred Drinks:</span>
                     <Badge className={getPreferredAlcoholColor(userProfile.preferredAlcohol)} data-testid="profile-alcohol">
                       {userProfile.preferredAlcohol}
                     </Badge>
@@ -282,8 +287,8 @@ export default function UserProfileDetail() {
                 {/* Group Size Preference */}
                 {userProfile.groupSize && (
                   <div className="flex items-center gap-3">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Group Size:</span>
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium">Group Size:</span>
                     <Badge variant="secondary" data-testid="profile-group-size">
                       {userProfile.groupSize}
                     </Badge>
@@ -293,8 +298,8 @@ export default function UserProfileDetail() {
                 {/* Group Size Range */}
                 {(userProfile.groupSizeMin || userProfile.groupSizeMax) && (
                   <div className="flex items-center gap-3">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Looking for groups of:</span>
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium">Looking for groups of:</span>
                     <Badge variant="outline" data-testid="profile-group-range">
                       {userProfile.groupSizeMin || '?'} - {userProfile.groupSizeMax || '?'} people
                     </Badge>
@@ -304,56 +309,62 @@ export default function UserProfileDetail() {
                 {/* Availability */}
                 {userProfile.availability && (
                   <div className="flex items-center gap-3">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Availability:</span>
+                    <Calendar className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium">Availability:</span>
                     <Badge variant="outline" data-testid="profile-availability">
                       {userProfile.availability}
                     </Badge>
                   </div>
                 )}
-              </div>
-            </div>
-
-            <Separator />
+              </CardContent>
+            </Card>
 
             {/* Contact Actions */}
-            <div>
-              <h3 className="font-semibold mb-4">Get in Touch</h3>
-              <div className="flex gap-3">
-                <Button variant="outline" size="sm">
-                  <Mail className="h-4 w-4 mr-2" />
-                  Email
-                </Button>
-                <Button variant="outline" size="sm">
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Chat
-                </Button>
-              </div>
-            </div>
+            <Card>
+              <CardHeader>
+                <h3 className="text-xl font-semibold">Get in Touch</h3>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1">
+                    <Mail className="h-4 w-4 mr-2" />
+                    Email
+                  </Button>
+                  <Button variant="outline" className="flex-1">
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Chat
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
+          {/* Right Column */}
+          <div className="space-y-6">
             {/* Photo Gallery */}
             {userProfile.photos && userProfile.photos.length > 0 && (
-              <>
-                <Separator />
-                <div>
-                  <h3 className="font-semibold mb-4">Photos</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4" data-testid="photo-gallery">
+              <Card>
+                <CardHeader>
+                  <h3 className="text-xl font-semibold">Photos</h3>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="photo-gallery">
                     {userProfile.photos.map((photo) => (
                       <div key={photo.id} className="relative">
                         <img
                           src={photo.url}
                           alt="User photo"
-                          className="w-full h-32 object-cover rounded-lg border"
+                          className="w-full h-40 object-cover rounded-lg border"
                           data-testid={`photo-${photo.id}`}
                         />
                       </div>
                     ))}
                   </div>
-                </div>
-              </>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
