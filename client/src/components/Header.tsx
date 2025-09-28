@@ -27,7 +27,7 @@ export default function Header() {
 
   // Logout mutation
   const logoutMutation = useMutation({
-    mutationFn: () => apiRequest('/api/auth/logout', 'POST'),
+    mutationFn: () => apiRequest('POST', '/api/auth/logout'),
     onSuccess: () => {
       // Clear all query cache after logout
       queryClient.clear();

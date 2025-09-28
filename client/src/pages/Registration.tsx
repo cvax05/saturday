@@ -94,8 +94,23 @@ export default function Registration() {
     setProfileImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Helper function to convert school name to URL-friendly slug
+  const schoolNameToSlug = (schoolName: string): string => {
+    return schoolName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+      .trim()
+      .replace(/\s+/g, '-'); // Replace spaces with hyphens
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.name || !formData.email || !formData.password || !formData.school) {
+      alert('Please fill in all required fields.');
+      return;
+    }
     
     // Validate group size min/max
     const minSize = parseInt(formData.groupSizeMin);
@@ -112,11 +127,12 @@ export default function Registration() {
         username: formData.name, // Using name as username for now
         email: formData.email,
         password: formData.password,
-        school: formData.school,
+        displayName: formData.name,
+        schoolSlug: schoolNameToSlug(formData.school), // Convert school name to slug
         profileImages: profileImages
       };
       
-      const response = await fetch('/api/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -132,21 +148,8 @@ export default function Registration() {
       
       const result = await response.json();
       
-      // Store user data in localStorage for session management
-      const userData = {
-        ...result.user,
-        // Add additional form data that's not stored in backend yet
-        groupSize: formData.groupSize,
-        description: formData.description,
-        groupSizeMin: formData.groupSizeMin,
-        groupSizeMax: formData.groupSizeMax,
-        preferredAlcohol: formData.preferredAlcohol,
-        availability: formData.availability
-      };
-      
-      safeSaveToLocalStorage('currentUser', userData);
-      
-      // Redirect to groups page
+      // JWT token is automatically stored in httpOnly cookie by server
+      // Redirect to groups page after successful registration
       setLocation("/groups");
     } catch (error) {
       console.error('Registration error:', error);

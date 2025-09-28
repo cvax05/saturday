@@ -22,7 +22,7 @@ export default function Login() {
     
     try {
       // Submit to backend
-      const response = await fetch('/api/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -41,9 +41,7 @@ export default function Login() {
       
       const result = await response.json();
       
-      // Store user data in localStorage for session management
-      localStorage.setItem('currentUser', JSON.stringify(result.user));
-      
+      // JWT token is automatically stored in httpOnly cookie by server
       // Redirect to groups page
       setLocation("/groups");
     } catch (error) {
