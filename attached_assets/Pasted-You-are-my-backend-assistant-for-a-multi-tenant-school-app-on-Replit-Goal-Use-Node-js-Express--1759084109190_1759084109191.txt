@@ -1,0 +1,45 @@
+You are my backend assistant for a multi-tenant school app on Replit.
+
+Goal:
+- Use Node.js (Express) with Postgres (via Supabase or a DATABASE_URL env var).
+- Implement email/password auth with bcrypt.
+- On login, set an httpOnly cookie with a JWT that includes { user_id, school_id }.
+- All routes must scope queries by the JWT’s school_id.
+- Fix the bug where new accounts are created but do not show in the school roster.
+
+Tasks:
+1) Database
+   - Generate SQL migrations for these tables: schools, users, school_memberships, conversations, conversation_participants, messages.
+   - Add indexes shown below and unique constraints on (school_id, user_id) in school_memberships.
+
+2) Auth
+   - POST /api/auth/register: create user, hash password, create school_membership for the chosen school_id in the same transaction.
+   - POST /api/auth/login: verify password, let the user choose a school they belong to if multiple, then sign a JWT with { user_id, school_id } and set as httpOnly cookie.
+   - GET /api/auth/me: return current user and school from JWT.
+
+3) School roster
+   - GET /api/schools/:slug/users: return all users in that school. Validate that req.school_id from JWT matches the slug’s school id. If mismatch, return 403.
+   - Ensure the query joins users to school_memberships on school_id, not just users.
+
+4) Messaging (MVP)
+   - POST /api/conversations: create conversation scoped to req.school_id and add creator as participant.
+   - POST /api/messages: insert message if sender belongs to req.school_id and is a participant.
+   - GET /api/conversations/:id/messages?after=timestamp: list messages after a timestamp.
+
+5) Bug reproduction test
+   - Add an integration test that registers a user, logs in, hits the roster endpoint, and asserts the user is included.
+   - If not included, dump the rows from school_memberships and log the school_id being used.
+
+6) Environment and persistence
+   - Use DATABASE_URL from Replit Secrets. Provide a script to set up the schema and seed:
+     - Seed one school with slug 'princeton' and a couple of users.
+   - Document how to run migrations and how to switch between SQLite (local) and Postgres (prod).
+
+Finally, produce:
+- server/index.js with Express routes
+- db/migrations/*.sql
+- db/pool.js for pooling
+- auth/jwt.js and auth/hash.js
+- A short README with curl examples
+
+Make sure every DB write that depends on another write is inside a single transaction. Return detailed errors to help me see when the membership insert fails.
