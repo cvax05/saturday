@@ -214,9 +214,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       ];
 
+      // Create or find default schools for sample organizations
+      const schoolMap = new Map();
+      
+      // Get unique schools from sample organizations
+      const uniqueSchools = Array.from(new Set(sampleOrgs.map(org => org.school)));
+      
+      for (const schoolName of uniqueSchools) {
+        const slug = schoolName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        let school = await storage.getSchoolBySlug(slug);
+        
+        if (!school) {
+          school = await storage.createSchool({
+            slug,
+            name: schoolName,
+          });
+        }
+        
+        schoolMap.set(schoolName, school.id);
+      }
+
       const createdOrgs = [];
       for (const org of sampleOrgs) {
-        const created = await storage.createOrganization(org);
+        const schoolId = schoolMap.get(org.school);
+        const created = await storage.createOrganization(org, schoolId);
         createdOrgs.push(created);
       }
 
