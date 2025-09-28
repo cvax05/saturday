@@ -54,7 +54,7 @@ export default function Calendar() {
   });
 
   // Transform API data to match component structure
-  const scheduledPregames: ScheduledPregame[] = pregamesData?.pregames?.map((pregame: any) => {
+  const scheduledPregames: ScheduledPregame[] = (pregamesData as any)?.pregames?.map((pregame: any) => {
     // Check if current user is creator or participant to determine the "other" person
     const isCreator = pregame.creatorEmail === currentUserEmail;
     const otherUserEmail = isCreator ? pregame.participantEmail : pregame.creatorEmail;
