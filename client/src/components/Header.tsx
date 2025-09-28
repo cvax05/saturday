@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User, Users, MessageCircle } from "lucide-react";
+import { LogOut, User, Users, MessageCircle, Calendar } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
 
 interface UserData {
@@ -100,6 +100,15 @@ export default function Header() {
             >
               <Users className="h-4 w-4 mr-2" />
               Groups
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setLocation("/calendar")}
+              data-testid="nav-calendar"
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Calendar
             </Button>
             <Button 
               variant="ghost" 
