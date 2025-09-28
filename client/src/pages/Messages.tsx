@@ -1,10 +1,10 @@
 import { useLocation } from "wouter";
-import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import MessageList from "@/components/MessageList";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2, MessageCircle } from "lucide-react";
+import type { AuthResponse } from "@shared/schema";
 
 interface ConversationSummary {
   id: string;
@@ -19,190 +19,152 @@ interface ConversationSummary {
 
 export default function Messages() {
   const [, setLocation] = useLocation();
-  const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
-  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
 
-  // Get current user email
-  useEffect(() => {
-    try {
-      const currentUserData = localStorage.getItem('currentUser');
-      if (currentUserData) {
-        const currentUser = JSON.parse(currentUserData);
-        setCurrentUserEmail(currentUser.email || "");
-      }
-    } catch (error) {
-      console.error("Error loading current user:", error);
-    }
-  }, []);
+  // Get current user and authentication status
+  const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
+    queryKey: ['/api/auth/me'],
+  });
 
-  // Fetch all messages for current user
-  const { data: messagesData, isLoading } = useQuery({
+  const currentUser = authData?.user;
+  const currentUserEmail = currentUser?.email || "";
+
+  // Fetch all messages for current user (JWT automatically provides school scoping)
+  const { data: messagesData, isLoading: messagesLoading } = useQuery({
     queryKey: ['/api/messages', currentUserEmail],
-    enabled: !!currentUserEmail,
+    enabled: !!currentUser?.email,
   });
 
   // Process messages into conversation summaries
-  useEffect(() => {
-    const processMessages = async () => {
-      if (!messagesData || !currentUserEmail) return;
-      
-      // Handle different possible response structures
-      const messages = (messagesData as any)?.messages || messagesData || [];
-      if (!Array.isArray(messages)) return;
+  const conversations: ConversationSummary[] = (() => {
+    if (!messagesData || !currentUserEmail) return [];
+    
+    // Handle different possible response structures
+    const messages = (messagesData as any)?.messages || messagesData || [];
+    if (!Array.isArray(messages)) return [];
 
-      const conversationMap = new Map<string, ConversationSummary>();
+    const conversationMap = new Map<string, ConversationSummary>();
+    
+    // Group messages by conversation partner
+    for (const message of messages) {
+      const partnerEmail = message.senderEmail === currentUserEmail 
+        ? message.recipientEmail 
+        : message.senderEmail;
       
-      // Group messages by conversation partner
-      for (const message of messages) {
-        const partnerEmail = message.senderEmail === currentUserEmail 
-          ? message.recipientEmail 
-          : message.senderEmail;
+      const existing = conversationMap.get(partnerEmail);
+      const messageTime = new Date(message.createdAt);
+      
+      if (!existing || messageTime > existing.lastMessageTime) {
+        // Create display name from email (simplified approach)
+        const partnerName = partnerEmail.includes('@') 
+          ? partnerEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim()
+          : 'Unknown User';
         
-        const existing = conversationMap.get(partnerEmail);
-        const messageTime = new Date(message.createdAt);
-        
-        if (!existing || messageTime > existing.lastMessageTime) {
-          // Get user data for this partner - check both users and organizations
-          const allUsersData = localStorage.getItem('allUsers');
-          const allOrganizationsData = localStorage.getItem('allOrganizations');
-          
-          let partner = null;
-          let partnerName = 'Unknown';
-          let partnerImage = undefined;
-          
-          // First check in users
-          if (allUsersData) {
-            const allUsers = JSON.parse(allUsersData);
-            partner = allUsers.find((user: any) => user.email === partnerEmail);
-          }
-          
-          // If not found in users, check in organizations
-          if (!partner && allOrganizationsData) {
-            const allOrganizations = JSON.parse(allOrganizationsData);
-            partner = allOrganizations.find((org: any) => org.contactEmail === partnerEmail);
-          }
-          
-          if (partner) {
-            partnerName = partner.name || partner.username || 'Unknown';
-            partnerImage = partner.profileImage || partner.profileImages?.[0];
-          } else {
-            // If not found in localStorage, try fetching from API
-            console.log('Messages: Partner not found in localStorage, fetching from API:', partnerEmail);
-            try {
-              const userResponse = await fetch(`/api/users/email/${encodeURIComponent(partnerEmail)}`);
-              if (userResponse.ok) {
-                const userData = await userResponse.json();
-                partnerName = userData.user.username || userData.user.name || 'Unknown';
-                partnerImage = userData.user.profileImage || userData.user.profileImages?.[0];
-                console.log('Messages: Found user via API:', partnerName);
-              } else {
-                // Try organizations API
-                const orgResponse = await fetch(`/api/organizations/email/${encodeURIComponent(partnerEmail)}`);
-                if (orgResponse.ok) {
-                  const orgData = await orgResponse.json();
-                  partnerName = orgData.organization.name || 'Unknown Organization';
-                  partnerImage = orgData.organization.profileImage;
-                  console.log('Messages: Found organization via API:', partnerName);
-                } else {
-                  // Create a better fallback name
-                  partnerName = partnerEmail.includes('@') ? 
-                    partnerEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').trim() : 
-                    'Unknown User';
-                  console.log('Messages: Using fallback name:', partnerName);
-                }
-              }
-            } catch (error) {
-              console.error('Messages: Error fetching partner data:', error);
-              partnerName = partnerEmail.includes('@') ? 
-                partnerEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').trim() : 
-                'Unknown User';
-            }
-          }
-
-          conversationMap.set(partnerEmail, {
-            id: partnerEmail, // Use email as conversation ID
-            participantName: partnerName,
-            participantEmail: partnerEmail,
-            participantImage: partnerImage,
-            lastMessage: message.content,
-            lastMessageTime: messageTime,
-            unreadCount: existing?.unreadCount || 0,
-            hasUnreadPendingRating: false
-          });
-        }
+        conversationMap.set(partnerEmail, {
+          id: partnerEmail, // Using email as ID for now
+          participantName: partnerName,
+          participantEmail: partnerEmail,
+          participantImage: undefined, // Will be enhanced later
+          lastMessage: message.content || "",
+          lastMessageTime: messageTime,
+          unreadCount: existing?.unreadCount || 0,
+          hasUnreadPendingRating: false
+        });
       }
-
-      // Calculate unread counts
-      conversationMap.forEach((conversation, partnerEmail) => {
-        const unreadCount = messages.filter((msg: any) => 
-          msg.senderEmail === partnerEmail && 
-          msg.recipientEmail === currentUserEmail && 
-          msg.isRead === 0
-        ).length;
-        conversation.unreadCount = unreadCount;
-      });
-
-      // Convert to array and sort by last message time
-      const conversationArray = Array.from(conversationMap.values())
-        .sort((a, b) => b.lastMessageTime.getTime() - a.lastMessageTime.getTime());
       
-      setConversations(conversationArray);
-    };
-
-    processMessages();
-  }, [messagesData, currentUserEmail]);
+      // Update unread count (simplified logic)
+      const conversation = conversationMap.get(partnerEmail);
+      if (conversation && message.senderEmail !== currentUserEmail && !message.isRead) {
+        conversation.unreadCount++;
+      }
+    }
+    
+    return Array.from(conversationMap.values())
+      .sort((a, b) => b.lastMessageTime.getTime() - a.lastMessageTime.getTime());
+  })();
 
   const handleConversationClick = (conversationId: string) => {
     setLocation(`/messages/${conversationId}`);
   };
 
-  const handleBack = () => {
-    setLocation("/groups");
+  const handleBackToHome = () => {
+    setLocation('/');
   };
+
+  // Loading states
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center py-12">
+            <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-4 animate-spin" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated
+  if (!authData?.user) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center py-12">
+            <MessageCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+            <p className="text-muted-foreground mb-4">
+              Please log in to view your messages.
+            </p>
+            <Button onClick={() => setLocation("/login")} data-testid="button-login">
+              Log In
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="flex items-center justify-between p-4 max-w-2xl mx-auto">
+      {/* Header with back button and theme toggle */}
+      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
-              size="icon"
-              onClick={handleBack}
-              data-testid="button-back"
+              size="sm"
+              onClick={handleBackToHome}
+              data-testid="button-back-home"
+              className="text-muted-foreground hover:text-foreground"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
             </Button>
-            <h1 className="text-2xl font-bold">Messages</h1>
+            <div>
+              <h1 className="text-xl font-semibold" data-testid="messages-title">Messages</h1>
+              <p className="text-sm text-muted-foreground">
+                {currentUser?.school || "Your School"}
+              </p>
+            </div>
           </div>
           <ThemeToggle />
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-2xl mx-auto p-4">
-        {isLoading ? (
-          <div className="text-center py-12">
-            <div className="text-muted-foreground">Loading conversations...</div>
+      {/* Messages content */}
+      <main className="max-w-4xl mx-auto p-4">
+        {messagesLoading && (
+          <div className="text-center py-8">
+            <Loader2 className="h-6 w-6 text-muted-foreground mx-auto mb-2 animate-spin" />
+            <p className="text-muted-foreground">Loading your conversations...</p>
           </div>
-        ) : conversations.length > 0 ? (
-          <MessageList
-            conversations={conversations}
+        )}
+
+        {!messagesLoading && (
+          <MessageList 
+            conversations={conversations} 
             onConversationClick={handleConversationClick}
           />
-        ) : (
-          <div className="text-center py-12">
-            <div className="text-muted-foreground">No messages yet</div>
-            <div className="text-sm text-muted-foreground mt-2">
-              Start chatting with groups from your school!
-            </div>
-            <Button 
-              onClick={() => setLocation("/groups")} 
-              className="mt-4"
-              data-testid="button-browse-groups"
-            >
-              Browse Groups
-            </Button>
-          </div>
         )}
       </main>
     </div>

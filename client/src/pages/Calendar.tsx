@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,11 @@ import {
   Clock, 
   MapPin,
   Plus,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, isToday } from "date-fns";
+import type { AuthResponse } from "@shared/schema";
 
 interface ScheduledPregame {
   id: string;
@@ -31,26 +33,20 @@ interface ScheduledPregame {
 export default function Calendar() {
   const [, setLocation] = useLocation();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  // Get current user email
-  useEffect(() => {
-    try {
-      const currentUserData = localStorage.getItem('currentUser');
-      if (currentUserData) {
-        const currentUser = JSON.parse(currentUserData);
-        setCurrentUserEmail(currentUser.email || "");
-      }
-    } catch (error) {
-      console.error("Error loading current user:", error);
-    }
-  }, []);
+  // Get current user and authentication status
+  const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
+    queryKey: ['/api/auth/me'],
+  });
 
-  // Fetch pregames for current user from API
+  const currentUser = authData?.user;
+  const currentUserEmail = currentUser?.email || "";
+
+  // Fetch pregames for current user from API (JWT automatically provides school scoping)
   const { data: pregamesData, isLoading } = useQuery({
     queryKey: ['/api/pregames', currentUserEmail],
-    enabled: !!currentUserEmail,
+    enabled: !!currentUser?.email,
   });
 
   // Transform API data to match component structure
@@ -59,36 +55,16 @@ export default function Calendar() {
     const isCreator = pregame.creatorEmail === currentUserEmail;
     const otherUserEmail = isCreator ? pregame.participantEmail : pregame.creatorEmail;
     
-    // Get participant data from localStorage
-    const allUsersData = localStorage.getItem('allUsers');
-    const allOrganizationsData = localStorage.getItem('allOrganizations');
-    
-    let participant = null;
-    
-    // First check in users
-    if (allUsersData) {
-      const allUsers = JSON.parse(allUsersData);
-      participant = allUsers.find((user: any) => user.email === otherUserEmail);
-    }
-    
-    // If not found in users, check in organizations
-    if (!participant && allOrganizationsData) {
-      const allOrganizations = JSON.parse(allOrganizationsData);
-      participant = allOrganizations.find((org: any) => org.contactEmail === otherUserEmail);
-    }
-    
-    // Create fallback name if participant not found
-    const participantName = participant ? 
-      (participant.name || participant.username || 'Unknown') :
-      (otherUserEmail.includes('@') ? 
-        otherUserEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').trim() : 
-        'Unknown User');
+    // Create display name from email (simplified approach)
+    const participantName = otherUserEmail.includes('@') ? 
+      otherUserEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim() : 
+      'Unknown User';
     
     return {
       id: pregame.id,
       participantEmail: otherUserEmail,
       participantName,
-      participantImage: participant?.profileImage || participant?.profileImages?.[0],
+      participantImage: undefined, // Will be enhanced later with proper user lookups
       date: pregame.date,
       time: pregame.time,
       location: pregame.location || "",
@@ -140,6 +116,40 @@ export default function Calendar() {
     : [];
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Loading states
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center py-12">
+            <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-4 animate-spin" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated
+  if (!authData?.user) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center py-12">
+            <CalendarIcon className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+            <p className="text-muted-foreground mb-4">
+              Please log in to view your pregame calendar.
+            </p>
+            <Button onClick={() => setLocation("/login")} data-testid="button-login">
+              Log In
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
