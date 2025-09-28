@@ -29,6 +29,7 @@ interface UserProfile {
   preferredAlcohol: string;
   availability: string;
   profileImage: string | null;
+  photos: { id: string; url: string; }[];
 }
 
 export default function UserProfileDetail() {
@@ -74,7 +75,8 @@ export default function UserProfileDetail() {
               groupSizeMin: '1',
               groupSizeMax: '1',
               preferredAlcohol: '',
-              availability: ''
+              availability: '',
+              photos: currentUserInfo.photos || []
             };
             setUserProfile(profileData);
             setLoading(false);
@@ -109,7 +111,8 @@ export default function UserProfileDetail() {
               groupSizeMin: '1', 
               groupSizeMax: '1',
               preferredAlcohol: '',
-              availability: ''
+              availability: '',
+              photos: userData.photos || []
             };
             
             setUserProfile(profileData);
@@ -327,6 +330,28 @@ export default function UserProfileDetail() {
                 </Button>
               </div>
             </div>
+
+            {/* Photo Gallery */}
+            {userProfile.photos && userProfile.photos.length > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="font-semibold mb-4">Photos</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4" data-testid="photo-gallery">
+                    {userProfile.photos.map((photo) => (
+                      <div key={photo.id} className="relative">
+                        <img
+                          src={photo.url}
+                          alt="User photo"
+                          className="w-full h-32 object-cover rounded-lg border"
+                          data-testid={`photo-${photo.id}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
