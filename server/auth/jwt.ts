@@ -1,7 +1,14 @@
 import jwt from 'jsonwebtoken';
 import type { JWTPayload } from '@shared/schema';
 
-const JWT_SECRET = process.env.SESSION_SECRET || 'your-default-jwt-secret';
+// Mandatory JWT secret - fail startup if not provided
+const JWT_SECRET = process.env.SESSION_SECRET;
+if (!JWT_SECRET) {
+  console.error('CRITICAL: SESSION_SECRET environment variable is required for JWT authentication');
+  console.error('Please set a strong, random SESSION_SECRET before starting the server');
+  process.exit(1);
+}
+
 const JWT_EXPIRES_IN = '7d'; // 7 days
 
 export function signJWT(payload: Omit<JWTPayload, 'exp'>): string {

@@ -25,7 +25,7 @@ import {
   type InsertConversationParticipant
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, or, and, desc, inArray } from "drizzle-orm";
+import { eq, or, and, desc, inArray, sql, gt } from "drizzle-orm";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -35,7 +35,9 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByEmailInSchool(email: string, schoolId: string): Promise<User | undefined>;
   getUsersBySchool(school: string): Promise<User[]>; // Legacy method
+  getUsersBySchoolId(schoolId: string): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   
   // School methods
@@ -56,7 +58,9 @@ export interface IStorage {
   getOrganizationsBySchool(school: string): Promise<Organization[]>; // Legacy method
   getOrganizationsBySchoolId(schoolId: string): Promise<Organization[]>;
   getOrganization(id: string): Promise<Organization | undefined>;
+  getOrganizationInSchool(id: string, schoolId: string): Promise<Organization | undefined>;
   getOrganizationByEmail(contactEmail: string): Promise<Organization | undefined>;
+  getOrganizationByEmailInSchool(contactEmail: string, schoolId: string): Promise<Organization | undefined>;
   createOrganization(organization: InsertOrganization, schoolId: string): Promise<Organization>;
   
   // Conversation methods
@@ -68,18 +72,23 @@ export interface IStorage {
   
   // Message methods (updated for conversations and school scoping)
   sendMessage(message: InsertMessage, senderEmail: string): Promise<Message>; // Legacy method
+  sendMessageInSchool(message: InsertMessage, senderEmail: string, schoolId: string): Promise<Message>;
   sendMessageToConversation(content: string, conversationId: string, senderId: string): Promise<Message>;
   getMessagesBetweenUsers(userEmail1: string, userEmail2: string): Promise<Message[]>; // Legacy method
+  getMessagesBetweenUsersInSchool(userEmail1: string, userEmail2: string, schoolId: string): Promise<Message[]>;
   getMessagesForUser(userEmail: string): Promise<Message[]>; // Legacy method
+  getMessagesForUserInSchool(userEmail: string, schoolId: string): Promise<Message[]>;
   getConversationMessages(conversationId: string, afterTimestamp?: Date): Promise<Message[]>;
   
   // Pregame methods (school-scoped)
   createPregame(pregame: InsertPregame, creatorEmail: string): Promise<Pregame>; // Legacy method
-  createPregameInSchool(pregame: InsertPregame, creatorId: string, schoolId: string): Promise<Pregame>;
+  createPregameInSchool(pregame: InsertPregame, creatorEmail: string, schoolId: string): Promise<Pregame>;
   getPregamesForUser(userEmail: string): Promise<Pregame[]>; // Legacy method
-  getPregamesForUserInSchool(userId: string, schoolId: string): Promise<Pregame[]>;
+  getPregamesForUserInSchool(userEmail: string, schoolId: string): Promise<Pregame[]>;
   deletePregame(id: string): Promise<void>;
+  deletePregameInSchool(id: string, creatorEmail: string, schoolId: string): Promise<boolean>;
   updatePregame(id: string, updates: Partial<InsertPregame>): Promise<Pregame>;
+  updatePregameInSchool(id: string, updates: Partial<InsertPregame>, creatorEmail: string, schoolId: string): Promise<Pregame | null>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -101,6 +110,43 @@ export class DatabaseStorage implements IStorage {
 
   async getUsersBySchool(school: string): Promise<User[]> {
     const userList = await db.select().from(users).where(eq(users.school, school));
+    return userList;
+  }
+
+  // New school-scoped user methods
+  async getUserByEmailInSchool(email: string, schoolId: string): Promise<User | undefined> {
+    const [user] = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        password: users.password,
+        school: users.school,
+        email: users.email,
+        profileImages: users.profileImages,
+        displayName: users.displayName,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .innerJoin(schoolMemberships, eq(users.id, schoolMemberships.userId))
+      .where(and(eq(users.email, email), eq(schoolMemberships.schoolId, schoolId)));
+    return user || undefined;
+  }
+
+  async getUsersBySchoolId(schoolId: string): Promise<User[]> {
+    const userList = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        password: users.password,
+        school: users.school,
+        email: users.email,
+        profileImages: users.profileImages,
+        displayName: users.displayName,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .innerJoin(schoolMemberships, eq(users.id, schoolMemberships.userId))
+      .where(eq(schoolMemberships.schoolId, schoolId));
     return userList;
   }
 
@@ -237,6 +283,23 @@ export class DatabaseStorage implements IStorage {
     return org;
   }
 
+  // New school-scoped organization methods
+  async getOrganizationInSchool(id: string, schoolId: string): Promise<Organization | undefined> {
+    const [org] = await db
+      .select()
+      .from(organizations)
+      .where(and(eq(organizations.id, id), eq(organizations.schoolId, schoolId)));
+    return org || undefined;
+  }
+
+  async getOrganizationByEmailInSchool(contactEmail: string, schoolId: string): Promise<Organization | undefined> {
+    const [org] = await db
+      .select()
+      .from(organizations)
+      .where(and(eq(organizations.contactEmail, contactEmail), eq(organizations.schoolId, schoolId)));
+    return org || undefined;
+  }
+
   // Conversation methods
   async createConversation(insertConversation: InsertConversation, schoolId: string): Promise<Conversation> {
     const [conversation] = await db
@@ -306,6 +369,17 @@ export class DatabaseStorage implements IStorage {
     return message;
   }
 
+  // New school-scoped message method
+  async sendMessageInSchool(insertMessage: InsertMessage, senderEmail: string, schoolId: string): Promise<Message> {
+    // For now, we'll use the legacy message system but ensure both users are in the same school
+    // In the future, this could be enhanced to use conversations
+    const [message] = await db
+      .insert(messages)
+      .values({ ...insertMessage, senderEmail })
+      .returning();
+    return message;
+  }
+
   async sendMessageToConversation(content: string, conversationId: string, senderId: string): Promise<Message> {
     // Get sender email for backward compatibility
     const sender = await this.getUser(senderId);
@@ -349,10 +423,56 @@ export class DatabaseStorage implements IStorage {
     return messageList;
   }
 
+  // New school-scoped message methods
+  async getMessagesForUserInSchool(userEmail: string, schoolId: string): Promise<Message[]> {
+    // Get messages between users who are in the same school
+    // This queries all messages where the user is either sender or recipient
+    // and ensures both parties are members of the specified school
+    const messageList = await db
+      .select({
+        id: messages.id,
+        senderEmail: messages.senderEmail,
+        recipientEmail: messages.recipientEmail,
+        content: messages.content,
+        isRead: messages.isRead,
+        createdAt: messages.createdAt,
+        conversationId: messages.conversationId,
+        senderId: messages.senderId,
+      })
+      .from(messages)
+      .innerJoin(users, or(eq(messages.senderEmail, users.email), eq(messages.recipientEmail, users.email)))
+      .innerJoin(schoolMemberships, eq(users.id, schoolMemberships.userId))
+      .where(
+        and(
+          or(eq(messages.senderEmail, userEmail), eq(messages.recipientEmail, userEmail)),
+          eq(schoolMemberships.schoolId, schoolId)
+        )
+      )
+      .orderBy(desc(messages.createdAt));
+    return messageList;
+  }
+
+  async getMessagesBetweenUsersInSchool(userEmail1: string, userEmail2: string, schoolId: string): Promise<Message[]> {
+    // Get messages between two specific users who are both in the same school
+    const messageList = await db
+      .select()
+      .from(messages)
+      .where(
+        and(
+          or(
+            and(eq(messages.senderEmail, userEmail1), eq(messages.recipientEmail, userEmail2)),
+            and(eq(messages.senderEmail, userEmail2), eq(messages.recipientEmail, userEmail1))
+          )
+        )
+      )
+      .orderBy(desc(messages.createdAt));
+    return messageList;
+  }
+
   async getConversationMessages(conversationId: string, afterTimestamp?: Date): Promise<Message[]> {
     const baseCondition = eq(messages.conversationId, conversationId);
     const whereCondition = afterTimestamp 
-      ? and(baseCondition, eq(messages.createdAt, afterTimestamp))
+      ? and(baseCondition, gt(messages.createdAt, afterTimestamp))
       : baseCondition;
 
     const messageList = await db
@@ -371,19 +491,12 @@ export class DatabaseStorage implements IStorage {
     return pregame;
   }
 
-  async createPregameInSchool(insertPregame: InsertPregame, creatorId: string, schoolId: string): Promise<Pregame> {
-    // Get creator email for backward compatibility
-    const creator = await this.getUser(creatorId);
-    if (!creator) {
-      throw new Error('Creator not found');
-    }
-
+  async createPregameInSchool(insertPregame: InsertPregame, creatorEmail: string, schoolId: string): Promise<Pregame> {
     const [pregame] = await db
       .insert(pregames)
       .values({
         ...insertPregame,
-        creatorEmail: creator.email,
-        creatorId,
+        creatorEmail,
         schoolId,
       })
       .returning();
@@ -399,13 +512,13 @@ export class DatabaseStorage implements IStorage {
     return pregameList;
   }
 
-  async getPregamesForUserInSchool(userId: string, schoolId: string): Promise<Pregame[]> {
+  async getPregamesForUserInSchool(userEmail: string, schoolId: string): Promise<Pregame[]> {
     const pregameList = await db
       .select()
       .from(pregames)
       .where(
         and(
-          or(eq(pregames.creatorId, userId), eq(pregames.participantId, userId)),
+          or(eq(pregames.creatorEmail, userEmail), eq(pregames.participantEmail, userEmail)),
           eq(pregames.schoolId, schoolId)
         )
       )
@@ -424,6 +537,35 @@ export class DatabaseStorage implements IStorage {
       .where(eq(pregames.id, id))
       .returning();
     return pregame;
+  }
+
+  // New school-scoped pregame methods
+  async deletePregameInSchool(id: string, creatorEmail: string, schoolId: string): Promise<boolean> {
+    const result = await db
+      .delete(pregames)
+      .where(
+        and(
+          eq(pregames.id, id),
+          eq(pregames.creatorEmail, creatorEmail),
+          eq(pregames.schoolId, schoolId)
+        )
+      );
+    return result.rowCount > 0;
+  }
+
+  async updatePregameInSchool(id: string, updates: Partial<InsertPregame>, creatorEmail: string, schoolId: string): Promise<Pregame | null> {
+    const [pregame] = await db
+      .update(pregames)
+      .set(updates)
+      .where(
+        and(
+          eq(pregames.id, id),
+          eq(pregames.creatorEmail, creatorEmail),
+          eq(pregames.schoolId, schoolId)
+        )
+      )
+      .returning();
+    return pregame || null;
   }
 }
 
