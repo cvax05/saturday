@@ -32,7 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username,
           email,
           password: hashedPassword,
-          displayName: displayName || username,
+          displayName: displayName || null, // Only use user-provided displayName
           profileImages: profileImages || [],
           school: null, // Will be set after we get school info
         }, schoolSlug);

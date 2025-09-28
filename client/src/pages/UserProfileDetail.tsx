@@ -70,25 +70,25 @@ export default function UserProfileDetail() {
           setIsOwnProfile(isOwn);
           
           if (isOwn) {
-            // Transform current user data to match UserProfile interface
+            // Transform current user data to match UserProfile interface - only use real data
             const profileData = {
               id: currentUserInfo.id,
-              name: currentUserInfo.displayName || currentUserInfo.username || currentUserInfo.name,
+              name: currentUserInfo.displayName || currentUserInfo.username, // Only use provided data
               username: currentUserInfo.username,
               displayName: currentUserInfo.displayName,
               email: currentUserInfo.email,
-              school: currentUserInfo.school || 'Unknown School',
-              description: currentUserInfo.bio || currentUserInfo.description || '',
+              school: currentUserInfo.school, // Don't add fake school data
+              description: currentUserInfo.bio || currentUserInfo.description, // Don't force empty string
               classYear: currentUserInfo.classYear,
               profileImage: currentUserInfo.avatarUrl || currentUserInfo.profileImage,
-              createdAt: currentUserInfo.createdAt || new Date().toISOString(),
+              createdAt: currentUserInfo.createdAt, // Don't create fake timestamps
               photos: currentUserInfo.photos || [],
-              // Legacy fields
-              groupSize: '1',
-              groupSizeMin: '1',
-              groupSizeMax: '1',
-              preferredAlcohol: '',
-              availability: ''
+              // Legacy fields - only if they exist
+              groupSize: currentUserInfo.groupSize,
+              groupSizeMin: currentUserInfo.groupSizeMin,
+              groupSizeMax: currentUserInfo.groupSizeMax,
+              preferredAlcohol: currentUserInfo.preferredAlcohol,
+              availability: currentUserInfo.availability
             };
             setUserProfile(profileData);
             setLoading(false);
@@ -112,25 +112,25 @@ export default function UserProfileDetail() {
           if (userResponse.ok) {
             const userData = await userResponse.json();
             
-            // Transform the API response to match the UserProfile interface
+            // Transform the API response to match the UserProfile interface - only use real data
             const profileData = {
               id: userData.user.id,
-              name: userData.user.displayName || userData.user.username || 'Student',
+              name: userData.user.displayName || userData.user.username, // Don't add fake "Student" name
               username: userData.user.username,
               displayName: userData.user.displayName,
               email: userData.user.email,
-              school: userData.schools?.[0]?.name || userData.user.school || 'Unknown School',
-              description: userData.user.bio || '',
+              school: userData.schools?.[0]?.name || userData.user.school, // Don't add fake "Unknown School"
+              description: userData.user.bio, // Don't force empty string
               classYear: userData.user.classYear,
               profileImage: userData.user.avatarUrl || userData.user.profileImages?.[0] || null,
               createdAt: userData.user.createdAt,
               photos: userData.photos || [],
-              // Legacy fields
-              groupSize: '1',
-              groupSizeMin: '1', 
-              groupSizeMax: '1',
-              preferredAlcohol: '',
-              availability: ''
+              // Legacy fields - don't add fake data
+              groupSize: userData.user.groupSize,
+              groupSizeMin: userData.user.groupSizeMin, 
+              groupSizeMax: userData.user.groupSizeMax,
+              preferredAlcohol: userData.user.preferredAlcohol,
+              availability: userData.user.availability
             };
             
             setUserProfile(profileData);

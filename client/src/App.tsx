@@ -12,7 +12,6 @@ import Messages from "@/pages/Messages";
 import ChatView from "@/pages/ChatView";
 import Calendar from "@/pages/Calendar";
 import ProfileEdit from "@/pages/ProfileEdit";
-import UserProfilePage from "@/pages/UserProfilePage";
 import People from "@/pages/People";
 import Groups from "@/pages/Groups";
 import UserProfileDetail from "@/pages/UserProfileDetail";
@@ -38,13 +37,13 @@ function Router() {
       <Route path="/groups" component={Groups} />
       <Route path="/profile/edit" component={ProfileEdit} />
       <Route path="/profile/:email" component={UserProfileDetail} />
+      <Route path="/profile/:id" component={UserProfileDetail} />
       <Route path="/home" component={Home} />
       <Route path="/leaderboard" component={Leaderboard} />
       <Route path="/organization/:id" component={OrganizationProfile} />
       <Route path="/messages" component={Messages} />
       <Route path="/messages/:id" component={ChatView} />
       <Route path="/calendar" component={Calendar} />
-      <Route path="/profile/:id" component={UserProfilePage} />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
