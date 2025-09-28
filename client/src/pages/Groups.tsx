@@ -116,70 +116,39 @@ export default function Groups() {
                     data-testid={`user-card-${user.email}`}
                     onClick={() => handleViewProfile(user.id)}
                   >
-                    <CardContent className="p-6">
-                      <div className="flex flex-col items-center text-center">
-                        {/* Profile Image - Larger for better visibility */}
-                        <Avatar className="h-20 w-20 border-2 border-border mb-4">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col items-center text-center space-y-3">
+                        {/* Profile Image */}
+                        <Avatar className="h-16 w-16 border-2 border-border">
                           <AvatarImage 
                             src={user.avatarUrl || user.profileImages?.[0] || ""} 
                             alt={user.username}
                             className="object-cover"
                           />
-                          <AvatarFallback className="text-lg font-semibold">
+                          <AvatarFallback className="text-sm font-semibold">
                             {(user.username || user.email).slice(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
 
-                        {/* User Info */}
-                        <div className="w-full">
-                          <div className="flex items-center justify-center gap-2 mb-3">
-                            <h3 className="font-semibold text-lg truncate" data-testid={`user-name-${user.email}`}>
-                              {user.username || user.displayName || 'Student'}
-                            </h3>
-                            {user.classYear && (
-                              <Badge variant="secondary" className="text-xs shrink-0">
-                                <GraduationCap className="h-3 w-3 mr-1" />
-                                '{user.classYear}
-                              </Badge>
-                            )}
-                          </div>
-                          
-                          {/* Bio/Description */}
-                          {user.bio && (
-                            <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                              {user.bio}
-                            </p>
-                          )}
+                        {/* User Name Only */}
+                        <h3 className="font-semibold truncate" data-testid={`user-name-${user.email}`}>
+                          {user.username || user.displayName || 'Student'}
+                        </h3>
 
-                          {/* Action Buttons */}
-                          <div className="flex gap-3 mt-4">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleViewProfile(user.id);
-                              }}
-                              data-testid={`button-view-profile-${user.email}`}
-                            >
-                              <ChevronRight className="h-4 w-4 mr-1" />
-                              View Profile
-                            </Button>
-                            <Button
-                              size="sm"
-                              className="flex-1"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleStartMessage(user.email);
-                              }}
-                              data-testid={`button-message-${user.email}`}
-                            >
-                              <MessageCircle className="h-4 w-4 mr-1" />
-                              Message
-                            </Button>
-                          </div>
-                        </div>
+                        {/* Single View Profile Button */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewProfile(user.id);
+                          }}
+                          data-testid={`button-view-profile-${user.email}`}
+                        >
+                          <ChevronRight className="h-4 w-4 mr-1" />
+                          View Profile
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
