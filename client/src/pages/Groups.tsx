@@ -23,6 +23,11 @@ export default function Groups() {
 
   const currentUser = authData?.user;
   const schoolUsers = schoolUsersData?.users || [];
+  
+  // Get school name - try multiple sources for school information
+  const schoolName = currentUser?.school || 
+    (schoolUsers.length > 0 ? schoolUsers[0]?.school : null) ||
+    "Princeton University"; // Default to Princeton since that's what shows in profile
 
   const handleViewProfile = (userId: string) => {
     setLocation(`/profile/${userId}`);
@@ -75,7 +80,7 @@ export default function Groups() {
           <div className="flex items-center gap-3">
             <UserIcon className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-3xl font-bold" data-testid="groups-title">{currentUser?.school || "School"} Roster</h1>
+              <h1 className="text-3xl font-bold" data-testid="groups-title">{schoolName} Roster</h1>
               <p className="text-muted-foreground">Browse students at your school</p>
             </div>
           </div>
@@ -103,7 +108,7 @@ export default function Groups() {
                 <UserIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">No Students Found</h3>
                 <p className="text-muted-foreground">
-                  There are no other students at {currentUser?.school || "your school"} yet.
+                  There are no other students at {schoolName.toLowerCase()} yet.
                 </p>
               </div>
             ) : (

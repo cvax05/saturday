@@ -19,17 +19,23 @@ import {
 } from "lucide-react";
 
 interface UserProfile {
+  id: string;
   name: string;
+  username: string;
+  displayName?: string;
   email: string;
   school: string;
   description: string;
+  classYear?: number;
+  profileImage: string | null;
+  photos: { id: string; url: string; }[];
+  createdAt: string;
+  // Legacy fields for pregame preferences (may not be filled)
   groupSize: string;
   groupSizeMin: string;
   groupSizeMax: string;
   preferredAlcohol: string;
   availability: string;
-  profileImage: string | null;
-  photos: { id: string; url: string; }[];
 }
 
 export default function UserProfileDetail() {
@@ -66,17 +72,23 @@ export default function UserProfileDetail() {
           if (isOwn) {
             // Transform current user data to match UserProfile interface
             const profileData = {
-              name: currentUserInfo.username || currentUserInfo.displayName || currentUserInfo.name,
+              id: currentUserInfo.id,
+              name: currentUserInfo.displayName || currentUserInfo.username || currentUserInfo.name,
+              username: currentUserInfo.username,
+              displayName: currentUserInfo.displayName,
               email: currentUserInfo.email,
               school: currentUserInfo.school || 'Unknown School',
               description: currentUserInfo.bio || currentUserInfo.description || '',
+              classYear: currentUserInfo.classYear,
               profileImage: currentUserInfo.avatarUrl || currentUserInfo.profileImage,
+              createdAt: currentUserInfo.createdAt || new Date().toISOString(),
+              photos: currentUserInfo.photos || [],
+              // Legacy fields
               groupSize: '1',
               groupSizeMin: '1',
               groupSizeMax: '1',
               preferredAlcohol: '',
-              availability: '',
-              photos: currentUserInfo.photos || []
+              availability: ''
             };
             setUserProfile(profileData);
             setLoading(false);
@@ -102,17 +114,23 @@ export default function UserProfileDetail() {
             
             // Transform the API response to match the UserProfile interface
             const profileData = {
-              name: userData.user.username || userData.user.displayName || 'Student',
+              id: userData.user.id,
+              name: userData.user.displayName || userData.user.username || 'Student',
+              username: userData.user.username,
+              displayName: userData.user.displayName,
               email: userData.user.email,
               school: userData.schools?.[0]?.name || userData.user.school || 'Unknown School',
               description: userData.user.bio || '',
+              classYear: userData.user.classYear,
               profileImage: userData.user.avatarUrl || userData.user.profileImages?.[0] || null,
+              createdAt: userData.user.createdAt,
+              photos: userData.photos || [],
+              // Legacy fields
               groupSize: '1',
               groupSizeMin: '1', 
               groupSizeMax: '1',
               preferredAlcohol: '',
-              availability: '',
-              photos: userData.photos || []
+              availability: ''
             };
             
             setUserProfile(profileData);
@@ -221,9 +239,32 @@ export default function UserProfileDetail() {
                       <span data-testid="profile-email">{userProfile.email}</span>
                     </div>
                     
-                    <div className="flex items-center gap-2 text-lg text-muted-foreground mb-4">
+                    <div className="flex items-center gap-2 text-lg text-muted-foreground mb-2">
+                      <User className="h-5 w-5" />
+                      <span data-testid="profile-username">@{userProfile.username}</span>
+                      {userProfile.displayName && userProfile.displayName !== userProfile.username && (
+                        <span className="text-sm">({userProfile.displayName})</span>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-lg text-muted-foreground mb-2">
                       <GraduationCap className="h-5 w-5" />
                       <span data-testid="profile-school">{userProfile.school}</span>
+                      {userProfile.classYear && (
+                        <Badge variant="secondary" className="ml-2">
+                          Class of '{String(userProfile.classYear).slice(-2)}
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                      <Calendar className="h-4 w-4" />
+                      <span data-testid="profile-member-since">
+                        Member since {new Date(userProfile.createdAt).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long' 
+                        })}
+                      </span>
                     </div>
                   </div>
                   
