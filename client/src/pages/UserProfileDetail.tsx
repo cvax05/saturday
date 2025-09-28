@@ -360,24 +360,6 @@ export default function UserProfileDetail() {
               </CardContent>
             </Card>
 
-            {/* Contact Actions */}
-            <Card>
-              <CardHeader>
-                <h3 className="text-xl font-semibold">Get in Touch</h3>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-3">
-                  <Button variant="outline" className="flex-1">
-                    <Mail className="h-4 w-4 mr-2" />
-                    Email
-                  </Button>
-                  <Button variant="outline" className="flex-1">
-                    <MessageCircle className="h-4 w-4 mr-2" />
-                    Chat
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
           {/* Right Column */}
