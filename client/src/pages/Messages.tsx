@@ -205,39 +205,6 @@ export default function Messages() {
           </div>
         )}
       </main>
-
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-        <div className="flex items-center justify-around py-2 px-4 max-w-lg mx-auto">
-          <button
-            onClick={() => setLocation("/home")}
-            className="flex flex-col items-center py-2 px-4 rounded-lg text-muted-foreground hover:text-foreground"
-            data-testid="nav-home"
-          >
-            <span className="text-xs font-medium">Home</span>
-          </button>
-          <button
-            onClick={() => setLocation("/messages")}
-            className="flex flex-col items-center py-2 px-4 rounded-lg text-primary bg-primary/10"
-            data-testid="nav-messages"
-          >
-            <span className="text-xs font-medium">Messages</span>
-          </button>
-          <button
-            onClick={() => setLocation("/calendar")}
-            className="flex flex-col items-center py-2 px-4 rounded-lg text-muted-foreground hover:text-foreground"
-            data-testid="nav-calendar"
-          >
-            <span className="text-xs font-medium">Calendar</span>
-          </button>
-          <button
-            onClick={() => setLocation("/profile/edit")}
-            className="flex flex-col items-center py-2 px-4 rounded-lg text-muted-foreground hover:text-foreground"
-            data-testid="nav-profile"
-          >
-            <span className="text-xs font-medium">Profile</span>
-          </button>
-        </div>
-      </nav>
     </div>
   );
 }
