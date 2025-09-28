@@ -1,0 +1,53 @@
+You are working on my Replit project that uses Node with Express and SQLite (server.js from earlier). I can log in and I see accounts, but clicking any profile does nothing. I also want bigger user cards on the group roster page with name and pictures, and clicking a card should open the full profile. My own profile link also does not open.
+
+Do the following.
+
+Context
+1) Database tables already exist: schools, users, school_memberships. The roster endpoint is GET /api/schools/:slug/users. Login returns a user id and the schools the user belongs to.
+2) There is no session yet. For now, store the logged in user id from the login response in localStorage so the app can fetch my profile.
+
+Database updates for profiles
+1) Add these columns to users if missing: avatar_url TEXT, bio TEXT, class_year INTEGER.
+2) Create table user_photos with id INTEGER PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, url TEXT NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP.
+3) Seed a few avatar_url values and two user_photos per user so I can see pictures in the UI.
+
+Backend API
+1) Update GET /api/schools/:slug/users to return id, displayName, email, avatar_url, class_year. Keep it scoped by school_memberships.
+2) Add GET /api/users/:id that returns a single user with id, displayName, email, avatar_url, bio, class_year, plus an array of photos from user_photos, plus the list of school slugs the user belongs to.
+3) Add GET /api/me that reads a user id from the request in a simple way for now: first check header X-User-Id, else check query param user_id. Return the same shape as GET /api/users/:id. This is only for development until I add real auth.
+4) If my app uses client side routing, add Express static file serving and a catch all so deep links work:
+   app.use(express.static("public"));
+   app.get("*", (req, res) => res.sendFile(require("path").join(__dirname, "public", "index.html")));
+   If the project is using React with Vite or a similar setup, configure the same fallback so /profile/:id and /schools/:slug do not 404 on refresh.
+
+Frontend UI
+1) If there is already a frontend, detect it and modify it. If there is no frontend, create a minimal React app in a public folder or use EJS templates. Use whatever is already present.
+2) Create a GroupRoster page at route /schools/:slug that fetches GET /api/schools/:slug/users and renders a responsive grid of user cards.
+   The card should be bigger than before, include user avatar (avatar_url), displayName, and class_year if present. Make the entire card clickable and navigate to /profile/:id.
+3) Create a Profile page at route /profile/:id that fetches GET /api/users/:id and renders avatar, name, class_year, bio, photo gallery, and a list of school slugs.
+   Also add a My Profile link that routes to /profile/me and resolves to the id saved in localStorage from login. If there is no id in localStorage, show a friendly message to log in.
+4) Add simple loading and error states for both pages.
+
+Bug fixes to address the click issue
+1) Ensure the anchors or onClick handlers actually call the router navigate function with the correct id.
+2) If using client side routing, verify the Express catch all is in place to prevent server 404 for routes like /profile/123.
+3) Make sure CORS is enabled if the client and server are on different origins in Replit.
+4) Confirm that the roster endpoint returns avatar_url and class_year so the UI has the data it needs.
+
+Tests and manual steps
+1) Run migrations for SQLite to add the new columns and the user_photos table. Show the exact SQL used and the console output.
+2) Seed one school with slug princeton if not present, create two users in that school, set an avatar_url and two user_photos per user, and set class_year for both.
+3) Login as one of the users and save the returned user id in localStorage. Show the code that saves it after a successful login.
+4) Visit /schools/princeton and confirm the larger cards render with avatar, name, and class year. Clicking a card goes to /profile/:id and loads the profile with gallery and bio. Clicking My Profile opens my own profile using the id in localStorage.
+5) Provide me with curl examples for:
+   GET /api/schools/princeton/users
+   GET /api/users/{id}
+   GET /api/me?user_id={id}
+
+Deliverables
+1) Any updated SQL migration files
+2) Updated server.js with the new routes and the static catch all if needed
+3) Frontend files for the roster page and the profile page, either React or EJS, consistent with the current project
+4) A short README section with run instructions and the manual test steps above
+
+Please keep names and file paths consistent with the current project, and explain any changes you make at the top of the PR message or summary.

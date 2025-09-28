@@ -19,6 +19,9 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   profileImages: text("profile_images").array(),
   displayName: text("display_name"), // Add display name for better user management
+  avatarUrl: text("avatar_url"), // Single avatar URL for profile display
+  bio: text("bio"), // User bio/description
+  classYear: integer("class_year"), // Graduation year
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
 });
 
@@ -43,6 +46,22 @@ export const schoolMemberships = pgTable("school_memberships", {
   }),
   // Indexes for performance
   schoolIndex: index().on(table.schoolId),
+  userIndex: index().on(table.userId),
+}));
+
+// User photos table for multiple photos per user
+export const userPhotos = pgTable("user_photos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  url: text("url").notNull(),
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+}, (table) => ({
+  // Foreign key to users
+  userFK: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+  }),
+  // Index for performance
   userIndex: index().on(table.userId),
 }));
 
@@ -176,6 +195,12 @@ export const insertSchoolMembershipSchema = createInsertSchema(schoolMemberships
   createdAt: true,
 });
 
+// User photos schemas
+export const insertUserPhotoSchema = createInsertSchema(userPhotos).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Updated user schemas for multi-tenant
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -184,6 +209,9 @@ export const insertUserSchema = createInsertSchema(users).pick({
   school: true, // Keep for backward compatibility
   profileImages: true,
   displayName: true,
+  avatarUrl: true,
+  bio: true,
+  classYear: true,
 });
 
 export const registerSchema = createInsertSchema(users).pick({
@@ -193,6 +221,9 @@ export const registerSchema = createInsertSchema(users).pick({
   school: true, // Keep for backward compatibility 
   profileImages: true,
   displayName: true,
+  avatarUrl: true,
+  bio: true,
+  classYear: true,
 }).extend({
   profileImages: z.array(
     z.string()
@@ -200,6 +231,9 @@ export const registerSchema = createInsertSchema(users).pick({
       .max(2000000, "Image size too large (max 2MB per image)")
   ).max(5, "Maximum 5 images allowed").optional(),
   schoolSlug: z.string().min(1, "School selection is required"), // New field for school selection
+  avatarUrl: z.string().url().optional(),
+  bio: z.string().max(500, "Bio must be 500 characters or less").optional(),
+  classYear: z.number().int().min(2020).max(2030).optional(),
 });
 
 export const loginSchema = createInsertSchema(users).pick({
@@ -282,6 +316,9 @@ export type SchoolMembership = typeof schoolMemberships.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export type InsertUserPhoto = z.infer<typeof insertUserPhotoSchema>;
+export type UserPhoto = typeof userPhotos.$inferSelect;
 
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type Conversation = typeof conversations.$inferSelect;
