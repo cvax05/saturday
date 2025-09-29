@@ -7,6 +7,17 @@ import { signJWT } from "./auth/jwt";
 import { authenticateJWT, optionalAuth } from "./auth/middleware";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Schools endpoint - public for registration
+  app.get("/api/schools", async (req, res) => {
+    try {
+      const schools = await storage.getAllSchools();
+      res.json({ schools });
+    } catch (error) {
+      console.error("Error fetching schools:", error);
+      res.status(500).json({ message: "Failed to fetch schools" });
+    }
+  });
+
   // JWT Authentication endpoints
   app.post("/api/auth/register", async (req, res) => {
     try {

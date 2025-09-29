@@ -46,6 +46,7 @@ export interface IStorage {
   // School methods
   getSchool(id: string): Promise<School | undefined>;
   getSchoolBySlug(slug: string): Promise<School | undefined>;
+  getAllSchools(): Promise<School[]>;
   createSchool(school: InsertSchool): Promise<School>;
   getUserSchools(userId: string): Promise<School[]>;
   
@@ -275,6 +276,19 @@ export class DatabaseStorage implements IStorage {
       .values(insertSchool)
       .returning();
     return school;
+  }
+
+  async getAllSchools(): Promise<School[]> {
+    const schoolList = await db
+      .select({
+        id: schools.id,
+        slug: schools.slug,
+        name: schools.name,
+        createdAt: schools.createdAt,
+      })
+      .from(schools)
+      .orderBy(schools.name);
+    return schoolList;
   }
 
   async getUserSchools(userId: string): Promise<School[]> {

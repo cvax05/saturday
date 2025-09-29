@@ -28,7 +28,8 @@ interface UserProfile {
   description: string;
   classYear?: number;
   profileImage: string | null;
-  photos: { id: string; url: string; }[];
+  profileImages: string[]; // Array of image URLs from registration
+  photos: { id: string; url: string; }[]; // Legacy field for compatibility
   createdAt: string;
   // Legacy fields for pregame preferences (may not be filled)
   groupSize: string;
@@ -80,7 +81,8 @@ export default function UserProfileDetail() {
               school: currentUserInfo.school, // Don't add fake school data
               description: currentUserInfo.bio || currentUserInfo.description, // Don't force empty string
               classYear: currentUserInfo.classYear,
-              profileImage: currentUserInfo.avatarUrl || currentUserInfo.profileImage,
+              profileImage: currentUserInfo.avatarUrl || currentUserInfo.profileImages?.[0] || currentUserInfo.profileImage,
+              profileImages: currentUserInfo.profileImages || [], // Registration photos
               createdAt: currentUserInfo.createdAt, // Don't create fake timestamps
               photos: currentUserInfo.photos || [],
               // Legacy fields - only if they exist
@@ -123,6 +125,7 @@ export default function UserProfileDetail() {
               description: userData.user.bio, // Don't force empty string
               classYear: userData.user.classYear,
               profileImage: userData.user.avatarUrl || userData.user.profileImages?.[0] || null,
+              profileImages: userData.user.profileImages || [], // Registration photos
               createdAt: userData.user.createdAt,
               photos: userData.photos || [],
               // Legacy fields - don't add fake data
@@ -365,14 +368,27 @@ export default function UserProfileDetail() {
           {/* Right Column */}
           <div className="space-y-6">
             {/* Photo Gallery */}
-            {userProfile.photos && userProfile.photos.length > 0 && (
+            {((userProfile.profileImages && userProfile.profileImages.length > 0) || 
+              (userProfile.photos && userProfile.photos.length > 0)) && (
               <Card>
                 <CardHeader>
                   <h3 className="text-xl font-semibold">Photos</h3>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="photo-gallery">
-                    {userProfile.photos.map((photo) => (
+                    {/* Display registration photos */}
+                    {userProfile.profileImages && userProfile.profileImages.map((imageUrl, index) => (
+                      <div key={`profile-${index}`} className="relative">
+                        <img
+                          src={imageUrl}
+                          alt={`User photo ${index + 1}`}
+                          className="w-full h-40 object-cover rounded-lg border"
+                          data-testid={`photo-profile-${index}`}
+                        />
+                      </div>
+                    ))}
+                    {/* Display legacy photos for backwards compatibility */}
+                    {userProfile.photos && userProfile.photos.map((photo) => (
                       <div key={photo.id} className="relative">
                         <img
                           src={photo.url}

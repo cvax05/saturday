@@ -128,7 +128,7 @@ export default function Registration() {
         email: formData.email,
         password: formData.password,
         displayName: formData.name,
-        schoolSlug: schoolNameToSlug(formData.school), // Convert school name to slug
+        schoolSlug: formData.school, // Already a slug from SearchableCollegeSelect
         profileImages: profileImages
       };
       
@@ -147,6 +147,26 @@ export default function Registration() {
       }
       
       const result = await response.json();
+      
+      // Store user data in localStorage for client-side access
+      if (result.user) {
+        const userData = {
+          id: result.user.id,
+          username: result.user.username,
+          displayName: result.user.displayName,
+          email: result.user.email,
+          school: result.user.school,
+          profileImages: result.user.profileImages || [],
+          // Add additional fields that might be needed for profile display
+          name: result.user.displayName || result.user.username,
+          description: formData.description, // Save the bio from registration
+          groupSizeMin: formData.groupSizeMin,
+          groupSizeMax: formData.groupSizeMax,
+          preferredAlcohol: formData.preferredAlcohol,
+          availability: formData.availability,
+        };
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+      }
       
       // JWT token is automatically stored in httpOnly cookie by server
       // Redirect to groups page after successful registration

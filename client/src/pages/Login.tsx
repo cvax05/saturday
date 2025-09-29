@@ -41,6 +41,21 @@ export default function Login() {
       
       const result = await response.json();
       
+      // Store user data in localStorage for client-side access
+      if (result.user) {
+        const userData = {
+          id: result.user.id,
+          username: result.user.username,
+          displayName: result.user.displayName,
+          email: result.user.email,
+          school: result.user.school,
+          profileImages: result.user.profileImages || [],
+          // Add additional fields for profile display
+          name: result.user.displayName || result.user.username,
+        };
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+      }
+      
       // JWT token is automatically stored in httpOnly cookie by server
       // Redirect to groups page
       setLocation("/groups");
