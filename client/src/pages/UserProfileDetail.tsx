@@ -137,7 +137,13 @@ export default function UserProfileDetail() {
             };
             
             setUserProfile(profileData);
-            console.log('UserProfileDetail: Found user via API:', userData.user.username);
+            console.log('UserProfileDetail: Loaded profile with pregame prefs:', {
+              username: userData.user.username,
+              groupSizeMin: profileData.groupSizeMin,
+              groupSizeMax: profileData.groupSizeMax,
+              preferredAlcohol: profileData.preferredAlcohol,
+              availability: profileData.availability
+            });
           } else {
             console.log('UserProfileDetail: User not found via API:', userResponse.status);
           }
