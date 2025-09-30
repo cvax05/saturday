@@ -41,9 +41,9 @@ export default function ConnectModal({
         <div className="space-y-6">
           <div className="flex items-center gap-3">
             <Avatar className="h-16 w-16">
-              <AvatarImage src={userImage} alt={userName} />
+              <AvatarImage src={userImage} alt={userName || 'User'} />
               <AvatarFallback className="text-lg">
-                {userName.split(' ').map(n => n[0]).join('')}
+                {(userName || 'U').split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
