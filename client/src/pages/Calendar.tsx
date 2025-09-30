@@ -230,7 +230,7 @@ export default function Calendar() {
                         {/* Pregame indicator - Beer icon */}
                         {dayPregames.length > 0 && (
                           <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none" data-testid={`beer-icon-${dayStr}`}>
-                            <Beer className="h-12 w-12 text-orange-500 dark:text-orange-400 drop-shadow-lg" strokeWidth={2.5} />
+                            <Beer className="h-20 w-20 text-orange-500 dark:text-orange-400 drop-shadow-lg" strokeWidth={2.5} />
                           </div>
                         )}
                       </Button>
