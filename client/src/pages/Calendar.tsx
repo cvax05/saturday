@@ -222,14 +222,14 @@ export default function Calendar() {
                         onClick={() => handleDateClick(day)}
                         data-testid={`calendar-day-${dayStr}`}
                       >
-                        <span className={`text-sm ${isTodayDate ? 'font-bold' : ''}`}>
+                        <span className={`text-sm ${isTodayDate ? 'font-bold' : ''} relative z-20`}>
                           {format(day, 'd')}
                         </span>
                         
                         {/* Pregame indicator - Beer icon */}
                         {dayPregames.length > 0 && (
-                          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none" data-testid={`beer-icon-${dayStr}`}>
-                            <Beer className="h-full w-full p-2 text-orange-500 dark:text-orange-400 drop-shadow-lg" strokeWidth={2.5} />
+                          <div className="absolute inset-0 z-10 flex items-center justify-center pt-6 pointer-events-none" data-testid={`beer-icon-${dayStr}`}>
+                            <Beer className="h-16 w-16 text-orange-500 dark:text-orange-400 drop-shadow-lg" strokeWidth={3} />
                           </div>
                         )}
                       </Button>
