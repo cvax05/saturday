@@ -99,7 +99,8 @@ export interface IStorage {
   
   // Review methods
   createReview(review: InsertReview, reviewerId: string): Promise<Review>;
-  getReviewsForUser(revieweeId: string): Promise<Review[]>;
+  getReviewsForUser(revieweeId: string, schoolId: string): Promise<Review[]>;
+  getReviewsByReviewer(reviewerId: string, schoolId: string): Promise<Review[]>;
   getReviewForPregame(pregameId: string, reviewerId: string): Promise<Review | undefined>;
 }
 
@@ -641,11 +642,50 @@ export class DatabaseStorage implements IStorage {
     return review;
   }
 
-  async getReviewsForUser(revieweeId: string): Promise<Review[]> {
+  async getReviewsForUser(revieweeId: string, schoolId: string): Promise<Review[]> {
+    // Join with pregames to ensure school scoping
     const reviewList = await db
-      .select()
+      .select({
+        id: reviews.id,
+        pregameId: reviews.pregameId,
+        reviewerId: reviews.reviewerId,
+        revieweeId: reviews.revieweeId,
+        rating: reviews.rating,
+        message: reviews.message,
+        createdAt: reviews.createdAt,
+      })
       .from(reviews)
-      .where(eq(reviews.revieweeId, revieweeId))
+      .innerJoin(pregames, eq(reviews.pregameId, pregames.id))
+      .where(
+        and(
+          eq(reviews.revieweeId, revieweeId),
+          eq(pregames.schoolId, schoolId)
+        )
+      )
+      .orderBy(desc(reviews.createdAt));
+    return reviewList;
+  }
+
+  async getReviewsByReviewer(reviewerId: string, schoolId: string): Promise<Review[]> {
+    // Join with pregames to ensure school scoping
+    const reviewList = await db
+      .select({
+        id: reviews.id,
+        pregameId: reviews.pregameId,
+        reviewerId: reviews.reviewerId,
+        revieweeId: reviews.revieweeId,
+        rating: reviews.rating,
+        message: reviews.message,
+        createdAt: reviews.createdAt,
+      })
+      .from(reviews)
+      .innerJoin(pregames, eq(reviews.pregameId, pregames.id))
+      .where(
+        and(
+          eq(reviews.reviewerId, reviewerId),
+          eq(pregames.schoolId, schoolId)
+        )
+      )
       .orderBy(desc(reviews.createdAt));
     return reviewList;
   }

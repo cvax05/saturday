@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,14 @@ import {
   Loader2,
   Beer
 } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, isToday } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, isToday, subDays, isPast, isYesterday } from "date-fns";
 import type { AuthResponse } from "@shared/schema";
+import { RatingDialog } from "@/components/RatingDialog";
 
 interface ScheduledPregame {
   id: string;
   participantEmail: string;
+  participantId?: string;
   participantName: string;
   participantImage?: string;
   date: string; // YYYY-MM-DD format
@@ -35,6 +37,8 @@ export default function Calendar() {
   const [, setLocation] = useLocation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [pregameToReview, setPregameToReview] = useState<ScheduledPregame | null>(null);
 
   // Get current user and authentication status
   const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
@@ -46,8 +50,14 @@ export default function Calendar() {
 
   // Fetch pregames for current user from API (JWT automatically provides school scoping)
   const { data: pregamesData, isLoading } = useQuery({
-    queryKey: ['/api/pregames', currentUserEmail],
+    queryKey: [`/api/pregames/${currentUserEmail}`],
     enabled: !!currentUser?.email,
+  });
+
+  // Fetch reviews submitted BY current user to check which pregames have been reviewed
+  const { data: reviewsData } = useQuery({
+    queryKey: ['/api/reviews/my-reviews'],
+    enabled: !!currentUser?.id,
   });
 
   // Transform API data to match component structure
@@ -55,6 +65,7 @@ export default function Calendar() {
     // Check if current user is creator or participant to determine the "other" person
     const isCreator = pregame.creatorEmail === currentUserEmail;
     const otherUserEmail = isCreator ? pregame.participantEmail : pregame.creatorEmail;
+    const otherUserId = isCreator ? pregame.participantId : pregame.creatorId;
     
     // Create display name from email (simplified approach)
     const participantName = otherUserEmail.includes('@') ? 
@@ -64,6 +75,7 @@ export default function Calendar() {
     return {
       id: pregame.id,
       participantEmail: otherUserEmail,
+      participantId: otherUserId,
       participantName,
       participantImage: undefined, // Will be enhanced later with proper user lookups
       date: pregame.date,
@@ -94,6 +106,29 @@ export default function Calendar() {
     acc[date].push(pregame);
     return acc;
   }, {} as Record<string, ScheduledPregame[]>);
+
+  // Check for pregames from the past that need to be reviewed
+  useEffect(() => {
+    if (!currentUser?.id || !scheduledPregames.length) return;
+
+    const reviews = (reviewsData as any)?.reviews || [];
+    const reviewedPregameIds = new Set(reviews.map((r: any) => r.pregameId));
+
+    // Find yesterday's pregames that haven't been reviewed
+    const yesterday = subDays(new Date(), 1);
+    const yesterdayStr = format(yesterday, 'yyyy-MM-dd');
+    
+    // Find the first unreviewed pregame from yesterday
+    const unreviewedPregame = scheduledPregames.find(pregame => {
+      const pregameDate = parseISO(pregame.date);
+      return isYesterday(pregameDate) && !reviewedPregameIds.has(pregame.id);
+    });
+
+    if (unreviewedPregame && !ratingDialogOpen) {
+      setPregameToReview(unreviewedPregame);
+      setRatingDialogOpen(true);
+    }
+  }, [scheduledPregames, reviewsData, currentUser?.id, ratingDialogOpen]);
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     if (direction === 'prev') {
@@ -318,6 +353,18 @@ export default function Calendar() {
           </div>
         </div>
       </main>
+
+      {/* Rating Dialog */}
+      {pregameToReview && pregameToReview.participantId && (
+        <RatingDialog
+          open={ratingDialogOpen}
+          onOpenChange={setRatingDialogOpen}
+          pregameId={pregameToReview.id}
+          revieweeId={pregameToReview.participantId}
+          revieweeName={pregameToReview.participantName}
+          pregameDate={format(parseISO(pregameToReview.date), 'MMMM d, yyyy')}
+        />
+      )}
     </div>
   );
 }

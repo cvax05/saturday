@@ -49,7 +49,9 @@ export function RatingDialog({
         title: "Review submitted",
         description: "Thank you for your feedback!",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/reviews'] });
+      // Invalidate my reviews (for calendar) and the reviewee's reviews (for their profile)
+      queryClient.invalidateQueries({ queryKey: ['/api/reviews/my-reviews'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/reviews/user/${revieweeId}`] });
       onOpenChange(false);
       setRating(0);
       setMessage("");

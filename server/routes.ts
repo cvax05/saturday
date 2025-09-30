@@ -547,6 +547,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { pregameId, revieweeId, rating, message } = insertReviewSchema.parse(req.body);
       const reviewerId = req.user!.user_id;
       
+      // Validate that the pregame exists and the user is a participant
+      const pregames = await storage.getPregamesForUserInSchool(req.user!.email, req.user!.school_id);
+      const pregame = pregames.find(p => p.id === pregameId);
+      
+      if (!pregame) {
+        return res.status(404).json({ message: "Pregame not found or access denied" });
+      }
+      
+      // Validate that reviewee is the other participant (not the reviewer)
+      const isCreator = pregame.creatorEmail === req.user!.email;
+      const otherUserId = isCreator ? pregame.participantId : pregame.creatorId;
+      
+      if (revieweeId !== otherUserId) {
+        return res.status(400).json({ message: "You can only review the person you pregamed with" });
+      }
+      
       // Check if review already exists for this pregame by this reviewer
       const existingReview = await storage.getReviewForPregame(pregameId, reviewerId);
       if (existingReview) {
@@ -567,13 +583,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/reviews/:userId", authenticateJWT, async (req, res) => {
+  app.get("/api/reviews/user/:userId", authenticateJWT, async (req, res) => {
     try {
       const { userId } = req.params;
-      const reviews = await storage.getReviewsForUser(userId);
+      // Pass schoolId from JWT to ensure school scoping
+      const reviews = await storage.getReviewsForUser(userId, req.user!.school_id);
       res.json({ reviews });
     } catch (error) {
       console.error("Error fetching reviews:", error);
+      res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
+  app.get("/api/reviews/my-reviews", authenticateJWT, async (req, res) => {
+    try {
+      const reviewerId = req.user!.user_id;
+      // Pass schoolId from JWT to ensure school scoping
+      const reviews = await storage.getReviewsByReviewer(reviewerId, req.user!.school_id);
+      res.json({ reviews });
+    } catch (error) {
+      console.error("Error fetching my reviews:", error);
       res.status(500).json({ message: "Failed to fetch reviews" });
     }
   });

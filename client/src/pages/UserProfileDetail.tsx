@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useRoute } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,8 @@ import {
   Wine,
   ArrowLeft,
   MessageCircle,
-  Edit
+  Edit,
+  Star
 } from "lucide-react";
 
 interface UserProfile {
@@ -412,7 +414,99 @@ export default function UserProfileDetail() {
             )}
           </div>
         </div>
+
+        {/* Reviews Section */}
+        <ReviewsSection userId={userProfile.id} />
       </div>
     </div>
+  );
+}
+
+function ReviewsSection({ userId }: { userId: string }) {
+  const { data: reviewsData, isLoading } = useQuery({
+    queryKey: [`/api/reviews/user/${userId}`],
+    enabled: !!userId,
+  });
+
+  const reviews = (reviewsData as any)?.reviews || [];
+
+  if (isLoading) {
+    return (
+      <Card className="mt-6">
+        <CardHeader>
+          <h3 className="text-xl font-semibold">Reviews</h3>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground text-sm">Loading reviews...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (reviews.length === 0) {
+    return null; // Don't show reviews section if there are no reviews
+  }
+
+  const averageRating = reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / reviews.length;
+
+  return (
+    <Card className="mt-6">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-semibold">Reviews</h3>
+          <div className="flex items-center gap-2">
+            <div className="flex">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={`h-5 w-5 ${
+                    star <= Math.round(averageRating)
+                      ? "fill-yellow-400 text-yellow-400"
+                      : "text-muted-foreground"
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-muted-foreground">
+              {averageRating.toFixed(1)} ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
+            </span>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {reviews.map((review: any) => (
+            <div key={review.id} className="border-b last:border-0 pb-4 last:pb-0" data-testid={`review-${review.id}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`h-4 w-4 ${
+                        star <= review.rating
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "text-muted-foreground"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(review.createdAt).toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </span>
+              </div>
+              {review.message && (
+                <p className="text-sm text-muted-foreground" data-testid={`review-message-${review.id}`}>
+                  {review.message}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
