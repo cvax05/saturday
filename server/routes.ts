@@ -21,7 +21,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // JWT Authentication endpoints
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { username, email, password, displayName, schoolSlug, profileImages } = registerSchema.parse(req.body);
+      const { 
+        username, 
+        email, 
+        password, 
+        displayName, 
+        schoolSlug, 
+        profileImages,
+        bio,
+        groupSizeMin,
+        groupSizeMax,
+        preferredAlcohol,
+        availability
+      } = registerSchema.parse(req.body);
       
       // Check if user already exists (by username or email)
       const existingUser = await storage.getUserByUsername(username);
@@ -43,8 +55,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username,
           email,
           password: hashedPassword,
-          displayName: displayName || null, // Only use user-provided displayName
+          displayName: displayName || null,
           profileImages: profileImages || [],
+          bio: bio || null,
+          groupSizeMin: groupSizeMin || null,
+          groupSizeMax: groupSizeMax || null,
+          preferredAlcohol: preferredAlcohol || null,
+          availability: availability || null,
           school: null, // Will be set after we get school info
         }, schoolSlug);
         
@@ -80,6 +97,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             displayName: user.displayName,
             profileImages: user.profileImages,
             school: user.school,
+            bio: user.bio,
+            groupSizeMin: user.groupSizeMin,
+            groupSizeMax: user.groupSizeMax,
+            preferredAlcohol: user.preferredAlcohol,
+            availability: user.availability,
           },
           schools: userSchools.map(s => ({
             id: s.id,
@@ -184,6 +206,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           displayName: user.displayName,
           profileImages: user.profileImages,
           school: user.school,
+          bio: user.bio,
+          groupSizeMin: user.groupSizeMin,
+          groupSizeMax: user.groupSizeMax,
+          preferredAlcohol: user.preferredAlcohol,
+          availability: user.availability,
         },
         schools: userSchools.map(s => ({
           id: s.id,
@@ -223,6 +250,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           displayName: user.displayName,
           profileImages: user.profileImages,
           school: user.school,
+          bio: user.bio,
+          groupSizeMin: user.groupSizeMin,
+          groupSizeMax: user.groupSizeMax,
+          preferredAlcohol: user.preferredAlcohol,
+          availability: user.availability,
         },
         schools: userSchools.map(s => ({
           id: s.id,

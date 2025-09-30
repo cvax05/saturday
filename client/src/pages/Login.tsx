@@ -50,8 +50,14 @@ export default function Login() {
           email: result.user.email,
           school: result.user.school,
           profileImages: result.user.profileImages || [],
-          // Add additional fields for profile display
+          bio: result.user.bio,
+          groupSizeMin: result.user.groupSizeMin,
+          groupSizeMax: result.user.groupSizeMax,
+          preferredAlcohol: result.user.preferredAlcohol,
+          availability: result.user.availability,
+          // Add additional fields for compatibility
           name: result.user.displayName || result.user.username,
+          description: result.user.bio,
         };
         localStorage.setItem('currentUser', JSON.stringify(userData));
       }

@@ -129,7 +129,12 @@ export default function Registration() {
         password: formData.password,
         displayName: formData.name,
         schoolSlug: formData.school, // Already a slug from SearchableCollegeSelect
-        profileImages: profileImages
+        profileImages: profileImages,
+        bio: formData.description,
+        groupSizeMin: formData.groupSizeMin ? parseInt(formData.groupSizeMin) : undefined,
+        groupSizeMax: formData.groupSizeMax ? parseInt(formData.groupSizeMax) : undefined,
+        preferredAlcohol: formData.preferredAlcohol,
+        availability: formData.availability
       };
       
       const response = await fetch('/api/auth/register', {
@@ -157,13 +162,14 @@ export default function Registration() {
           email: result.user.email,
           school: result.user.school,
           profileImages: result.user.profileImages || [],
-          // Add additional fields that might be needed for profile display
+          bio: result.user.bio,
+          groupSizeMin: result.user.groupSizeMin,
+          groupSizeMax: result.user.groupSizeMax,
+          preferredAlcohol: result.user.preferredAlcohol,
+          availability: result.user.availability,
+          // Add additional fields for compatibility
           name: result.user.displayName || result.user.username,
-          description: formData.description, // Save the bio from registration
-          groupSizeMin: formData.groupSizeMin,
-          groupSizeMax: formData.groupSizeMax,
-          preferredAlcohol: formData.preferredAlcohol,
-          availability: formData.availability,
+          description: result.user.bio,
         };
         localStorage.setItem('currentUser', JSON.stringify(userData));
       }

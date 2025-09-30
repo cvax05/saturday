@@ -22,6 +22,10 @@ export const users = pgTable("users", {
   avatarUrl: text("avatar_url"), // Single avatar URL for profile display
   bio: text("bio"), // User bio/description
   classYear: integer("class_year"), // Graduation year
+  groupSizeMin: integer("group_size_min"), // Minimum group size preference
+  groupSizeMax: integer("group_size_max"), // Maximum group size preference
+  preferredAlcohol: text("preferred_alcohol"), // Alcohol preference (Beer, Wine, Cocktails, etc.)
+  availability: text("availability"), // Availability (Weekends, Weekdays, Both)
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
 });
 
@@ -212,6 +216,10 @@ export const insertUserSchema = createInsertSchema(users).pick({
   avatarUrl: true,
   bio: true,
   classYear: true,
+  groupSizeMin: true,
+  groupSizeMax: true,
+  preferredAlcohol: true,
+  availability: true,
 });
 
 export const registerSchema = createInsertSchema(users).pick({
@@ -224,6 +232,10 @@ export const registerSchema = createInsertSchema(users).pick({
   avatarUrl: true,
   bio: true,
   classYear: true,
+  groupSizeMin: true,
+  groupSizeMax: true,
+  preferredAlcohol: true,
+  availability: true,
 }).extend({
   profileImages: z.array(
     z.string()
@@ -234,6 +246,10 @@ export const registerSchema = createInsertSchema(users).pick({
   avatarUrl: z.string().url().optional(),
   bio: z.string().max(500, "Bio must be 500 characters or less").optional(),
   classYear: z.number().int().min(2020).max(2030).optional(),
+  groupSizeMin: z.number().int().min(1).max(100).optional(),
+  groupSizeMax: z.number().int().min(1).max(100).optional(),
+  preferredAlcohol: z.string().optional(),
+  availability: z.string().optional(),
 });
 
 export const loginSchema = createInsertSchema(users).pick({
@@ -297,6 +313,11 @@ export interface AuthUser {
   displayName?: string | null;
   profileImages?: string[] | null;
   school?: string | null;
+  bio?: string | null;
+  groupSizeMin?: number | null;
+  groupSizeMax?: number | null;
+  preferredAlcohol?: string | null;
+  availability?: string | null;
 }
 
 export interface AuthResponse {
