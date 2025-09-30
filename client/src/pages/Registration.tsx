@@ -188,7 +188,7 @@ export default function Registration() {
       <div className="max-w-md mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-2">
-            {SITE_NAME}
+            Saturday 🍻
           </h1>
           <p className="text-muted-foreground">Join your campus pregame community</p>
         </div>
