@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SITE_NAME } from "@/lib/constants";
+import { safeSaveToLocalStorage } from "@/lib/imageUtils";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -41,6 +42,9 @@ export default function Login() {
       
       const result = await response.json();
       
+      // Clear any existing user data first to prevent stale data
+      localStorage.removeItem('currentUser');
+      
       // Store user data in localStorage for client-side access
       if (result.user) {
         const userData = {
@@ -49,7 +53,9 @@ export default function Login() {
           displayName: result.user.displayName,
           email: result.user.email,
           school: result.user.school,
-          profileImages: result.user.profileImages || [],
+          profileImage: result.user.profileImage || "",
+          galleryImages: result.user.galleryImages || [],
+          profileImages: result.user.profileImages || [], // Keep for backward compatibility
           bio: result.user.bio,
           groupSizeMin: result.user.groupSizeMin,
           groupSizeMax: result.user.groupSizeMax,
@@ -59,7 +65,11 @@ export default function Login() {
           name: result.user.displayName || result.user.username,
           description: result.user.bio,
         };
-        localStorage.setItem('currentUser', JSON.stringify(userData));
+        
+        const saved = safeSaveToLocalStorage('currentUser', userData);
+        if (!saved) {
+          alert('Profile data is too large. Please try using smaller images.');
+        }
       }
       
       // JWT token is automatically stored in httpOnly cookie by server

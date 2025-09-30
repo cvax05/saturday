@@ -27,13 +27,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password, 
         displayName, 
         schoolSlug, 
-        profileImages,
+        profileImage,
+        galleryImages,
         bio,
         groupSizeMin,
         groupSizeMax,
         preferredAlcohol,
         availability
       } = registerSchema.parse(req.body);
+      
+      // Combine profileImage and galleryImages into profileImages array for database storage
+      const profileImages: string[] = [];
+      if (profileImage) {
+        profileImages.push(profileImage);
+      }
+      if (galleryImages && Array.isArray(galleryImages)) {
+        profileImages.push(...galleryImages);
+      }
       
       // Check if user already exists (by username or email)
       const existingUser = await storage.getUserByUsername(username);
@@ -56,7 +66,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email,
           password: hashedPassword,
           displayName: displayName || null,
-          profileImages: profileImages || [],
+          profileImages: profileImages,
           bio: bio || null,
           groupSizeMin: groupSizeMin || null,
           groupSizeMax: groupSizeMax || null,
@@ -87,15 +97,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
         
-        // Return user and schools
+        // Return user and schools with separated photo structure
         const userSchools = await storage.getUserSchools(user.id);
+        const userProfileImages = user.profileImages || [];
         const authResponse: AuthResponse = {
           user: {
             id: user.id,
             username: user.username,
             email: user.email,
             displayName: user.displayName,
-            profileImages: user.profileImages,
+            profileImage: userProfileImages[0] || null,
+            galleryImages: userProfileImages.slice(1),
+            profileImages: user.profileImages, // Keep for backward compatibility
             school: user.school,
             bio: user.bio,
             groupSizeMin: user.groupSizeMin,
@@ -153,13 +166,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If multiple schools and no specific school requested, return schools for selection
       if (userSchools.length > 1 && !schoolSlug) {
+        const userProfileImages = user.profileImages || [];
         const authResponse: AuthResponse = {
           user: {
             id: user.id,
             username: user.username,
             email: user.email,
             displayName: user.displayName,
-            profileImages: user.profileImages,
+            profileImage: userProfileImages[0] || null,
+            galleryImages: userProfileImages.slice(1),
+            profileImages: user.profileImages, // Keep for backward compatibility
             school: user.school,
           },
           schools: userSchools.map(s => ({
@@ -198,13 +214,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
       
+      // Separate profile image and gallery images
+      const userProfileImages = user.profileImages || [];
       const authResponse: AuthResponse = {
         user: {
           id: user.id,
           username: user.username,
           email: user.email,
           displayName: user.displayName,
-          profileImages: user.profileImages,
+          profileImage: userProfileImages[0] || null,
+          galleryImages: userProfileImages.slice(1),
+          profileImages: user.profileImages, // Keep for backward compatibility
           school: user.school,
           bio: user.bio,
           groupSizeMin: user.groupSizeMin,
@@ -242,13 +262,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get user's schools
       const userSchools = await storage.getUserSchools(user.id);
       
+      // Separate profile image and gallery images
+      const userProfileImages = user.profileImages || [];
       const authResponse: AuthResponse = {
         user: {
           id: user.id,
           username: user.username,
           email: user.email,
           displayName: user.displayName,
-          profileImages: user.profileImages,
+          profileImage: userProfileImages[0] || null,
+          galleryImages: userProfileImages.slice(1),
+          profileImages: user.profileImages, // Keep for backward compatibility
           school: user.school,
           bio: user.bio,
           groupSizeMin: user.groupSizeMin,

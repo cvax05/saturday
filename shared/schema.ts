@@ -255,7 +255,6 @@ export const registerSchema = createInsertSchema(users).pick({
   email: true,
   password: true,
   school: true, // Keep for backward compatibility 
-  profileImages: true,
   displayName: true,
   avatarUrl: true,
   bio: true,
@@ -265,11 +264,15 @@ export const registerSchema = createInsertSchema(users).pick({
   preferredAlcohol: true,
   availability: true,
 }).extend({
-  profileImages: z.array(
+  profileImage: z.string()
+    .regex(/^data:image\/(jpeg|jpg|png|gif|webp);base64,/, "Must be a valid image data URL")
+    .max(2000000, "Profile image size too large (max 2MB)")
+    .optional(),
+  galleryImages: z.array(
     z.string()
       .regex(/^data:image\/(jpeg|jpg|png|gif|webp);base64,/, "Must be a valid image data URL")
       .max(2000000, "Image size too large (max 2MB per image)")
-  ).max(5, "Maximum 5 images allowed").optional(),
+  ).max(5, "Maximum 5 gallery images allowed").optional(),
   schoolSlug: z.string().min(1, "School selection is required"), // New field for school selection
   avatarUrl: z.string().url().optional(),
   bio: z.string().max(500, "Bio must be 500 characters or less").optional(),
@@ -348,7 +351,9 @@ export interface AuthUser {
   username: string;
   email: string;
   displayName?: string | null;
-  profileImages?: string[] | null;
+  profileImage?: string | null;
+  galleryImages?: string[];
+  profileImages?: string[] | null; // Deprecated: kept for backward compatibility
   school?: string | null;
   bio?: string | null;
   groupSizeMin?: number | null;

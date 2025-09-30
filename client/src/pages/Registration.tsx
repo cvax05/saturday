@@ -150,20 +150,28 @@ export default function Registration() {
     
     try {
       // Submit to backend API
-      const registrationData = {
+      const registrationData: Record<string, any> = {
         username: formData.name, // Using name as username for now
         email: formData.email,
         password: formData.password,
         displayName: formData.name,
         schoolSlug: formData.school, // Already a slug from SearchableCollegeSelect
-        profileImage: formData.profileImage,
-        galleryImages: formData.galleryImages,
         bio: formData.description,
         groupSizeMin: formData.groupSizeMin ? parseInt(formData.groupSizeMin) : undefined,
         groupSizeMax: formData.groupSizeMax ? parseInt(formData.groupSizeMax) : undefined,
         preferredAlcohol: formData.preferredAlcohol,
         availability: formData.availability
       };
+      
+      // Only include profileImage if it has a value
+      if (formData.profileImage) {
+        registrationData.profileImage = formData.profileImage;
+      }
+      
+      // Only include galleryImages if there are any
+      if (formData.galleryImages && formData.galleryImages.length > 0) {
+        registrationData.galleryImages = formData.galleryImages;
+      }
       
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -191,6 +199,7 @@ export default function Registration() {
           school: result.user.school,
           profileImage: result.user.profileImage || "",
           galleryImages: result.user.galleryImages || [],
+          profileImages: result.user.profileImages || [], // Keep for backward compatibility
           bio: result.user.bio,
           groupSizeMin: result.user.groupSizeMin,
           groupSizeMax: result.user.groupSizeMax,
