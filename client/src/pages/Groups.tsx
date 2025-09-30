@@ -102,7 +102,7 @@ export default function Groups() {
 
         {/* User Cards Grid */}
         {!usersLoading && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2">
             {schoolUsers.length === 0 ? (
               <div className="col-span-full text-center py-12">
                 <UserIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -117,43 +117,46 @@ export default function Groups() {
                 .map((user) => (
                   <Card 
                     key={user.id || user.email} 
-                    className="hover-elevate cursor-pointer transition-shadow"
+                    className="hover-elevate cursor-pointer transition-all"
                     data-testid={`user-card-${user.email}`}
                     onClick={() => handleViewProfile(user.id)}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex flex-col items-center text-center space-y-3">
-                        {/* Profile Image */}
-                        <Avatar className="h-16 w-16 border-2 border-border">
+                    <CardContent className="p-8">
+                      <div className="flex items-center gap-6">
+                        {/* Large Profile Image */}
+                        <Avatar className="h-32 w-32 border-4 border-primary/20 ring-2 ring-primary/10">
                           <AvatarImage 
                             src={user.avatarUrl || user.profileImages?.[0] || ""} 
                             alt={user.username}
                             className="object-contain"
                           />
-                          <AvatarFallback className="text-sm font-semibold">
+                          <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-primary/20 to-primary/5">
                             {(user.username || user.email).slice(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
 
-                        {/* User Name Only */}
-                        <h3 className="font-semibold truncate" data-testid={`user-name-${user.email}`}>
-                          {user.username || user.displayName || 'Student'}
-                        </h3>
-
-                        {/* Single View Profile Button */}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewProfile(user.id);
-                          }}
-                          data-testid={`button-view-profile-${user.email}`}
-                        >
-                          <ChevronRight className="h-4 w-4 mr-1" />
-                          View Profile
-                        </Button>
+                        {/* User Info */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-3xl font-bold mb-2 truncate bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text" data-testid={`user-name-${user.email}`}>
+                            {user.displayName || user.username || 'Student'}
+                          </h3>
+                          {user.displayName && user.username && user.displayName !== user.username && (
+                            <p className="text-lg text-muted-foreground mb-3">@{user.username}</p>
+                          )}
+                          <Button
+                            size="lg"
+                            variant="default"
+                            className="w-full font-semibold"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewProfile(user.id);
+                            }}
+                            data-testid={`button-view-profile-${user.email}`}
+                          >
+                            View Profile
+                            <ChevronRight className="h-5 w-5 ml-2" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
