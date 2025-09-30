@@ -160,6 +160,7 @@ export default function Calendar() {
           <div className="flex items-center gap-3">
             <CalendarIcon className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-bold" data-testid="calendar-title">Calendar</h1>
+            <span className="text-xs text-muted-foreground" data-testid="calendar-version">v2.0-orange-beer</span>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -228,7 +229,7 @@ export default function Calendar() {
                         
                         {/* Pregame indicator - Beer icon */}
                         {dayPregames.length > 0 && (
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none" data-testid={`beer-icon-${dayStr}`}>
                             <Beer className="h-12 w-12 text-orange-500 dark:text-orange-400 drop-shadow-lg" strokeWidth={2.5} />
                           </div>
                         )}
