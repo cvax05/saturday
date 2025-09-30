@@ -311,57 +311,59 @@ export default function UserProfileDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column */}
           <div className="space-y-6">
-            {/* Pregame Preferences */}
-            <Card>
-              <CardHeader>
-                <h3 className="text-xl font-semibold">Pregame Preferences</h3>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Preferred Alcohol */}
-                {userProfile.preferredAlcohol && (
-                  <div className="flex items-center gap-3">
-                    <Wine className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium">Preferred Drinks:</span>
-                    <Badge className={getPreferredAlcoholColor(userProfile.preferredAlcohol)} data-testid="profile-alcohol">
-                      {userProfile.preferredAlcohol}
-                    </Badge>
-                  </div>
-                )}
+            {/* Pregame Preferences - Only show if user has filled out preferences */}
+            {(userProfile.preferredAlcohol || userProfile.groupSize || userProfile.groupSizeMin || userProfile.groupSizeMax || userProfile.availability) && (
+              <Card>
+                <CardHeader>
+                  <h3 className="text-xl font-semibold">Pregame Preferences</h3>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Preferred Alcohol */}
+                  {userProfile.preferredAlcohol && (
+                    <div className="flex items-center gap-3">
+                      <Wine className="h-5 w-5 text-muted-foreground" />
+                      <span className="font-medium">Preferred Drinks:</span>
+                      <Badge className={getPreferredAlcoholColor(userProfile.preferredAlcohol)} data-testid="profile-alcohol">
+                        {userProfile.preferredAlcohol}
+                      </Badge>
+                    </div>
+                  )}
 
-                {/* Group Size Preference */}
-                {userProfile.groupSize && (
-                  <div className="flex items-center gap-3">
-                    <Users className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium">Group Size:</span>
-                    <Badge variant="secondary" data-testid="profile-group-size">
-                      {userProfile.groupSize}
-                    </Badge>
-                  </div>
-                )}
+                  {/* Group Size Preference */}
+                  {userProfile.groupSize && (
+                    <div className="flex items-center gap-3">
+                      <Users className="h-5 w-5 text-muted-foreground" />
+                      <span className="font-medium">Group Size:</span>
+                      <Badge variant="secondary" data-testid="profile-group-size">
+                        {userProfile.groupSize}
+                      </Badge>
+                    </div>
+                  )}
 
-                {/* Group Size Range */}
-                {(userProfile.groupSizeMin || userProfile.groupSizeMax) && (
-                  <div className="flex items-center gap-3">
-                    <Users className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium">Looking for groups of:</span>
-                    <Badge variant="outline" data-testid="profile-group-range">
-                      {userProfile.groupSizeMin || '?'} - {userProfile.groupSizeMax || '?'} people
-                    </Badge>
-                  </div>
-                )}
+                  {/* Group Size Range */}
+                  {(userProfile.groupSizeMin || userProfile.groupSizeMax) && (
+                    <div className="flex items-center gap-3">
+                      <Users className="h-5 w-5 text-muted-foreground" />
+                      <span className="font-medium">Looking for groups of:</span>
+                      <Badge variant="outline" data-testid="profile-group-range">
+                        {userProfile.groupSizeMin || '?'} - {userProfile.groupSizeMax || '?'} people
+                      </Badge>
+                    </div>
+                  )}
 
-                {/* Availability */}
-                {userProfile.availability && (
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <span className="font-medium">Availability:</span>
-                    <Badge variant="outline" data-testid="profile-availability">
-                      {userProfile.availability}
-                    </Badge>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  {/* Availability */}
+                  {userProfile.availability && (
+                    <div className="flex items-center gap-3">
+                      <Calendar className="h-5 w-5 text-muted-foreground" />
+                      <span className="font-medium">Availability:</span>
+                      <Badge variant="outline" data-testid="profile-availability">
+                        {userProfile.availability}
+                      </Badge>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
           </div>
 
