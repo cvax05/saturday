@@ -39,6 +39,7 @@ export default function Registration() {
     "Cocktails",
     "Vodka",
     "Whiskey",
+    "Seltzers",
     "Wine & Cocktails",
     "Anything",
     "None"

@@ -65,6 +65,7 @@ export default function ProfileEdit() {
     "Cocktails",
     "Vodka",
     "Whiskey",
+    "Seltzers",
     "Wine & Cocktails",
     "Anything",
     "None"
