@@ -188,6 +188,34 @@ export const pregames = pgTable("pregames", {
   participantIndex: index().on(table.participantId),
 }));
 
+export const reviews = pgTable("reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  pregameId: varchar("pregame_id").notNull(),
+  reviewerId: varchar("reviewer_id").notNull(), // User who wrote the review
+  revieweeId: varchar("reviewee_id").notNull(), // User being reviewed
+  rating: integer("rating").notNull(), // 1-5 stars
+  message: text("message"), // Optional review message
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+}, (table) => ({
+  // Foreign keys
+  pregameFK: foreignKey({
+    columns: [table.pregameId],
+    foreignColumns: [pregames.id],
+  }),
+  reviewerFK: foreignKey({
+    columns: [table.reviewerId],
+    foreignColumns: [users.id],
+  }),
+  revieweeFK: foreignKey({
+    columns: [table.revieweeId],
+    foreignColumns: [users.id],
+  }),
+  // Indexes for performance
+  pregameIndex: index().on(table.pregameId),
+  reviewerIndex: index().on(table.reviewerId),
+  revieweeIndex: index().on(table.revieweeId),
+}));
+
 // School schemas
 export const insertSchoolSchema = createInsertSchema(schools).omit({
   id: true,
@@ -295,6 +323,15 @@ export const insertPregameSchema = createInsertSchema(pregames).omit({
   schoolId: true, // Will be derived from JWT
 });
 
+export const insertReviewSchema = createInsertSchema(reviews).omit({
+  id: true,
+  createdAt: true,
+  reviewerId: true, // Will be derived from JWT
+}).extend({
+  rating: z.number().int().min(1).max(5),
+  message: z.string().max(500).optional(),
+});
+
 // JWT payload type for type safety
 export interface JWTPayload {
   user_id: string;
@@ -352,3 +389,5 @@ export type InsertMessage = z.infer<typeof insertMessageSchema>;
 export type Message = typeof messages.$inferSelect;
 export type InsertPregame = z.infer<typeof insertPregameSchema>;
 export type Pregame = typeof pregames.$inferSelect;
+export type InsertReview = z.infer<typeof insertReviewSchema>;
+export type Review = typeof reviews.$inferSelect;
