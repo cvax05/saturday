@@ -8,6 +8,7 @@ import {
   conversations,
   conversationParticipants,
   userPhotos,
+  reviews,
   type User, 
   type InsertUser, 
   type Organization, 
@@ -24,7 +25,9 @@ import {
   type InsertConversation,
   type ConversationParticipant,
   type InsertConversationParticipant,
-  type UserPhoto
+  type UserPhoto,
+  type Review,
+  type InsertReview
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, or, and, desc, inArray, sql, gt } from "drizzle-orm";
@@ -93,6 +96,11 @@ export interface IStorage {
   deletePregameInSchool(id: string, creatorEmail: string, schoolId: string): Promise<boolean>;
   updatePregame(id: string, updates: Partial<InsertPregame>): Promise<Pregame>;
   updatePregameInSchool(id: string, updates: Partial<InsertPregame>, creatorEmail: string, schoolId: string): Promise<Pregame | null>;
+  
+  // Review methods
+  createReview(review: InsertReview, reviewerId: string): Promise<Review>;
+  getReviewsForUser(revieweeId: string): Promise<Review[]>;
+  getReviewForPregame(pregameId: string, reviewerId: string): Promise<Review | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -619,6 +627,40 @@ export class DatabaseStorage implements IStorage {
       )
       .returning();
     return pregame || null;
+  }
+
+  // Review methods
+  async createReview(insertReview: InsertReview, reviewerId: string): Promise<Review> {
+    const [review] = await db
+      .insert(reviews)
+      .values({
+        ...insertReview,
+        reviewerId,
+      })
+      .returning();
+    return review;
+  }
+
+  async getReviewsForUser(revieweeId: string): Promise<Review[]> {
+    const reviewList = await db
+      .select()
+      .from(reviews)
+      .where(eq(reviews.revieweeId, revieweeId))
+      .orderBy(desc(reviews.createdAt));
+    return reviewList;
+  }
+
+  async getReviewForPregame(pregameId: string, reviewerId: string): Promise<Review | undefined> {
+    const [review] = await db
+      .select()
+      .from(reviews)
+      .where(
+        and(
+          eq(reviews.pregameId, pregameId),
+          eq(reviews.reviewerId, reviewerId)
+        )
+      );
+    return review || undefined;
   }
 }
 
