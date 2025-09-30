@@ -13,7 +13,8 @@ import {
   MapPin,
   Plus,
   MessageSquare,
-  Loader2
+  Loader2,
+  Beer
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, isToday } from "date-fns";
 import type { AuthResponse } from "@shared/schema";
@@ -225,20 +226,10 @@ export default function Calendar() {
                           {format(day, 'd')}
                         </span>
                         
-                        {/* Pregame indicators */}
+                        {/* Pregame indicator - Beer icon */}
                         {dayPregames.length > 0 && (
-                          <div className="flex flex-col gap-0.5 mt-1 w-full">
-                            {dayPregames.slice(0, 2).map((pregame, index) => (
-                              <div
-                                key={pregame.id}
-                                className="w-full h-1 bg-primary rounded-full opacity-75"
-                              />
-                            ))}
-                            {dayPregames.length > 2 && (
-                              <Badge variant="secondary" className="text-[10px] h-3 w-full">
-                                +{dayPregames.length - 2}
-                              </Badge>
-                            )}
+                          <div className="mt-1">
+                            <Beer className="h-4 w-4 text-primary" />
                           </div>
                         )}
                       </Button>
@@ -290,7 +281,7 @@ export default function Calendar() {
                           </Avatar>
                           
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm mb-1">{pregame.participantName}</h4>
+                            <h4 className="font-medium text-sm mb-1">Pregaming with {pregame.participantName}</h4>
                             
                             <div className="space-y-1 text-xs text-muted-foreground">
                               <div className="flex items-center gap-1">
@@ -322,35 +313,6 @@ export default function Calendar() {
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="font-semibold mb-3">Quick Actions</h3>
-                <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setLocation("/messages")}
-                    className="w-full justify-start"
-                    data-testid="button-go-to-messages"
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Go to Messages
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentDate(new Date())}
-                    className="w-full justify-start"
-                    data-testid="button-go-to-today"
-                  >
-                    <CalendarIcon className="h-4 w-4 mr-2" />
-                    Go to Today
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </div>
