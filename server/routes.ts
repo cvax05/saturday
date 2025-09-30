@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
-import { insertUserSchema, insertMessageSchema, insertPregameSchema, registerSchema, loginSchema, type AuthResponse, type AuthUser } from "@shared/schema";
+import { insertUserSchema, insertMessageSchema, insertPregameSchema, insertReviewSchema, registerSchema, loginSchema, type AuthResponse, type AuthUser } from "@shared/schema";
 import { signJWT } from "./auth/jwt";
 import { authenticateJWT, optionalAuth } from "./auth/middleware";
 
@@ -538,6 +538,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating pregame:", error);
       res.status(500).json({ message: "Failed to update pregame" });
+    }
+  });
+
+  // Review routes
+  app.post("/api/reviews", authenticateJWT, async (req, res) => {
+    try {
+      const { pregameId, revieweeId, rating, message } = insertReviewSchema.parse(req.body);
+      const reviewerId = req.user!.user_id;
+      
+      // Check if review already exists for this pregame by this reviewer
+      const existingReview = await storage.getReviewForPregame(pregameId, reviewerId);
+      if (existingReview) {
+        return res.status(400).json({ message: "You have already reviewed this pregame" });
+      }
+      
+      const review = await storage.createReview({
+        pregameId,
+        revieweeId,
+        rating,
+        message,
+      }, reviewerId);
+      
+      res.status(201).json({ message: "Review submitted", data: review });
+    } catch (error) {
+      console.error("Error creating review:", error);
+      res.status(400).json({ message: "Failed to submit review" });
+    }
+  });
+
+  app.get("/api/reviews/:userId", authenticateJWT, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const reviews = await storage.getReviewsForUser(userId);
+      res.json({ reviews });
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+      res.status(500).json({ message: "Failed to fetch reviews" });
     }
   });
 
