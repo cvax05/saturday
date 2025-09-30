@@ -382,7 +382,7 @@ export default function UserProfileDetail() {
                         <img
                           src={imageUrl}
                           alt={`User photo ${index + 1}`}
-                          className="w-full h-40 object-cover rounded-lg border"
+                          className="w-full h-40 object-contain rounded-lg border bg-muted"
                           data-testid={`photo-profile-${index}`}
                         />
                       </div>
@@ -393,7 +393,7 @@ export default function UserProfileDetail() {
                         <img
                           src={photo.url}
                           alt="User photo"
-                          className="w-full h-40 object-cover rounded-lg border"
+                          className="w-full h-40 object-contain rounded-lg border bg-muted"
                           data-testid={`photo-${photo.id}`}
                         />
                       </div>
