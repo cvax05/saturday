@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Users, GraduationCap, Mail, ChevronRight, User, Loader2 } from "lucide-react";
+import { authQueryFn } from "@/lib/queryClient";
 import type { User as UserType, AuthResponse } from "@shared/schema";
 
 export default function People() {
@@ -13,6 +14,7 @@ export default function People() {
   // Get current user and authentication status
   const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
     queryKey: ['/api/auth/me'],
+    queryFn: authQueryFn as any,
   });
 
   // Fetch users from the same school (JWT automatically provides school scoping)

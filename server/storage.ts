@@ -45,6 +45,7 @@ export interface IStorage {
   getUsersBySchoolId(schoolId: string): Promise<User[]>;
   getUserWithPhotosAndSchools(id: string): Promise<{ user: User; photos: UserPhoto[]; schools: School[] } | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserProfile(userId: string, updates: Partial<InsertUser>): Promise<User | null>;
   
   // School methods
   getSchool(id: string): Promise<School | undefined>;
@@ -266,6 +267,29 @@ export class DatabaseStorage implements IStorage {
       .values(insertUser)
       .returning();
     return user;
+  }
+
+  async updateUserProfile(userId: string, updates: Partial<InsertUser>): Promise<User | null> {
+    // Filter out undefined values to avoid updating fields unintentionally
+    const filteredUpdates: Record<string, any> = {};
+    for (const [key, value] of Object.entries(updates)) {
+      if (value !== undefined) {
+        filteredUpdates[key] = value;
+      }
+    }
+
+    if (Object.keys(filteredUpdates).length === 0) {
+      // No updates to perform, just return the current user
+      return await this.getUser(userId) || null;
+    }
+
+    const [updatedUser] = await db
+      .update(users)
+      .set(filteredUpdates)
+      .where(eq(users.id, userId))
+      .returning();
+    
+    return updatedUser || null;
   }
 
   // School methods

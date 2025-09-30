@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User, Users, MessageCircle, Calendar, Loader2 } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, authQueryFn } from "@/lib/queryClient";
 import type { AuthResponse } from "@shared/schema";
 
 export default function Header() {
@@ -21,6 +21,7 @@ export default function Header() {
   // Get current user and authentication status
   const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
     queryKey: ['/api/auth/me'],
+    queryFn: authQueryFn as any,
   });
 
   const currentUser = authData?.user;

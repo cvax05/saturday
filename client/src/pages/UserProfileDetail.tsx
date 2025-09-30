@@ -377,34 +377,21 @@ export default function UserProfileDetail() {
 
           {/* Right Column */}
           <div className="space-y-6">
-            {/* Photo Gallery */}
-            {((userProfile.profileImages && userProfile.profileImages.length > 0) || 
-              (userProfile.photos && userProfile.photos.length > 0)) && (
+            {/* Photo Gallery - Always show if there are ANY photos */}
+            {userProfile.profileImages && userProfile.profileImages.length > 0 && (
               <Card>
                 <CardHeader>
-                  <h3 className="text-xl font-semibold">Photos</h3>
+                  <h3 className="text-xl font-semibold">Photos ({userProfile.profileImages.length})</h3>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-testid="photo-gallery">
-                    {/* Display registration photos */}
-                    {userProfile.profileImages && userProfile.profileImages.map((imageUrl, index) => (
-                      <div key={`profile-${index}`} className="relative">
+                  <div className="grid grid-cols-2 gap-4" data-testid="photo-gallery">
+                    {userProfile.profileImages.map((imageUrl, index) => (
+                      <div key={`profile-${index}`} className="relative aspect-square overflow-hidden rounded-lg border">
                         <img
                           src={imageUrl}
-                          alt={`User photo ${index + 1}`}
-                          className="w-full h-40 object-contain rounded-lg border bg-muted"
-                          data-testid={`photo-profile-${index}`}
-                        />
-                      </div>
-                    ))}
-                    {/* Display legacy photos for backwards compatibility */}
-                    {userProfile.photos && userProfile.photos.map((photo) => (
-                      <div key={photo.id} className="relative">
-                        <img
-                          src={photo.url}
-                          alt="User photo"
-                          className="w-full h-40 object-contain rounded-lg border bg-muted"
-                          data-testid={`photo-${photo.id}`}
+                          alt={`${userProfile.name}'s photo ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          data-testid={`photo-${index}`}
                         />
                       </div>
                     ))}

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Users, GraduationCap, MessageCircle, ChevronRight, Loader2, User as UserIcon } from "lucide-react";
+import { authQueryFn } from "@/lib/queryClient";
 import type { AuthResponse, User } from "@shared/schema";
 
 export default function Groups() {
@@ -13,6 +14,7 @@ export default function Groups() {
   // Get current user and authentication status
   const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
     queryKey: ['/api/auth/me'],
+    queryFn: authQueryFn as any,
   });
 
   // Get school users roster

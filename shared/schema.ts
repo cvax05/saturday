@@ -290,6 +290,27 @@ export const loginSchema = createInsertSchema(users).pick({
   schoolSlug: z.string().optional(), // For when user belongs to multiple schools
 });
 
+// Update user profile schema (all fields optional except those that should never change)
+const dataUrlRegex = /^data:image\/(jpeg|jpg|png|gif|webp);base64,/;
+export const updateProfileSchema = z.object({
+  displayName: z.string().min(1).max(100).optional(),
+  bio: z.string().max(500).optional(),
+  groupSizeMin: z.number().int().min(1).max(50).optional(),
+  groupSizeMax: z.number().int().min(1).max(50).optional(),
+  preferredAlcohol: z.string().max(100).optional(),
+  availability: z.string().max(100).optional(),
+  profileImage: z.string().regex(dataUrlRegex, "Must be a valid image data URL").optional(),
+  galleryImages: z.array(z.string().regex(dataUrlRegex, "Must be a valid image data URL")).max(5).optional(),
+}).refine(data => {
+  if (data.groupSizeMin !== undefined && data.groupSizeMax !== undefined) {
+    return data.groupSizeMin <= data.groupSizeMax;
+  }
+  return true;
+}, {
+  message: "Minimum group size cannot be greater than maximum group size",
+  path: ["groupSizeMin"],
+});
+
 // Conversation schemas
 export const insertConversationSchema = createInsertSchema(conversations).omit({
   id: true,

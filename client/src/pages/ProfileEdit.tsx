@@ -139,21 +139,77 @@ export default function ProfileEdit() {
     galleryInputRef.current?.click();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Updated profile data:', formData);
     
-    // Update user data safely in localStorage
-    const saved = safeSaveToLocalStorage('currentUser', formData);
-    
-    if (!saved) {
-      alert('Profile data is too large to save. Please try using smaller images or remove some gallery photos.');
-      return;
+    try {
+      // Prepare update data (only send fields that should be updated)
+      const updateData: Record<string, any> = {
+        displayName: formData.name,
+        bio: formData.description,
+        groupSizeMin: formData.groupSizeMin ? parseInt(formData.groupSizeMin) : undefined,
+        groupSizeMax: formData.groupSizeMax ? parseInt(formData.groupSizeMax) : undefined,
+        preferredAlcohol: formData.preferredAlcohol || undefined,
+        availability: formData.availability || undefined,
+      };
+
+      // Only include photos if they've been set
+      if (formData.profileImage) {
+        updateData.profileImage = formData.profileImage;
+      }
+      if (formData.galleryImages && formData.galleryImages.length > 0) {
+        updateData.galleryImages = formData.galleryImages;
+      }
+
+      const response = await fetch('/api/users/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.error || 'Failed to update profile');
+        return;
+      }
+
+      const result = await response.json();
+      
+      // Update localStorage with the returned user data
+      if (result.user) {
+        const userData = {
+          id: result.user.id,
+          username: result.user.username,
+          displayName: result.user.displayName,
+          email: result.user.email,
+          school: result.user.school,
+          profileImage: result.user.profileImage || "",
+          galleryImages: result.user.galleryImages || [],
+          profileImages: result.user.profileImages || [],
+          bio: result.user.bio,
+          groupSizeMin: result.user.groupSizeMin,
+          groupSizeMax: result.user.groupSizeMax,
+          preferredAlcohol: result.user.preferredAlcohol,
+          availability: result.user.availability,
+          name: result.user.displayName || result.user.username,
+          description: result.user.bio,
+        };
+        
+        const saved = safeSaveToLocalStorage('currentUser', userData);
+        if (!saved) {
+          alert('Profile updated but couldn\'t save to local storage. Please try refreshing the page.');
+        }
+      }
+
+      // Redirect to groups page
+      setLocation("/groups");
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      alert('Failed to update profile. Please try again.');
     }
-    
-    // TODO: Submit to backend
-    // For now, just redirect back to home
-    setLocation("/home");
   };
 
   const handleBack = () => {
@@ -211,8 +267,60 @@ export default function ProfileEdit() {
                   data-testid="button-upload-photo"
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  Change Photo
+                  {formData.profileImage ? 'Change Photo' : 'Add Photo'}
                 </Button>
+              </div>
+
+              {/* Photo Gallery */}
+              <div>
+                <Label>Photo Gallery ({formData.galleryImages.length}/5)</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Add up to 5 photos of your group/organization
+                </p>
+                
+                <div className="grid grid-cols-3 gap-3">
+                  {formData.galleryImages.map((image, index) => (
+                    <div key={index} className="relative group aspect-square">
+                      <img 
+                        src={image} 
+                        alt={`Gallery ${index + 1}`}
+                        className="w-full h-full object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeGalleryImage(index)}
+                        data-testid={`button-remove-gallery-${index}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {formData.galleryImages.length < 5 && (
+                    <div 
+                      className="aspect-square border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                      onClick={handleGalleryUploadClick}
+                      data-testid="button-add-gallery-photo"
+                    >
+                      <div className="text-center">
+                        <Plus className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Add Photo</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <input
+                  type="file"
+                  ref={galleryInputRef}
+                  onChange={handleGalleryUpload}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                />
               </div>
 
               {/* Basic Info */}

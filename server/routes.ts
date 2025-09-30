@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
-import { insertUserSchema, insertMessageSchema, insertPregameSchema, insertReviewSchema, registerSchema, loginSchema, type AuthResponse, type AuthUser } from "@shared/schema";
+import { insertUserSchema, insertMessageSchema, insertPregameSchema, insertReviewSchema, registerSchema, loginSchema, updateProfileSchema, type AuthResponse, type AuthUser } from "@shared/schema";
 import { signJWT } from "./auth/jwt";
 import { authenticateJWT, optionalAuth } from "./auth/middleware";
 
@@ -297,6 +297,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/logout", (req, res) => {
     res.clearCookie('auth_token');
     res.status(200).json({ message: "Logged out successfully" });
+  });
+
+  // Update user profile - JWT protected
+  app.patch("/api/users/profile", authenticateJWT, async (req, res) => {
+    try {
+      const profileData = updateProfileSchema.parse(req.body);
+      const userId = req.user!.user_id;
+      const schoolId = req.user!.school_id;
+      
+      // Verify user belongs to the school (security check)
+      const membership = await storage.getUserSchoolMembership(userId, schoolId);
+      if (!membership) {
+        return res.status(403).json({ error: "Unauthorized: User not in this school" });
+      }
+      
+      // Combine profileImage and galleryImages into profileImages array for database storage
+      let profileImages: string[] | undefined = undefined;
+      if (profileData.profileImage !== undefined || profileData.galleryImages !== undefined) {
+        profileImages = [];
+        if (profileData.profileImage) {
+          profileImages.push(profileData.profileImage);
+        }
+        if (profileData.galleryImages && Array.isArray(profileData.galleryImages)) {
+          profileImages.push(...profileData.galleryImages);
+        }
+      }
+      
+      // Only update allowed fields (restrict to profile-editable fields only)
+      const updatedUser = await storage.updateUserProfile(userId, {
+        displayName: profileData.displayName,
+        bio: profileData.bio,
+        groupSizeMin: profileData.groupSizeMin,
+        groupSizeMax: profileData.groupSizeMax,
+        preferredAlcohol: profileData.preferredAlcohol,
+        availability: profileData.availability,
+        profileImages: profileImages,
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Split profileImages back into profileImage and galleryImages for response
+      const userProfileImages = updatedUser.profileImages || [];
+      
+      // Return updated user without password
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.status(200).json({
+        user: {
+          ...userWithoutPassword,
+          profileImage: userProfileImages[0] || null,
+          galleryImages: userProfileImages.slice(1),
+        }
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({ error: "Failed to update profile" });
+    }
   });
 
   // Legacy endpoints removed for security - all authentication now goes through JWT-based /api/auth/* endpoints

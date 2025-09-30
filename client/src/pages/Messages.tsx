@@ -4,6 +4,7 @@ import MessageList from "@/components/MessageList";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, MessageCircle } from "lucide-react";
+import { authQueryFn } from "@/lib/queryClient";
 import type { AuthResponse } from "@shared/schema";
 
 interface ConversationSummary {
@@ -23,6 +24,7 @@ export default function Messages() {
   // Get current user and authentication status
   const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
     queryKey: ['/api/auth/me'],
+    queryFn: authQueryFn as any,
   });
 
   const currentUser = authData?.user;

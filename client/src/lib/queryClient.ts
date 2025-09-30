@@ -41,6 +41,8 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+export const authQueryFn = getQueryFn({ on401: "returnNull" });
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

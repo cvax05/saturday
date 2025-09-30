@@ -17,6 +17,7 @@ import {
   Beer
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, isToday, subDays, isPast, isYesterday } from "date-fns";
+import { authQueryFn } from "@/lib/queryClient";
 import type { AuthResponse } from "@shared/schema";
 import { RatingDialog } from "@/components/RatingDialog";
 
@@ -43,6 +44,7 @@ export default function Calendar() {
   // Get current user and authentication status
   const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
     queryKey: ['/api/auth/me'],
+    queryFn: authQueryFn as any,
   });
 
   const currentUser = authData?.user;

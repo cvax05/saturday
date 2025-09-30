@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Settings, Loader2, Users } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
+import { authQueryFn } from "@/lib/queryClient";
 import type { AuthResponse } from "@shared/schema";
 
 // Mock data for now - will be replaced with actual API data later
@@ -97,6 +98,7 @@ export default function Home() {
   // Get current user and authentication status
   const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
     queryKey: ['/api/auth/me'],
+    queryFn: authQueryFn as any,
   });
 
   const currentUser = authData?.user;
