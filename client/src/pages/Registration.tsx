@@ -24,10 +24,12 @@ export default function Registration() {
     groupSizeMin: "",
     groupSizeMax: "",
     preferredAlcohol: "",
-    availability: ""
+    availability: "",
+    profileImage: "",
+    galleryImages: [] as string[]
   });
-  const [profileImages, setProfileImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   // Schools list now handled by SearchableCollegeSelect component
 
@@ -47,39 +49,22 @@ export default function Registration() {
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-    
-    // Check if adding these files would exceed the 5 image limit
-    if (profileImages.length + files.length > 5) {
-      alert('You can only upload up to 5 images of your group/organization.');
-      return;
-    }
-    
-    const processFile = async (file: File): Promise<string> => {
+    const file = e.target.files?.[0];
+    if (file) {
       try {
         // Compress image to reduce storage size
-        return await compressImage(file, 400, 400, 0.7);
+        const compressedImage = await compressImage(file, 400, 400, 0.7);
+        setFormData(prev => ({ ...prev, profileImage: compressedImage }));
       } catch (error) {
         console.error('Failed to process image:', error);
-        // Fallback to original method but with proper Promise handling
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error('Failed to read file'));
-          reader.readAsDataURL(file);
-        });
+        // Fallback to original method
+        const reader = new FileReader();
+        reader.onload = () => {
+          setFormData(prev => ({ ...prev, profileImage: reader.result as string }));
+        };
+        reader.readAsDataURL(file);
       }
-    };
-    
-    try {
-      const newImages = await Promise.all(files.map(processFile));
-      setProfileImages(prev => [...prev, ...newImages]);
-    } catch (error) {
-      console.error('Failed to process one or more images:', error);
-      alert('Failed to process some images. Please try again.');
     }
-    
     // Clear the input so the same file can be selected again
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -90,8 +75,49 @@ export default function Registration() {
     fileInputRef.current?.click();
   };
 
-  const removeImage = (index: number) => {
-    setProfileImages(prev => prev.filter((_, i) => i !== index));
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && formData.galleryImages.length < 5) {
+      const remainingSlots = 5 - formData.galleryImages.length;
+      const filesToProcess = Array.from(files).slice(0, remainingSlots);
+      
+      for (const file of filesToProcess) {
+        try {
+          // Compress gallery images to save space
+          const compressedImage = await compressImage(file, 600, 600, 0.8);
+          setFormData(prev => ({
+            ...prev,
+            galleryImages: [...prev.galleryImages, compressedImage]
+          }));
+        } catch (error) {
+          console.error('Failed to process gallery image:', error);
+          // Fallback to original method
+          const reader = new FileReader();
+          reader.onload = () => {
+            setFormData(prev => ({
+              ...prev,
+              galleryImages: [...prev.galleryImages, reader.result as string]
+            }));
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+    // Clear the input so the same file can be selected again
+    if (galleryInputRef.current) {
+      galleryInputRef.current.value = '';
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      galleryImages: prev.galleryImages.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleGalleryUploadClick = () => {
+    galleryInputRef.current?.click();
   };
 
   // Helper function to convert school name to URL-friendly slug
@@ -129,7 +155,8 @@ export default function Registration() {
         password: formData.password,
         displayName: formData.name,
         schoolSlug: formData.school, // Already a slug from SearchableCollegeSelect
-        profileImages: profileImages,
+        profileImage: formData.profileImage,
+        galleryImages: formData.galleryImages,
         bio: formData.description,
         groupSizeMin: formData.groupSizeMin ? parseInt(formData.groupSizeMin) : undefined,
         groupSizeMax: formData.groupSizeMax ? parseInt(formData.groupSizeMax) : undefined,
@@ -161,7 +188,8 @@ export default function Registration() {
           displayName: result.user.displayName,
           email: result.user.email,
           school: result.user.school,
-          profileImages: result.user.profileImages || [],
+          profileImage: result.user.profileImage || "",
+          galleryImages: result.user.galleryImages || [],
           bio: result.user.bio,
           groupSizeMin: result.user.groupSizeMin,
           groupSizeMax: result.user.groupSizeMax,
@@ -171,7 +199,11 @@ export default function Registration() {
           name: result.user.displayName || result.user.username,
           description: result.user.bio,
         };
-        localStorage.setItem('currentUser', JSON.stringify(userData));
+        const saved = safeSaveToLocalStorage('currentUser', userData);
+        
+        if (!saved) {
+          alert('Profile data is too large. Please try using smaller images.');
+        }
       }
       
       // JWT token is automatically stored in httpOnly cookie by server
@@ -200,65 +232,87 @@ export default function Registration() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               
-              {/* Group/Organization Images */}
-              <div className="space-y-3">
-                <Label>Group/Organization Images (up to 5)</Label>
+              {/* Profile Picture */}
+              <div className="flex flex-col items-center space-y-3">
+                <Avatar className="h-28 w-28 border-2 border-border">
+                  <AvatarImage 
+                    src={formData.profileImage} 
+                    alt={formData.name}
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="text-2xl font-bold bg-muted">
+                    {formData.name.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleUploadClick}
+                  data-testid="button-upload-photo"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {formData.profileImage ? 'Change Photo' : 'Add Photo'}
+                </Button>
+              </div>
+
+              {/* Photo Gallery */}
+              <div>
+                <Label>Photo Gallery ({formData.galleryImages.length}/5)</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Add up to 5 photos of your group/organization
+                </p>
+                
                 <div className="grid grid-cols-3 gap-3">
-                  {profileImages.map((image, index) => (
-                    <div key={index} className="relative">
-                      <div className="aspect-square rounded-lg overflow-hidden border">
-                        <img
-                          src={image}
-                          alt={`Group image ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                  {formData.galleryImages.map((image, index) => (
+                    <div key={index} className="relative group aspect-square">
+                      <img 
+                        src={image} 
+                        alt={`Gallery ${index + 1}`}
+                        className="w-full h-full object-cover rounded-lg border"
+                      />
                       <Button
                         type="button"
                         variant="destructive"
-                        size="sm"
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-                        onClick={() => removeImage(index)}
-                        data-testid={`button-remove-image-${index}`}
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeGalleryImage(index)}
+                        data-testid={`button-remove-gallery-${index}`}
                       >
                         <X className="h-3 w-3" />
                       </Button>
                     </div>
                   ))}
                   
-                  {profileImages.length < 5 && (
+                  {formData.galleryImages.length < 5 && (
                     <div 
-                      className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
-                      onClick={handleUploadClick}
+                      className="aspect-square border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                      onClick={handleGalleryUploadClick}
+                      data-testid="button-add-gallery-photo"
                     >
-                      <Upload className="h-6 w-6 text-muted-foreground mb-1" />
-                      <span className="text-xs text-muted-foreground text-center">Add Image</span>
+                      <div className="text-center">
+                        <Upload className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">Add Photo</p>
+                      </div>
                     </div>
                   )}
                 </div>
                 
                 <input
                   type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
+                  ref={galleryInputRef}
+                  onChange={handleGalleryUpload}
                   accept="image/*"
                   multiple
                   className="hidden"
                 />
-                
-                {profileImages.length < 5 && (
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleUploadClick}
-                    className="w-full"
-                    data-testid="button-upload-photo"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Add Images ({profileImages.length}/5)
-                  </Button>
-                )}
               </div>
 
               {/* Basic Info */}
