@@ -63,13 +63,13 @@ export default function RatingModal({
         <div className="space-y-6">
           <div className="flex items-center gap-3">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={userImage} alt={userName} />
+              <AvatarImage src={userImage} alt={userName || 'User'} />
               <AvatarFallback>
-                {userName.split(' ').map(n => n[0]).join('')}
+                {userName ? userName.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-semibold">{userName}</p>
+              <p className="font-semibold">{userName || 'User'}</p>
               <p className="text-sm text-muted-foreground">How was your pregame experience?</p>
             </div>
           </div>
