@@ -96,37 +96,46 @@ export const organizations = pgTable("organizations", {
 export const conversations = pgTable("conversations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   schoolId: varchar("school_id").notNull(),
+  isGroup: integer("is_group").default(0).notNull(), // 0 for false, 1 for true - boolean
   title: text("title"), // Optional title for group conversations
+  createdBy: varchar("created_by").notNull(),
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
-  updatedAt: timestamp("updated_at").default(sql`now()`).notNull(),
 }, (table) => ({
   // Foreign key to schools
   schoolFK: foreignKey({
     columns: [table.schoolId],
     foreignColumns: [schools.id],
   }),
+  // Foreign key to user who created the conversation
+  createdByFK: foreignKey({
+    columns: [table.createdBy],
+    foreignColumns: [users.id],
+  }),
   // Index for performance
   schoolIndex: index().on(table.schoolId),
 }));
 
-// Junction table for conversation participants
+// Junction table for conversation participants with composite primary key
 export const conversationParticipants = pgTable("conversation_participants", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   conversationId: varchar("conversation_id").notNull(),
   userId: varchar("user_id").notNull(),
+  lastReadAt: timestamp("last_read_at"), // Track when user last read messages
   joinedAt: timestamp("joined_at").default(sql`now()`).notNull(),
 }, (table) => ({
-  // Unique constraint to prevent duplicate participants
-  uniqueConversationUser: unique().on(table.conversationId, table.userId),
-  // Foreign keys
+  // Composite primary key
+  pk: {
+    name: "conversation_participants_pkey",
+    columns: [table.conversationId, table.userId],
+  },
+  // Foreign keys with cascade delete
   conversationFK: foreignKey({
     columns: [table.conversationId],
     foreignColumns: [conversations.id],
-  }),
+  }).onDelete("cascade"),
   userFK: foreignKey({
     columns: [table.userId],
     foreignColumns: [users.id],
-  }),
+  }).onDelete("cascade"),
   // Indexes for performance
   conversationIndex: index().on(table.conversationId),
   userIndex: index().on(table.userId),
@@ -134,25 +143,30 @@ export const conversationParticipants = pgTable("conversation_participants", {
 
 export const messages = pgTable("messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  conversationId: varchar("conversation_id"), // New way: link to conversations
-  senderEmail: text("sender_email").notNull(), // Keep for backward compatibility
-  recipientEmail: text("recipient_email").notNull(), // Keep for backward compatibility
-  senderId: varchar("sender_id"), // New way: link to user IDs
-  content: text("content").notNull(),
+  conversationId: varchar("conversation_id").notNull(),
+  senderId: varchar("sender_id").notNull(),
+  content: text("content").notNull().$default(() => {
+    // This is just for type checking - actual check is in DB
+    throw new Error("Content must be between 1 and 4000 characters");
+  }),
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
-  isRead: integer("is_read").default(0).notNull(), // 0 for false, 1 for true
+  // Legacy fields for backward compatibility
+  senderEmail: text("sender_email"),
+  recipientEmail: text("recipient_email"),
+  isRead: integer("is_read").default(0), // Deprecated - use conversation_participants.last_read_at instead
 }, (table) => ({
-  // Foreign keys
+  // Foreign keys with cascade delete
   conversationFK: foreignKey({
     columns: [table.conversationId],
     foreignColumns: [conversations.id],
-  }),
+  }).onDelete("cascade"),
   senderFK: foreignKey({
     columns: [table.senderId],
     foreignColumns: [users.id],
-  }),
-  // Indexes for performance
-  conversationIndex: index().on(table.conversationId),
+  }).onDelete("cascade"),
+  // Index for pagination and performance (conversation_id, created_at)
+  conversationTimeIndex: index().on(table.conversationId, table.createdAt),
+  // Additional indexes
   senderIndex: index().on(table.senderId),
 }));
 
@@ -315,13 +329,29 @@ export const updateProfileSchema = z.object({
 export const insertConversationSchema = createInsertSchema(conversations).omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
   schoolId: true, // Will be derived from JWT
+  createdBy: true, // Will be derived from JWT
 });
 
 export const insertConversationParticipantSchema = createInsertSchema(conversationParticipants).omit({
-  id: true,
   joinedAt: true,
+  lastReadAt: true,
+});
+
+// Schema for creating new conversations with participants
+export const createConversationSchema = z.object({
+  participantIds: z.array(z.string().uuid()).min(1, "At least one participant required"),
+  title: z.string().max(200).optional(),
+});
+
+// Schema for sending messages
+export const sendMessageSchema = z.object({
+  content: z.string().min(1, "Message cannot be empty").max(4000, "Message too long (max 4000 characters)"),
+});
+
+// Schema for marking conversation as read
+export const markReadSchema = z.object({
+  lastReadAt: z.string().datetime().optional(), // ISO timestamp, defaults to now() if not provided
 });
 
 // Updated schemas for multi-tenant
@@ -417,3 +447,40 @@ export type InsertPregame = z.infer<typeof insertPregameSchema>;
 export type Pregame = typeof pregames.$inferSelect;
 export type InsertReview = z.infer<typeof insertReviewSchema>;
 export type Review = typeof reviews.$inferSelect;
+
+// Messaging request/response types
+export type CreateConversationRequest = z.infer<typeof createConversationSchema>;
+export type SendMessageRequest = z.infer<typeof sendMessageSchema>;
+export type MarkReadRequest = z.infer<typeof markReadSchema>;
+
+// Conversation with participants for API responses
+export interface ConversationWithParticipants extends Conversation {
+  participants: User[];
+}
+
+// Conversation list item with preview and unread count
+export interface ConversationListItem extends Conversation {
+  participants: Array<{
+    id: string;
+    username: string;
+    displayName?: string | null;
+    profileImage?: string | null;
+  }>;
+  lastMessage?: {
+    id: string;
+    content: string;
+    senderId: string;
+    createdAt: Date;
+  } | null;
+  unreadCount: number;
+}
+
+// Message with sender info
+export interface MessageWithSender extends Message {
+  sender: {
+    id: string;
+    username: string;
+    displayName?: string | null;
+    profileImage?: string | null;
+  };
+}
