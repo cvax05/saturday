@@ -1,102 +1,242 @@
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import MessageList from "@/components/MessageList";
+import { useQuery, useMutation, useInfiniteQuery } from "@tanstack/react-query";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, MessageCircle } from "lucide-react";
-import { authQueryFn } from "@/lib/queryClient";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ArrowLeft, Loader2, MessageCircle, Send } from "lucide-react";
+import { authQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import type { AuthResponse } from "@shared/schema";
+import { useState, useEffect, useRef } from "react";
+import { formatDistanceToNow } from "date-fns";
 
-interface ConversationSummary {
+interface Message {
   id: string;
-  participantName: string;
-  participantEmail: string;
-  participantImage?: string;
-  lastMessage: string;
-  lastMessageTime: Date;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+}
+
+interface ConversationUser {
+  id: string;
+  displayName: string | null;
+  username: string;
+  profileImages: string[];
+}
+
+interface Conversation {
+  id: string;
+  title: string | null;
+  isGroup: boolean;
+  lastMessageAt: string | null;
+  otherParticipants: ConversationUser[];
   unreadCount: number;
-  hasUnreadPendingRating: boolean;
 }
 
 export default function Messages() {
   const [, setLocation] = useLocation();
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [messageText, setMessageText] = useState("");
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
+  const [isNearBottom, setIsNearBottom] = useState(true);
+  const justSentRef = useRef(false);
+  const lastMarkedMessageId = useRef<string | null>(null);
+  const lastMarkReadTime = useRef(0);
+  const prevScrollHeightRef = useRef(0);
 
-  // Get current user and authentication status
+  // Get current user
   const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
     queryKey: ['/api/auth/me'],
     queryFn: authQueryFn as any,
   });
 
   const currentUser = authData?.user;
-  const currentUserEmail = currentUser?.email || "";
 
-  // Fetch all messages for current user (JWT automatically provides school scoping)
-  const { data: messagesData, isLoading: messagesLoading } = useQuery({
-    queryKey: ['/api/messages', currentUserEmail],
-    enabled: !!currentUser?.email,
+  // Fetch all conversations with real-time updates
+  const { data: conversationsData, isLoading: conversationsLoading } = useQuery({
+    queryKey: ['/api/messages/conversations'],
+    enabled: !!currentUser,
+    refetchInterval: 3000, // Poll every 3 seconds for new conversations and unread counts
   });
 
-  // Process messages into conversation summaries
-  const conversations: ConversationSummary[] = (() => {
-    if (!messagesData || !currentUserEmail) return [];
-    
-    // Handle different possible response structures
-    const messages = (messagesData as any)?.messages || messagesData || [];
-    if (!Array.isArray(messages)) return [];
+  const conversations = (conversationsData as any)?.conversations || [];
 
-    const conversationMap = new Map<string, ConversationSummary>();
+  // Fetch messages for selected conversation with infinite scroll
+  const {
+    data: messagesData,
+    isLoading: messagesLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['/api/messages', selectedConversationId],
+    enabled: !!selectedConversationId,
+    queryFn: async ({ pageParam }) => {
+      const url = pageParam
+        ? `/api/messages/${selectedConversationId}?cursor=${pageParam}&limit=30`
+        : `/api/messages/${selectedConversationId}?limit=30`;
+      const res = await fetch(url, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch messages");
+      return res.json();
+    },
+    getNextPageParam: (lastPage: any) => {
+      return lastPage?.nextCursor || undefined;
+    },
+    initialPageParam: undefined,
+    refetchInterval: 3000, // Poll every 3 seconds for new messages
+  });
+
+  // Messages sorted by createdAt ascending (oldest first) with de-duplication
+  const messages = (() => {
+    const allMessages = messagesData?.pages.flatMap((page: any) => page.messages || []) || [];
+    const messageMap = new Map<string, Message>();
     
-    // Group messages by conversation partner
-    for (const message of messages) {
-      const partnerEmail = message.senderEmail === currentUserEmail 
-        ? message.recipientEmail 
-        : message.senderEmail;
-      
-      const existing = conversationMap.get(partnerEmail);
-      const messageTime = new Date(message.createdAt);
-      
-      if (!existing || messageTime > existing.lastMessageTime) {
-        // Create display name from email (simplified approach)
-        const partnerName = partnerEmail.includes('@') 
-          ? partnerEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim()
-          : 'Unknown User';
-        
-        conversationMap.set(partnerEmail, {
-          id: partnerEmail, // Using email as ID for now
-          participantName: partnerName,
-          participantEmail: partnerEmail,
-          participantImage: undefined, // Will be enhanced later
-          lastMessage: message.content || "",
-          lastMessageTime: messageTime,
-          unreadCount: existing?.unreadCount || 0,
-          hasUnreadPendingRating: false
-        });
+    // De-duplicate by message ID
+    allMessages.forEach((msg: Message) => {
+      if (!messageMap.has(msg.id)) {
+        messageMap.set(msg.id, msg);
       }
-      
-      // Update unread count (simplified logic)
-      const conversation = conversationMap.get(partnerEmail);
-      if (conversation && message.senderEmail !== currentUserEmail && !message.isRead) {
-        conversation.unreadCount++;
-      }
-    }
+    });
     
-    return Array.from(conversationMap.values())
-      .sort((a, b) => b.lastMessageTime.getTime() - a.lastMessageTime.getTime());
+    return Array.from(messageMap.values())
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   })();
 
-  const handleConversationClick = (conversationId: string) => {
-    setLocation(`/messages/${conversationId}`);
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: async (content: string) => {
+      if (!selectedConversationId) throw new Error("No conversation selected");
+      return apiRequest("POST", `/api/messages/${selectedConversationId}`, { content });
+    },
+    onSuccess: () => {
+      justSentRef.current = true;
+      queryClient.invalidateQueries({ queryKey: ['/api/messages', selectedConversationId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/messages/conversations'] });
+      setMessageText("");
+    },
+  });
+
+  // Mark as read mutation
+  const markReadMutation = useMutation({
+    mutationFn: async (conversationId: string) => {
+      return apiRequest("POST", `/api/messages/${conversationId}/read`, { 
+        lastReadAt: new Date().toISOString() 
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/messages/conversations'] });
+    },
+  });
+
+  // Reset state when conversation changes
+  useEffect(() => {
+    setIsNearBottom(true);
+    justSentRef.current = false;
+    lastMarkedMessageId.current = null;
+    prevScrollHeightRef.current = 0;
+  }, [selectedConversationId]);
+
+  // Check if user is near bottom of scroll area
+  const checkIfNearBottom = () => {
+    const viewport = scrollViewportRef.current;
+    if (viewport) {
+      const { scrollTop, scrollHeight, clientHeight } = viewport;
+      const nearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setIsNearBottom(nearBottom);
+    }
   };
 
-  const handleBackToHome = () => {
-    setLocation('/');
+  // Preserve scroll position when loading older messages, auto-scroll when near bottom or just sent
+  useEffect(() => {
+    const viewport = scrollViewportRef.current;
+    if (!viewport) return;
+
+    const currentScrollHeight = viewport.scrollHeight;
+    const prevScrollHeight = prevScrollHeightRef.current;
+
+    // If scroll height increased and we have a previous value, we loaded older messages
+    if (prevScrollHeight > 0 && currentScrollHeight > prevScrollHeight) {
+      // Preserve scroll position by adjusting for the height increase
+      requestAnimationFrame(() => {
+        if (viewport) {
+          viewport.scrollTop += (currentScrollHeight - prevScrollHeight);
+        }
+      });
+    } else {
+      // Normal auto-scroll behavior when near bottom or just sent
+      const shouldScroll = isNearBottom || justSentRef.current;
+      
+      if (shouldScroll) {
+        viewport.scrollTop = viewport.scrollHeight;
+        justSentRef.current = false;
+      }
+    }
+
+    // Update previous scroll height
+    prevScrollHeightRef.current = currentScrollHeight;
+  }, [messages, isNearBottom]);
+
+  // Mark as read with throttling - only when new messages arrive and user is viewing
+  useEffect(() => {
+    if (!selectedConversationId || messages.length === 0 || !isNearBottom) {
+      return;
+    }
+
+    const newestMessage = messages[messages.length - 1];
+    const now = Date.now();
+    const shouldMark = 
+      lastMarkedMessageId.current !== newestMessage.id &&
+      now - lastMarkReadTime.current > 5000; // Throttle to max once per 5 seconds
+
+    if (shouldMark) {
+      lastMarkedMessageId.current = newestMessage.id;
+      lastMarkReadTime.current = now;
+      markReadMutation.mutate(selectedConversationId);
+    }
+  }, [selectedConversationId, messages, isNearBottom]);
+
+  const handleSendMessage = () => {
+    if (messageText.trim() && !sendMessageMutation.isPending) {
+      sendMessageMutation.mutate(messageText.trim());
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const selectedConversation = conversations.find((c: Conversation) => c.id === selectedConversationId);
+  
+  const getConversationDisplayName = (conv: Conversation) => {
+    if (conv.title) return conv.title;
+    if (conv.otherParticipants.length === 0) return "Unknown";
+    if (conv.otherParticipants.length === 1) {
+      const user = conv.otherParticipants[0];
+      return user.displayName || user.username;
+    }
+    return conv.otherParticipants.map(u => u.displayName || u.username).join(", ");
+  };
+
+  const getConversationAvatar = (conv: Conversation) => {
+    if (conv.otherParticipants.length > 0) {
+      const participant = conv.otherParticipants[0];
+      if (participant.profileImages && participant.profileImages.length > 0) {
+        return participant.profileImages[0];
+      }
+    }
+    return undefined;
   };
 
   // Loading states
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background p-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center py-12">
             <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-4 animate-spin" />
             <p className="text-muted-foreground">Loading...</p>
@@ -110,7 +250,7 @@ export default function Messages() {
   if (!authData?.user) {
     return (
       <div className="min-h-screen bg-background p-4">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center py-12">
             <MessageCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
@@ -127,15 +267,15 @@ export default function Messages() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header with back button and theme toggle */}
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleBackToHome}
+              onClick={() => setLocation('/')}
               data-testid="button-back-home"
               className="text-muted-foreground hover:text-foreground"
             >
@@ -153,22 +293,190 @@ export default function Messages() {
         </div>
       </div>
 
-      {/* Messages content */}
-      <main className="max-w-4xl mx-auto p-4">
-        {messagesLoading && (
-          <div className="text-center py-8">
-            <Loader2 className="h-6 w-6 text-muted-foreground mx-auto mb-2 animate-spin" />
-            <p className="text-muted-foreground">Loading your conversations...</p>
+      {/* Main 2-pane layout */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left pane: Conversation list */}
+        <div className="w-80 border-r flex flex-col">
+          <div className="p-4 border-b">
+            <h2 className="font-semibold">Conversations</h2>
           </div>
-        )}
+          
+          <ScrollArea className="flex-1">
+            {conversationsLoading ? (
+              <div className="p-4 text-center">
+                <Loader2 className="h-6 w-6 text-muted-foreground mx-auto mb-2 animate-spin" />
+                <p className="text-sm text-muted-foreground">Loading conversations...</p>
+              </div>
+            ) : conversations.length === 0 ? (
+              <div className="p-4 text-center">
+                <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">No conversations yet</p>
+              </div>
+            ) : (
+              <div className="divide-y">
+                {conversations.map((conv: Conversation) => (
+                  <button
+                    key={conv.id}
+                    onClick={() => setSelectedConversationId(conv.id)}
+                    data-testid={`conversation-item-${conv.id}`}
+                    className={`w-full p-4 text-left hover-elevate ${
+                      selectedConversationId === conv.id ? 'bg-accent' : ''
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={getConversationAvatar(conv)} />
+                        <AvatarFallback>
+                          {getConversationDisplayName(conv).substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-medium truncate">
+                            {getConversationDisplayName(conv)}
+                          </p>
+                          {conv.unreadCount > 0 && (
+                            <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                              {conv.unreadCount}
+                            </span>
+                          )}
+                        </div>
+                        {conv.lastMessageAt && (
+                          <p className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(conv.lastMessageAt), { addSuffix: true })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </div>
 
-        {!messagesLoading && (
-          <MessageList 
-            conversations={conversations} 
-            onConversationClick={handleConversationClick}
-          />
-        )}
-      </main>
+        {/* Right pane: Message thread */}
+        <div className="flex-1 flex flex-col">
+          {selectedConversationId && selectedConversation ? (
+            <>
+              {/* Conversation header */}
+              <div className="p-4 border-b">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={getConversationAvatar(selectedConversation)} />
+                    <AvatarFallback>
+                      {getConversationDisplayName(selectedConversation).substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h3 className="font-semibold" data-testid="conversation-header-name">
+                      {getConversationDisplayName(selectedConversation)}
+                    </h3>
+                    {selectedConversation.isGroup && (
+                      <p className="text-xs text-muted-foreground">
+                        {selectedConversation.otherParticipants.length + 1} members
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-auto p-4" ref={scrollViewportRef} onScroll={checkIfNearBottom}>
+                {hasNextPage && (
+                  <div className="text-center py-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                      data-testid="button-load-more"
+                    >
+                      {isFetchingNextPage ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Load more messages"
+                      )}
+                    </Button>
+                  </div>
+                )}
+                {messagesLoading ? (
+                  <div className="text-center py-8">
+                    <Loader2 className="h-6 w-6 text-muted-foreground mx-auto mb-2 animate-spin" />
+                    <p className="text-sm text-muted-foreground">Loading messages...</p>
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="text-center py-8">
+                    <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">No messages yet. Start the conversation!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {messages.map((msg: Message) => {
+                      const isOwn = msg.senderId === currentUser?.id;
+                      return (
+                        <div
+                          key={msg.id}
+                          className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                          data-testid={`message-${msg.id}`}
+                        >
+                          <div
+                            className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                              isOwn
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted'
+                            }`}
+                          >
+                            <p className="text-sm break-words">{msg.content}</p>
+                            <p className={`text-xs mt-1 ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                              {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Message composer */}
+              <div className="p-4 border-t">
+                <div className="flex gap-2">
+                  <Input
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Type a message..."
+                    disabled={sendMessageMutation.isPending}
+                    data-testid="input-message"
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={!messageText.trim() || sendMessageMutation.isPending}
+                    data-testid="button-send-message"
+                  >
+                    {sendMessageMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <MessageCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  Select a conversation to start messaging
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
