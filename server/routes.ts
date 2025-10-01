@@ -90,15 +90,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         // Set httpOnly cookie
-        const cookieOptions = {
+        res.cookie('auth_token', token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax' as const, // Changed from 'strict' to 'lax' to work with navigation
           path: '/', // Explicitly set path to root
           maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        };
-        console.log('[AUTH] Setting cookie with options:', JSON.stringify(cookieOptions));
-        res.cookie('auth_token', token, cookieOptions);
+        });
         
         // Return user and schools with separated photo structure
         const userSchools = await storage.getUserSchools(user.id);
@@ -210,15 +208,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Set httpOnly cookie
-      const cookieOptions = {
+      res.cookie('auth_token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax' as const, // Changed from 'strict' to 'lax' to work with navigation
         path: '/', // Explicitly set path to root
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      };
-      console.log('[AUTH] Setting cookie with options:', JSON.stringify(cookieOptions));
-      res.cookie('auth_token', token, cookieOptions);
+      });
       
       // Separate profile image and gallery images
       const userProfileImages = user.profileImages || [];

@@ -47,6 +47,8 @@ Preferred communication style: Simple, everyday language.
 
 **LocalStorage Fix (October 2025)**: Removed all localStorage caching from auth flows to prevent quota exceeded errors. Previously, base64-encoded profile images were cached in localStorage, exceeding the 5MB browser limit. Now all user data is fetched fresh from API using JWT authentication.
 
+**Cookie Navigation Fix (October 2025)**: Fixed random logout bug during navigation by setting explicit `path: '/'` on auth cookies and changing `sameSite` from 'strict' to 'lax'. Root cause: cookies without explicit path were scoped to `/api/auth/*`, causing other API calls to miss the cookie. Cookie settings now: `httpOnly: true`, `secure: production only`, `sameSite: 'lax'`, `path: '/'`, `maxAge: 7 days`.
+
 ### Design System
 **Comprehensive Design Guidelines**: Detailed color palette for dark/light themes, typography using Inter font family, consistent spacing system, and component specifications.
 
