@@ -1,0 +1,64 @@
+Act as a senior full stack engineer reviewing my Replit project.
+
+Goal
+Make new user registration persist full profile data and have the Profile page render that data immediately after signup and on reload. Fields needed are email, passwordHash, displayName, bio, avatarUrl, galleryJson array of image URLs. Fix any session issues that cause the wrong user to appear.
+
+Please analyze the codebase and answer in these sections only
+
+1) Stack and project map
+• Identify framework, server, client setup, and database or storage in use
+• List the main server file and any router modules
+• List the profile page component and any data fetching utilities
+
+2) Auth and sessions
+• Show where sessions or JWT are configured
+• Confirm cookie settings and whether trust proxy is set for Replit
+• List which routes are publicly accessible and which require auth
+
+3) Data model
+• Show the current User schema and any profile related tables or collections
+• Tell me if avatarUrl and gallery are stored, and where
+
+4) Routes and handlers
+• List all auth and profile routes with method and source file
+• Show the register route and login route exactly
+• Show the profile read route and profile update route if they exist
+
+5) Upload handling
+• Detect whether we use local uploads with Multer or a cloud service
+• Show where uploaded files are saved and how they are served
+• Note any missing static serve middleware for uploads
+
+6) Reproduce the bug
+• Give exact steps that lead to missing avatar or photos after signup
+• Show the network calls and the response payloads where data is lost
+• Explain the root cause in one paragraph
+
+7) Fix plan with exact edits
+• If DB exists give a minimal migration to add avatarUrl and galleryJson text JSON
+• If no DB create SQLite with a Users table including those fields
+• Update POST api register to accept avatar and optional gallery file uploads and to persist their URLs, then start a fresh session and return the user
+• Add GET api profile to return full profile for the logged in user
+• Add PUT api profile to update displayName bio avatar and gallery
+• Ensure login and register call session regenerate and set session userId
+• Ensure app serves uploads folder statically and returns URL paths
+• Make login and signup pages public and protect only data routes
+
+8) Code patches
+• Provide unified diffs per file or complete replacements only where needed
+• Keep naming consistent with the existing codebase
+• Include any new imports and middleware wiring
+
+9) Client updates
+• On successful register call api me then api profile and render avatarUrl and gallery
+• Profile page should fetch api profile on mount and render displayName bio avatar and gallery grid with placeholders if missing
+
+10) Tests I can run now
+• Give curl commands for register login api me api profile and logout using cookie jars
+• Give an acceptance checklist that passes in normal and incognito windows
+
+11) Risks and follow ups
+• Call out anything that may break and how to guard it
+• List next steps such as moving uploads to a cloud service
+
+Return the diagnosis first. Do not write code until after the diagnosis. Then propose the minimal set of code changes needed. 

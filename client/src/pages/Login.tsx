@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SITE_NAME } from "@/lib/constants";
-import { safeSaveToLocalStorage } from "@/lib/imageUtils";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -38,38 +37,6 @@ export default function Login() {
         const errorData = await response.json();
         alert(errorData.message || 'Login failed');
         return;
-      }
-      
-      const result = await response.json();
-      
-      // Clear any existing user data first to prevent stale data
-      localStorage.removeItem('currentUser');
-      
-      // Store user data in localStorage for client-side access
-      if (result.user) {
-        const userData = {
-          id: result.user.id,
-          username: result.user.username,
-          displayName: result.user.displayName,
-          email: result.user.email,
-          school: result.user.school,
-          profileImage: result.user.profileImage || "",
-          galleryImages: result.user.galleryImages || [],
-          profileImages: result.user.profileImages || [], // Keep for backward compatibility
-          bio: result.user.bio,
-          groupSizeMin: result.user.groupSizeMin,
-          groupSizeMax: result.user.groupSizeMax,
-          preferredAlcohol: result.user.preferredAlcohol,
-          availability: result.user.availability,
-          // Add additional fields for compatibility
-          name: result.user.displayName || result.user.username,
-          description: result.user.bio,
-        };
-        
-        const saved = safeSaveToLocalStorage('currentUser', userData);
-        if (!saved) {
-          alert('Profile data is too large. Please try using smaller images.');
-        }
       }
       
       // JWT token is automatically stored in httpOnly cookie by server

@@ -10,14 +10,24 @@ import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArrowLeft, Upload, X, Plus } from "lucide-react";
-import { compressImage, safeSaveToLocalStorage } from "@/lib/imageUtils";
+import { compressImage } from "@/lib/imageUtils";
+import { useQuery } from "@tanstack/react-query";
+import { authQueryFn } from "@/lib/queryClient";
+import type { AuthResponse } from "@shared/schema";
 
 export default function ProfileEdit() {
   const [, setLocation] = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   
-  // Load current user data from localStorage (registration data)
+  // Fetch current user data from API
+  const { data: authData, isLoading } = useQuery<AuthResponse>({
+    queryKey: ['/api/auth/me'],
+    queryFn: authQueryFn as any,
+  });
+
+  const currentUser = authData?.user;
+  
   const [formData, setFormData] = useState({
     name: "",
     groupSize: "",
@@ -32,30 +42,24 @@ export default function ProfileEdit() {
     galleryImages: [] as string[]
   });
 
+  // Load user data from API when it's available
   useEffect(() => {
-    // Load user data from localStorage
-    const storedUserData = localStorage.getItem('currentUser');
-    if (storedUserData) {
-      try {
-        const userData = JSON.parse(storedUserData);
-        setFormData({
-          name: userData.name || "",
-          groupSize: userData.groupSize || "",
-          email: userData.email || "",
-          school: userData.school || "",
-          description: userData.description || "",
-          groupSizeMin: userData.groupSizeMin || "",
-          groupSizeMax: userData.groupSizeMax || "",
-          preferredAlcohol: userData.preferredAlcohol || "",
-          availability: userData.availability || "",
-          profileImage: userData.profileImage || "",
-          galleryImages: userData.galleryImages || []
-        });
-      } catch (e) {
-        console.error('Error loading user data:', e);
-      }
+    if (currentUser) {
+      setFormData({
+        name: currentUser.displayName || currentUser.username || "",
+        groupSize: "", // Not returned by API, can be removed if not needed
+        email: currentUser.email || "",
+        school: currentUser.school || "",
+        description: currentUser.bio || "",
+        groupSizeMin: currentUser.groupSizeMin?.toString() || "",
+        groupSizeMax: currentUser.groupSizeMax?.toString() || "",
+        preferredAlcohol: currentUser.preferredAlcohol || "",
+        availability: currentUser.availability || "",
+        profileImage: currentUser.profileImage || "",
+        galleryImages: currentUser.galleryImages || []
+      });
     }
-  }, []);
+  }, [currentUser]);
 
   // Schools list now handled by SearchableCollegeSelect component
 
@@ -176,34 +180,7 @@ export default function ProfileEdit() {
         return;
       }
 
-      const result = await response.json();
-      
-      // Update localStorage with the returned user data
-      if (result.user) {
-        const userData = {
-          id: result.user.id,
-          username: result.user.username,
-          displayName: result.user.displayName,
-          email: result.user.email,
-          school: result.user.school,
-          profileImage: result.user.profileImage || "",
-          galleryImages: result.user.galleryImages || [],
-          profileImages: result.user.profileImages || [],
-          bio: result.user.bio,
-          groupSizeMin: result.user.groupSizeMin,
-          groupSizeMax: result.user.groupSizeMax,
-          preferredAlcohol: result.user.preferredAlcohol,
-          availability: result.user.availability,
-          name: result.user.displayName || result.user.username,
-          description: result.user.bio,
-        };
-        
-        const saved = safeSaveToLocalStorage('currentUser', userData);
-        if (!saved) {
-          alert('Profile updated but couldn\'t save to local storage. Please try refreshing the page.');
-        }
-      }
-
+      // Profile updated successfully - JWT cookie already contains updated auth
       // Redirect to groups page
       setLocation("/groups");
     } catch (error) {

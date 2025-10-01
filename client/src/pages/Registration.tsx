@@ -10,7 +10,7 @@ import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, X } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
-import { compressImage, safeSaveToLocalStorage } from "@/lib/imageUtils";
+import { compressImage } from "@/lib/imageUtils";
 
 export default function Registration() {
   const [, setLocation] = useLocation();
@@ -185,35 +185,6 @@ export default function Registration() {
         const errorData = await response.json();
         alert(errorData.message || 'Registration failed');
         return;
-      }
-      
-      const result = await response.json();
-      
-      // Store user data in localStorage for client-side access
-      if (result.user) {
-        const userData = {
-          id: result.user.id,
-          username: result.user.username,
-          displayName: result.user.displayName,
-          email: result.user.email,
-          school: result.user.school,
-          profileImage: result.user.profileImage || "",
-          galleryImages: result.user.galleryImages || [],
-          profileImages: result.user.profileImages || [], // Keep for backward compatibility
-          bio: result.user.bio,
-          groupSizeMin: result.user.groupSizeMin,
-          groupSizeMax: result.user.groupSizeMax,
-          preferredAlcohol: result.user.preferredAlcohol,
-          availability: result.user.availability,
-          // Add additional fields for compatibility
-          name: result.user.displayName || result.user.username,
-          description: result.user.bio,
-        };
-        const saved = safeSaveToLocalStorage('currentUser', userData);
-        
-        if (!saved) {
-          alert('Profile data is too large. Please try using smaller images.');
-        }
       }
       
       // JWT token is automatically stored in httpOnly cookie by server

@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+app.set('trust proxy', 1); // Trust Replit proxy for secure cookies in production
 app.use(express.json({ limit: '15mb' })); // Allow up to 15MB for multiple images (5 images * ~2-3MB each)
 app.use(express.urlencoded({ extended: false, limit: '15mb' }));
 app.use(cookieParser()); // Add cookie parser for JWT authentication

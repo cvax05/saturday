@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { authQueryFn } from "@/lib/queryClient";
+import type { AuthResponse } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,8 +48,15 @@ export default function UserProfileDetail() {
   const [, params] = useRoute("/profile/:email");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+
+  // Fetch current user from API
+  const { data: authData } = useQuery<AuthResponse>({
+    queryKey: ['/api/auth/me'],
+    queryFn: authQueryFn as any,
+  });
+
+  const currentUser = authData?.user;
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -62,37 +71,31 @@ export default function UserProfileDetail() {
         // Check if the parameter is a user ID (UUID format) or email
         const isUserId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetParam);
         
-        // Load current user data for authentication context
-        const currentUserData = localStorage.getItem('currentUser');
-        if (currentUserData) {
-          const currentUserInfo = JSON.parse(currentUserData);
-          setCurrentUser(currentUserInfo);
-          
-          // Check if this is the user's own profile
-          const isOwn = isUserId ? currentUserInfo.id === targetParam : currentUserInfo.email === targetParam;
+        // Check if this is the user's own profile (using API data)
+        if (currentUser) {
+          const isOwn = isUserId ? currentUser.id === targetParam : currentUser.email === targetParam;
           setIsOwnProfile(isOwn);
           
           if (isOwn) {
             // Transform current user data to match UserProfile interface - only use real data
-            const profileData = {
-              id: currentUserInfo.id,
-              name: currentUserInfo.displayName || currentUserInfo.username, // Only use provided data
-              username: currentUserInfo.username,
-              displayName: currentUserInfo.displayName,
-              email: currentUserInfo.email,
-              school: currentUserInfo.school, // Don't add fake school data
-              description: currentUserInfo.bio || currentUserInfo.description, // Don't force empty string
-              classYear: currentUserInfo.classYear,
-              profileImage: currentUserInfo.avatarUrl || currentUserInfo.profileImages?.[0] || currentUserInfo.profileImage,
-              profileImages: currentUserInfo.profileImages || [], // Registration photos
-              createdAt: currentUserInfo.createdAt, // Don't create fake timestamps
-              photos: currentUserInfo.photos || [],
-              // Legacy fields - only if they exist
-              groupSize: currentUserInfo.groupSize,
-              groupSizeMin: currentUserInfo.groupSizeMin,
-              groupSizeMax: currentUserInfo.groupSizeMax,
-              preferredAlcohol: currentUserInfo.preferredAlcohol,
-              availability: currentUserInfo.availability
+            const profileData: UserProfile = {
+              id: currentUser.id,
+              name: currentUser.displayName || currentUser.username,
+              username: currentUser.username,
+              displayName: currentUser.displayName || undefined,
+              email: currentUser.email,
+              school: currentUser.school || "",
+              description: currentUser.bio || "",
+              classYear: undefined,
+              profileImage: currentUser.profileImage || null,
+              profileImages: currentUser.profileImages || [],
+              createdAt: "",
+              photos: [],
+              groupSize: "",
+              groupSizeMin: currentUser.groupSizeMin?.toString() || "",
+              groupSizeMax: currentUser.groupSizeMax?.toString() || "",
+              preferredAlcohol: currentUser.preferredAlcohol || "",
+              availability: currentUser.availability || ""
             };
             setUserProfile(profileData);
             setLoading(false);
@@ -159,7 +162,7 @@ export default function UserProfileDetail() {
     };
 
     fetchUserProfile();
-  }, [params?.email]);
+  }, [params?.email, currentUser]);
 
   const getPreferredAlcoholColor = (alcohol: string) => {
     switch (alcohol.toLowerCase()) {
