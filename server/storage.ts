@@ -71,20 +71,28 @@ export interface IStorage {
   getOrganizationByEmailInSchool(contactEmail: string, schoolId: string): Promise<Organization | undefined>;
   createOrganization(organization: InsertOrganization, schoolId: string): Promise<Organization>;
   
-  // Conversation methods
+  // New messaging methods for first-class messaging
+  createOrGetDirectConversation(senderId: string, participantId: string, schoolId: string): Promise<{ conversation: Conversation; participants: User[] }>;
+  listConversationsForUser(userId: string, schoolId: string): Promise<import("@shared/schema").ConversationListItem[]>;
+  listMessages(conversationId: string, userId: string, limit?: number, cursor?: string): Promise<{ messages: import("@shared/schema").MessageWithSender[]; hasMore: boolean; nextCursor?: string }>;
+  createMessage(conversationId: string, senderId: string, content: string): Promise<Message>;
+  markRead(conversationId: string, userId: string, at?: Date): Promise<void>;
+  isUserInConversation(conversationId: string, userId: string): Promise<boolean>;
+  
+  // Legacy conversation methods (kept for backward compatibility)
   createConversation(conversation: InsertConversation, schoolId: string): Promise<Conversation>;
   getConversation(id: string): Promise<Conversation | undefined>;
   addConversationParticipant(participant: InsertConversationParticipant): Promise<ConversationParticipant>;
   getConversationParticipants(conversationId: string): Promise<User[]>;
   getUserConversations(userId: string, schoolId: string): Promise<Conversation[]>;
   
-  // Message methods (updated for conversations and school scoping)
-  sendMessage(message: InsertMessage, senderEmail: string): Promise<Message>; // Legacy method
+  // Legacy message methods (kept for backward compatibility)
+  sendMessage(message: InsertMessage, senderEmail: string): Promise<Message>;
   sendMessageInSchool(message: InsertMessage, senderEmail: string, schoolId: string): Promise<Message>;
   sendMessageToConversation(content: string, conversationId: string, senderId: string): Promise<Message>;
-  getMessagesBetweenUsers(userEmail1: string, userEmail2: string): Promise<Message[]>; // Legacy method
+  getMessagesBetweenUsers(userEmail1: string, userEmail2: string): Promise<Message[]>;
   getMessagesBetweenUsersInSchool(userEmail1: string, userEmail2: string, schoolId: string): Promise<Message[]>;
-  getMessagesForUser(userEmail: string): Promise<Message[]>; // Legacy method
+  getMessagesForUser(userEmail: string): Promise<Message[]>;
   getMessagesForUserInSchool(userEmail: string, schoolId: string): Promise<Message[]>;
   getConversationMessages(conversationId: string, afterTimestamp?: Date): Promise<Message[]>;
   
@@ -383,11 +391,266 @@ export class DatabaseStorage implements IStorage {
     return org || undefined;
   }
 
-  // Conversation methods
+  // New messaging methods for first-class messaging
+  async createOrGetDirectConversation(senderId: string, participantId: string, schoolId: string): Promise<{ conversation: Conversation; participants: User[] }> {
+    // Check if direct conversation already exists between these two users in this school
+    const existing = await db
+      .select({
+        conversation: conversations,
+      })
+      .from(conversations)
+      .innerJoin(
+        conversationParticipants,
+        eq(conversations.id, conversationParticipants.conversationId)
+      )
+      .where(
+        and(
+          eq(conversations.schoolId, schoolId),
+          eq(conversations.isGroup, 0),
+          or(
+            eq(conversationParticipants.userId, senderId),
+            eq(conversationParticipants.userId, participantId)
+          )
+        )
+      )
+      .groupBy(conversations.id)
+      .having(sql`COUNT(DISTINCT ${conversationParticipants.userId}) = 2`);
+
+    // If exists, verify it's between exactly these two users
+    for (const row of existing) {
+      const participants = await db
+        .select({ userId: conversationParticipants.userId })
+        .from(conversationParticipants)
+        .where(eq(conversationParticipants.conversationId, row.conversation.id));
+      
+      const participantIds = participants.map(p => p.userId).sort();
+      const targetIds = [senderId, participantId].sort();
+      
+      if (JSON.stringify(participantIds) === JSON.stringify(targetIds)) {
+        // Found exact match
+        const fullParticipants = await this.getConversationParticipants(row.conversation.id);
+        return { conversation: row.conversation, participants: fullParticipants };
+      }
+    }
+
+    // No existing conversation, create new one
+    const [conversation] = await db
+      .insert(conversations)
+      .values({
+        schoolId,
+        isGroup: 0,
+        createdBy: senderId,
+        title: null,
+      })
+      .returning();
+
+    // Add both participants
+    await db.insert(conversationParticipants).values([
+      { conversationId: conversation.id, userId: senderId },
+      { conversationId: conversation.id, userId: participantId },
+    ]);
+
+    const participants = await this.getConversationParticipants(conversation.id);
+    return { conversation, participants };
+  }
+
+  async listConversationsForUser(userId: string, schoolId: string): Promise<import("@shared/schema").ConversationListItem[]> {
+    const userConversations = await db
+      .select({
+        conversation: conversations,
+        lastMessage: {
+          id: messages.id,
+          content: messages.content,
+          senderId: messages.senderId,
+          createdAt: messages.createdAt,
+        },
+      })
+      .from(conversations)
+      .innerJoin(
+        conversationParticipants,
+        and(
+          eq(conversations.id, conversationParticipants.conversationId),
+          eq(conversationParticipants.userId, userId)
+        )
+      )
+      .leftJoin(
+        messages,
+        and(
+          eq(conversations.id, messages.conversationId),
+          sql`${messages.createdAt} = (
+            SELECT MAX(created_at) 
+            FROM ${messages} 
+            WHERE conversation_id = ${conversations.id}
+          )`
+        )
+      )
+      .where(eq(conversations.schoolId, schoolId))
+      .orderBy(desc(sql`COALESCE(${messages.createdAt}, ${conversations.createdAt})`));
+
+    // Build response with participants and unread counts
+    const result: import("@shared/schema").ConversationListItem[] = [];
+    
+    for (const row of userConversations) {
+      const participants = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          displayName: users.displayName,
+          profileImage: sql<string>`CASE WHEN ${users.profileImages}[1] IS NOT NULL THEN ${users.profileImages}[1] ELSE NULL END`.as('profileImage'),
+        })
+        .from(users)
+        .innerJoin(conversationParticipants, eq(users.id, conversationParticipants.userId))
+        .where(eq(conversationParticipants.conversationId, row.conversation.id));
+
+      // Get unread count
+      const [unreadData] = await db
+        .select({
+          count: sql<number>`COUNT(*)::int`.as('count'),
+        })
+        .from(messages)
+        .innerJoin(conversationParticipants, 
+          and(
+            eq(messages.conversationId, conversationParticipants.conversationId),
+            eq(conversationParticipants.userId, userId)
+          )
+        )
+        .where(
+          and(
+            eq(messages.conversationId, row.conversation.id),
+            or(
+              sql`${conversationParticipants.lastReadAt} IS NULL`,
+              sql`${messages.createdAt} > ${conversationParticipants.lastReadAt}`
+            ),
+            sql`${messages.senderId} != ${userId}` // Don't count own messages
+          )
+        );
+
+      result.push({
+        ...row.conversation,
+        participants: participants.map(p => ({
+          id: p.id,
+          username: p.username,
+          displayName: p.displayName,
+          profileImage: p.profileImage,
+        })),
+        lastMessage: row.lastMessage?.id ? {
+          id: row.lastMessage.id,
+          content: row.lastMessage.content,
+          senderId: row.lastMessage.senderId,
+          createdAt: row.lastMessage.createdAt,
+        } : null,
+        unreadCount: unreadData?.count || 0,
+      });
+    }
+
+    return result;
+  }
+
+  async listMessages(
+    conversationId: string,
+    userId: string,
+    limit: number = 30,
+    cursor?: string
+  ): Promise<{ messages: import("@shared/schema").MessageWithSender[]; hasMore: boolean; nextCursor?: string }> {
+    // Verify user is in conversation
+    const isParticipant = await this.isUserInConversation(conversationId, userId);
+    if (!isParticipant) {
+      throw new Error('User is not a participant in this conversation');
+    }
+
+    // Build query with cursor-based pagination
+    const conditions = [eq(messages.conversationId, conversationId)];
+    if (cursor) {
+      conditions.push(sql`${messages.createdAt} < ${new Date(cursor)}`);
+    }
+
+    const messageList = await db
+      .select({
+        message: messages,
+        sender: {
+          id: users.id,
+          username: users.username,
+          displayName: users.displayName,
+          profileImage: sql<string>`CASE WHEN ${users.profileImages}[1] IS NOT NULL THEN ${users.profileImages}[1] ELSE NULL END`.as('profileImage'),
+        },
+      })
+      .from(messages)
+      .innerJoin(users, eq(messages.senderId, users.id))
+      .where(and(...conditions))
+      .orderBy(desc(messages.createdAt))
+      .limit(limit + 1); // Fetch one extra to check if there's more
+
+    const hasMore = messageList.length > limit;
+    const messagesToReturn = hasMore ? messageList.slice(0, limit) : messageList;
+
+    const result = messagesToReturn.map(row => ({
+      ...row.message,
+      sender: {
+        id: row.sender.id,
+        username: row.sender.username,
+        displayName: row.sender.displayName,
+        profileImage: row.sender.profileImage,
+      },
+    }));
+
+    const nextCursor = hasMore && messagesToReturn.length > 0
+      ? messagesToReturn[messagesToReturn.length - 1].message.createdAt.toISOString()
+      : undefined;
+
+    return { messages: result, hasMore, nextCursor };
+  }
+
+  async createMessage(conversationId: string, senderId: string, content: string): Promise<Message> {
+    const [message] = await db
+      .insert(messages)
+      .values({
+        conversationId,
+        senderId,
+        content,
+        senderEmail: null, // Legacy field
+        recipientEmail: null, // Legacy field
+      })
+      .returning();
+    return message;
+  }
+
+  async markRead(conversationId: string, userId: string, at?: Date): Promise<void> {
+    const readAt = at || new Date();
+    await db
+      .update(conversationParticipants)
+      .set({ lastReadAt: readAt })
+      .where(
+        and(
+          eq(conversationParticipants.conversationId, conversationId),
+          eq(conversationParticipants.userId, userId)
+        )
+      );
+  }
+
+  async isUserInConversation(conversationId: string, userId: string): Promise<boolean> {
+    const [participant] = await db
+      .select()
+      .from(conversationParticipants)
+      .where(
+        and(
+          eq(conversationParticipants.conversationId, conversationId),
+          eq(conversationParticipants.userId, userId)
+        )
+      )
+      .limit(1);
+    return !!participant;
+  }
+
+  // Legacy conversation methods
   async createConversation(insertConversation: InsertConversation, schoolId: string): Promise<Conversation> {
     const [conversation] = await db
       .insert(conversations)
-      .values({ ...insertConversation, schoolId })
+      .values({ 
+        ...insertConversation, 
+        schoolId,
+        isGroup: insertConversation.isGroup ?? 0,
+        createdBy: insertConversation.createdBy ?? '',
+      })
       .returning();
     return conversation;
   }
