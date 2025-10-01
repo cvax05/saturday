@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
-import { insertUserSchema, insertMessageSchema, insertPregameSchema, insertReviewSchema, registerSchema, loginSchema, updateProfileSchema, type AuthResponse, type AuthUser } from "@shared/schema";
+import { insertUserSchema, insertMessageSchema, insertPregameSchema, insertReviewSchema, registerSchema, loginSchema, updateProfileSchema, createConversationSchema, sendMessageSchema, markReadSchema, type AuthResponse, type AuthUser } from "@shared/schema";
 import { signJWT } from "./auth/jwt";
 import { authenticateJWT, optionalAuth } from "./auth/middleware";
 
@@ -543,6 +543,135 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching conversation:", error);
       res.status(500).json({ message: "Failed to fetch conversation" });
+    }
+  });
+
+  // New messaging endpoints - First-class messaging with conversations
+  // POST /api/messages/conversations - Create or get direct conversation
+  app.post("/api/messages/conversations", authenticateJWT, async (req, res) => {
+    try {
+      const { participantIds, title } = createConversationSchema.parse(req.body);
+      const senderId = req.user!.user_id;
+      const schoolId = req.user!.school_id;
+
+      // Validate all participants are in the same school
+      for (const participantId of participantIds) {
+        const participant = await storage.getUser(participantId);
+        if (!participant) {
+          return res.status(404).json({ error: `Participant ${participantId} not found` });
+        }
+        
+        // Check if participant is in the same school
+        const membership = await storage.getUserSchoolMembership(participantId, schoolId);
+        if (!membership) {
+          return res.status(403).json({ error: `Participant ${participantId} not in your school` });
+        }
+      }
+
+      // For two-person conversations, check if one already exists
+      if (participantIds.length === 1) {
+        const result = await storage.createOrGetDirectConversation(senderId, participantIds[0], schoolId);
+        return res.status(200).json(result);
+      }
+
+      // For group conversations, create new one
+      // This is a simplified implementation - you can enhance it to check for duplicate groups
+      return res.status(501).json({ error: "Group conversations not yet implemented" });
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      res.status(400).json({ error: "Failed to create conversation" });
+    }
+  });
+
+  // GET /api/messages/conversations - List all conversations for user
+  app.get("/api/messages/conversations", authenticateJWT, async (req, res) => {
+    try {
+      const userId = req.user!.user_id;
+      const schoolId = req.user!.school_id;
+
+      const conversations = await storage.listConversationsForUser(userId, schoolId);
+      res.status(200).json({ conversations });
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      res.status(500).json({ error: "Failed to fetch conversations" });
+    }
+  });
+
+  // GET /api/messages/:conversationId - Get messages in a conversation
+  app.get("/api/messages/:conversationId", authenticateJWT, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const { cursor, limit } = req.query;
+      const userId = req.user!.user_id;
+
+      // Verify user is in conversation
+      const isParticipant = await storage.isUserInConversation(conversationId, userId);
+      if (!isParticipant) {
+        return res.status(403).json({ error: "You are not a participant in this conversation" });
+      }
+
+      const messageLimit = limit ? parseInt(limit as string, 10) : 30;
+      const result = await storage.listMessages(
+        conversationId,
+        userId,
+        messageLimit,
+        cursor as string | undefined
+      );
+
+      res.status(200).json(result);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  // POST /api/messages/:conversationId - Send a message
+  app.post("/api/messages/:conversationId", authenticateJWT, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const { content } = sendMessageSchema.parse(req.body);
+      const senderId = req.user!.user_id;
+
+      // Verify user is in conversation
+      const isParticipant = await storage.isUserInConversation(conversationId, senderId);
+      if (!isParticipant) {
+        return res.status(403).json({ error: "You are not a participant in this conversation" });
+      }
+
+      // Verify conversation is in user's school
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation || conversation.schoolId !== req.user!.school_id) {
+        return res.status(403).json({ error: "Conversation not found in your school" });
+      }
+
+      const message = await storage.createMessage(conversationId, senderId, content);
+      res.status(201).json({ message });
+    } catch (error) {
+      console.error("Error sending message:", error);
+      res.status(400).json({ error: "Failed to send message" });
+    }
+  });
+
+  // POST /api/messages/:conversationId/read - Mark conversation as read
+  app.post("/api/messages/:conversationId/read", authenticateJWT, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const { lastReadAt } = markReadSchema.parse(req.body);
+      const userId = req.user!.user_id;
+
+      // Verify user is in conversation
+      const isParticipant = await storage.isUserInConversation(conversationId, userId);
+      if (!isParticipant) {
+        return res.status(403).json({ error: "You are not a participant in this conversation" });
+      }
+
+      const readTime = lastReadAt ? new Date(lastReadAt) : undefined;
+      await storage.markRead(conversationId, userId, readTime);
+      
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Error marking conversation as read:", error);
+      res.status(400).json({ error: "Failed to mark as read" });
     }
   });
 
