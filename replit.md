@@ -36,9 +36,16 @@ Preferred communication style: Simple, everyday language.
 - Designed for extension with additional tables for profiles, messages, ratings, etc.
 
 ### Authentication & Authorization
-**Planned JWT Implementation**: Backend includes JWT dependencies and session management setup with connect-pg-simple for PostgreSQL session storage.
+**JWT Implementation**: Complete JWT authentication system with httpOnly cookies for secure token storage. Tokens expire after 7 days and are automatically sent with all API requests.
 
-**Security Considerations**: Password hashing with bcryptjs, secure session storage, and environment-based configuration for sensitive data.
+**Security Considerations**: 
+- Password hashing with bcryptjs
+- JWT tokens stored in httpOnly cookies (not accessible to JavaScript)
+- Trust proxy configuration for Replit production environment
+- All authentication flows rely on API endpoints, no localStorage caching
+- /api/auth/me endpoint for user data retrieval
+
+**LocalStorage Fix (October 2025)**: Removed all localStorage caching from auth flows to prevent quota exceeded errors. Previously, base64-encoded profile images were cached in localStorage, exceeding the 5MB browser limit. Now all user data is fetched fresh from API using JWT authentication.
 
 ### Design System
 **Comprehensive Design Guidelines**: Detailed color palette for dark/light themes, typography using Inter font family, consistent spacing system, and component specifications.
