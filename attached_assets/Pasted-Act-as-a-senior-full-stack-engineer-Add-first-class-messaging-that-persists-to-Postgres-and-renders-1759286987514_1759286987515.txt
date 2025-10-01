@@ -1,0 +1,125 @@
+Act as a senior full-stack engineer. Add first-class messaging that persists to Postgres and renders in the client.
+
+Goal
+Users can create a direct conversation and send messages. Messages save to Postgres using Drizzle and load on page refresh. Scope conversations to the same school as the sender. Keep current stack:
+• Backend: Express TS, Drizzle ORM, Neon Postgres
+• Frontend: React 18 TS, Vite, Wouter, TanStack Query
+• Auth: JWT in httpOnly cookies via existing authenticateJWT
+• Styling: Tailwind + shadcn/ui
+
+Deliverables
+1) Drizzle schema and migrations
+2) Server routes with Zod validation
+3) Database layer methods in server/storage.ts
+4) Client components, hooks, and optimistic send
+5) Tests with curl and a short acceptance checklist
+
+Data model
+Create three tables with foreign keys and indexes.
+
+A) conversations
+  id uuid pk
+  school_id text not null
+  is_group boolean default false
+  title text nullable
+  created_by uuid not null references users(id)
+  created_at timestamptz default now()
+
+B) conversation_participants
+  conversation_id uuid not null references conversations(id) on delete cascade
+  user_id uuid not null references users(id) on delete cascade
+  last_read_at timestamptz nullable
+  joined_at timestamptz default now()
+  primary key (conversation_id, user_id)
+
+C) messages
+  id uuid pk default gen_random_uuid()
+  conversation_id uuid not null references conversations(id) on delete cascade
+  sender_id uuid not null references users(id) on delete cascade
+  content text not null check (char_length(content) between 1 and 4000)
+  created_at timestamptz default now()
+  index on (conversation_id, created_at)
+
+Add Drizzle models in shared/schema.ts and a migration file. Include helper types for Conversation, Participant, Message.
+
+Server routes in server/routes.ts
+All routes require authenticateJWT unless noted.
+
+1) POST /api/messages/conversations
+  Body: { participantIds: string[], title?: string }
+  Rules: sender must share school_id with all participants. If a two-person conversation with same users already exists in this school, return it instead of creating a new one.
+  Returns: { conversation, participants }
+
+2) GET /api/messages/conversations
+  Query: none
+  Returns all conversations where req.user.id is a participant, newest message time first, plus last message preview and unread count per conversation.
+
+3) GET /api/messages/:conversationId
+  Query: { cursor?: string, limit?: number default 30 }
+  Paginates messages by created_at descending with a cursor. Verify req.user is a participant.
+
+4) POST /api/messages/:conversationId
+  Body: { content: string }
+  Creates a message as req.user.id after verifying participation and school scope. Return the new message.
+
+5) POST /api/messages/:conversationId/read
+  Body: { lastReadAt?: string }
+  Sets conversation_participants.last_read_at to now or provided ISO time for req.user.
+
+Validation and security
+• Use Zod to validate all bodies and params
+• Enforce same school_id for all conversation members
+• Use credentials: "include" on all client fetches so the cookie is sent
+• Add app.set("trust proxy", 1) if not already present so secure cookies work on Replit
+
+Database layer in server/storage.ts
+Add methods:
+• createOrGetDirectConversation(senderId, participantId, schoolId)
+• listConversationsForUser(userId, schoolId)
+• listMessages(conversationId, userId, limit, cursor)
+• createMessage(conversationId, senderId, content)
+• markRead(conversationId, userId, at)
+
+Client
+Files to add or edit:
+• client/src/pages/Messages.tsx main screen with two panes: left list of conversations, right message thread
+• client/src/components/ConversationList.tsx shows conversations with unread counts and last message preview
+• client/src/components/MessageThread.tsx shows messages with infinite scroll up and auto-scroll on send
+• client/src/components/MessageComposer.tsx text box and Send button
+
+Hooks with TanStack Query:
+• useQuery(['/api/messages/conversations'], authQueryFn)
+• useInfiniteQuery([`/api/messages/${id}`], authQueryFnWithCursor)
+• useMutation for POST send with optimistic update
+All fetch calls use credentials: 'include'
+
+Minimal UX rules
+• When you open a conversation, immediately call POST read to update last_read_at
+• Optimistically add the message to the thread, rollback on error
+• Show a small unread pill in the conversation list
+• For now, update by refetch on send. Real-time can be added later
+
+Indexes and performance
+• Ensure messages table has index on (conversation_id, created_at)
+• Ensure listConversations query joins to messages using max(created_at) for last preview in a performant way
+
+Tests with curl
+1) Login and keep cookie in jar
+2) Create a conversation with another user id
+3) Send a message
+4) List messages
+5) Mark read
+Provide exact curl commands with -c and -b to use cookies
+
+Acceptance checklist
+1) Create two users in same school, A and B
+2) A creates a conversation with B and sends “hello”
+3) B logs in and sees the conversation and the unread badge
+4) B opens the thread, unread badge clears, messages load, and refresh shows the same result
+5) Pagination works when there are more than 30 messages
+
+Constraints
+• Do not change existing auth or profile flows
+• Keep current school membership logic
+• Keep code style and file layout consistent with this repo
+• Return code patches per file and a short explanation of key choices

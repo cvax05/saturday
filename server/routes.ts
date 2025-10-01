@@ -93,7 +93,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.cookie('auth_token', token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
+          sameSite: 'lax', // Changed from 'strict' to 'lax' to work with navigation
+          path: '/', // Explicitly set path to root
           maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
         
@@ -210,7 +211,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.cookie('auth_token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax', // Changed from 'strict' to 'lax' to work with navigation
+        path: '/', // Explicitly set path to root
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
       
