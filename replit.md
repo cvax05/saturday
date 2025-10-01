@@ -29,11 +29,23 @@ Preferred communication style: Simple, everyday language.
 **Route Organization**: Centralized route registration system with proper HTTP status code handling and JSON response formatting.
 
 ### Database Schema
-**PostgreSQL with Drizzle ORM**: Uses Drizzle for type-safe database operations and schema management. Currently has minimal schema with just users table containing basic authentication fields.
+**PostgreSQL with Drizzle ORM**: Uses Drizzle for type-safe database operations and schema management.
 
 **Schema Structure**: 
-- Users table with UUID primary keys, username, and password fields
-- Designed for extension with additional tables for profiles, messages, ratings, etc.
+- **Users table**: UUID primary keys, authentication, profile data (display name, bio, group size, availability)
+- **Conversations table**: UUID primary keys, supports both direct (1-on-1) and group conversations with titles
+- **Conversation_participants table**: Junction table linking users to conversations with last_read_at timestamps for unread count tracking
+- **Messages table**: UUID primary keys, content with CHECK constraint (length > 0), indexed by conversation_id and created_at for efficient pagination
+- **Schools table**: School information with unique slugs
+- **User_school_memberships table**: Many-to-many relationship between users and schools for multi-tenancy
+- **Reviews, pregames tables**: Rating and event coordination features
+
+**Messaging System (October 2025)**: Complete first-class messaging implementation with:
+- Cursor-based pagination for efficient message loading
+- Direct message deduplication via composite unique constraint on sorted participant IDs
+- Unread count tracking via last_read_at timestamps
+- School isolation: all conversations scoped to school_id from JWT
+- Real-time updates via polling (3-second intervals)
 
 ### Authentication & Authorization
 **JWT Implementation**: Complete JWT authentication system with httpOnly cookies for secure token storage. Tokens expire after 7 days and are automatically sent with all API requests.
