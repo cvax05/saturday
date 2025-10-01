@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import type { JWTPayload } from '@shared/schema';
 
 // Mandatory JWT secret - fail startup if not provided
-const JWT_SECRET = process.env.SESSION_SECRET;
+const JWT_SECRET = process.env.SESSION_SECRET as string;
 if (!JWT_SECRET) {
   console.error('CRITICAL: SESSION_SECRET environment variable is required for JWT authentication');
   console.error('Please set a strong, random SESSION_SECRET before starting the server');
@@ -17,7 +17,8 @@ export function signJWT(payload: Omit<JWTPayload, 'exp'>): string {
 
 export function verifyJWT(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return decoded as JWTPayload;
   } catch (error) {
     console.error('JWT verification failed:', error);
     return null;
