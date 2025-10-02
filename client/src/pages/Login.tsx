@@ -27,6 +27,7 @@ export default function Login() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           username: formData.email, // Using email as username for now  
           password: formData.password,
