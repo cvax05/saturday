@@ -275,7 +275,7 @@ export default function Messages() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setLocation('/')}
+              onClick={() => setLocation('/groups')}
               data-testid="button-back-home"
               className="text-muted-foreground hover:text-foreground"
             >
