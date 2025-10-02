@@ -1,0 +1,148 @@
+Act as a senior full stack engineer. Fix auth so multiple accounts work in parallel, and make messaging fully persist and render. Then prove it with automated checks.
+
+Repo facts to respect
+• Backend Express TS with Drizzle on Neon Postgres
+• Frontend React 18 TS with Vite and Wouter
+• JWT in httpOnly cookie
+• Tailwind and shadcn
+• Images can stay base64 for now
+
+Make these changes
+
+A) Auth hardening and multi account support
+1) server/index.ts
+   • app.set('trust proxy', 1)
+   • Ensure JSON body limit remains 15mb
+2) server/auth/jwt.ts
+   • Confirm cookie options are:
+     httpOnly true
+     sameSite 'lax' by default
+     secure true when running behind https on Replit
+   • Export a helper setAuthCookie(res, token) so all places use the same options
+3) CORS only if client and API are on different origins
+   • If dev serves client and API from the same Express origin, do nothing
+   • If not, enable cors with credentials true and set cookie sameSite 'none'
+
+B) Remove fragile localStorage auth state
+1) client/src/lib/queryClient.ts
+   • Shared fetch must include credentials 'include'
+2) Remove any use of safeSaveToLocalStorage for auth or profile
+   • After register or login, do not write user data to localStorage
+   • Always read user state from GET /api/auth/me
+
+C) Messaging persistence and correctness
+Schema with Drizzle in shared/schema.ts and a migration
+1) conversations
+   id uuid pk
+   school_id text not null
+   is_group boolean default false
+   title text null
+   created_by uuid not null references users(id)
+   created_at timestamptz default now()
+   index on (school_id, created_at desc)
+2) conversation_participants
+   conversation_id uuid not null references conversations(id) on delete cascade
+   user_id uuid not null references users(id) on delete cascade
+   last_read_at timestamptz null
+   joined_at timestamptz default now()
+   primary key (conversation_id, user_id)
+3) messages
+   id uuid pk default gen_random_uuid()
+   conversation_id uuid not null references conversations(id) on delete cascade
+   sender_id uuid not null references users(id) on delete cascade
+   content text not null check (char_length(content) between 1 and 4000)
+   created_at timestamptz default now()
+   index on (conversation_id, created_at)
+
+Server routes in server/routes.ts with Zod validation and authenticateJWT
+1) POST /api/messages/conversations
+   Body participantIds string[] title optional
+   Rule same school for all members
+   If a direct 2 member conversation already exists for these two users in this school return it
+   Return conversation and participants
+2) GET /api/messages/conversations
+   List user’s conversations with last message preview and unread count
+3) GET /api/messages/:conversationId
+   Query cursor optional limit default 30
+   Return messages newest first with cursor pagination
+4) POST /api/messages/:conversationId
+   Body content string
+   Insert message as req.user.id and return the inserted row
+5) POST /api/messages/:conversationId/read
+   Mark last_read_at for this user now
+
+Database layer in server/storage.ts
+Add methods
+• createOrGetDirectConversation
+• listConversationsForUser with last message and unread count
+• listMessages with cursor pagination
+• createMessage returning the inserted message
+• markRead
+
+Client
+1) New Messages page client/src/pages/Messages.tsx with two panes
+   Left ConversationList using useQuery(['/api/messages/conversations'])
+   Right MessageThread using useInfiniteQuery([`/api/messages/${id}`]) and a MessageComposer
+2) All fetches use credentials include
+3) When a conversation opens call POST read
+4) On send use a TanStack useMutation with an optimistic update and rollback on error
+
+D) Verification and diagnostics
+1) Add GET /api/auth/me which already exists and must return a unique id per cookie
+2) Add GET /api/messages/debug/selftest for development only guarded by env flag
+   It should check
+   • JWT is present and decodes
+   • DB connectivity ok
+   • Required tables exist
+   • Row level create and read of a temp conversation and message works then cleans up
+   Return a JSON report with pass true or false and any failures
+3) Add a tiny seed script in scripts/seedTwoUsers.ts
+   Create two users in the same school if they do not already exist and print their ids and emails
+
+E) Tests to include in the PR description
+Provide exact curl commands using cookie jars to prove multi account isolation and messaging
+
+# Create or login as Alice
+curl -c alice.txt -b alice.txt -H "Content-Type: application/json" -X POST \
+  https://YOUR_URL/api/auth/login \
+  -d '{"username":"alice","password":"pass","schoolSlug":"test-school"}'
+
+# Create or login as Bob
+curl -c bob.txt -b bob.txt -H "Content-Type: application/json" -X POST \
+  https://YOUR_URL/api/auth/login \
+  -d '{"username":"bob","password":"pass","schoolSlug":"test-school"}'
+
+# Alice creates or fetches a direct conversation with Bob
+curl -c alice.txt -b alice.txt -H "Content-Type: application/json" -X POST \
+  https://YOUR_URL/api/messages/conversations \
+  -d '{"participantIds":["BOB_UUID"]}'
+
+# Alice sends a message
+curl -c alice.txt -b alice.txt -H "Content-Type: application/json" -X POST \
+  https://YOUR_URL/api/messages/CONV_UUID \
+  -d '{"content":"hello from alice"}'
+
+# Bob lists his conversations and should see an unread count
+curl -c bob.txt -b bob.txt https://YOUR_URL/api/messages/conversations
+
+# Bob opens the thread and fetches messages
+curl -c bob.txt -b bob.txt https://YOUR_URL/api/messages/CONV_UUID
+
+# Bob marks as read
+curl -c bob.txt -b bob.txt -H "Content-Type: application/json" -X POST \
+  https://YOUR_URL/api/messages/CONV_UUID/read -d '{}'
+
+# Prove account isolation
+curl -c alice.txt -b alice.txt https://YOUR_URL/api/auth/me
+curl -c bob.txt -b bob.txt https://YOUR_URL/api/auth/me
+
+Acceptance checklist
+1) In a normal window log in as Alice and in an incognito window log in as Bob
+2) Alice starts a conversation with Bob and sends two messages
+3) Bob sees the conversation with an unread badge then opens it and sees both messages
+4) Refresh both windows and confirm the same state loads from the API
+5) Sending in either window immediately shows locally and persists on refresh
+
+Deliverables
+• Drizzle migration file and updated shared/schema.ts
+• Code patches per fi
