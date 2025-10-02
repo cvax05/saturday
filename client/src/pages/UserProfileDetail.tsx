@@ -310,6 +310,7 @@ export default function UserProfileDetail() {
                   <MessageDialog 
                     recipientName={userProfile.name} 
                     recipientEmail={userProfile.email}
+                    recipientId={userProfile.id}
                   />
                 )}
               </div>

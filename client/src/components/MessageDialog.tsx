@@ -1,49 +1,69 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { MessageCircle, Send } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { apiRequest, authQueryFn } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import type { AuthResponse } from "@shared/schema";
 
 interface MessageDialogProps {
   recipientName: string;
   recipientEmail: string;
+  recipientId: string;
   children?: React.ReactNode;
 }
 
-export default function MessageDialog({ recipientName, recipientEmail, children }: MessageDialogProps) {
+export default function MessageDialog({ recipientName, recipientEmail, recipientId, children }: MessageDialogProps) {
+  const [, setLocation] = useLocation();
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Get current user from API
+  const { data: authData } = useQuery<AuthResponse>({
+    queryKey: ['/api/auth/me'],
+    queryFn: authQueryFn as any,
+  });
+
+  const currentUser = authData?.user;
+
   const sendMessageMutation = useMutation({
-    mutationFn: async (data: { recipientEmail: string; content: string }) => {
-      // Get current user email from localStorage
-      const currentUserData = localStorage.getItem('currentUser');
-      if (!currentUserData) {
+    mutationFn: async (data: { recipientId: string; content: string }) => {
+      if (!currentUser) {
         throw new Error('No user logged in');
       }
       
-      const currentUser = JSON.parse(currentUserData);
-      const messageData = {
-        ...data,
-        senderEmail: currentUser.email
-      };
+      // Step 1: Create or get conversation with recipient
+      const conversationResponse = await apiRequest('POST', '/api/messages/conversations', {
+        participantIds: [data.recipientId]
+      });
+      const conversationData = await conversationResponse.json();
+      const conversationId = conversationData.conversation.id;
       
-      return await apiRequest('POST', '/api/messages/send', messageData);
+      // Step 2: Send message to the conversation
+      const messageResponse = await apiRequest('POST', `/api/messages/${conversationId}`, {
+        content: data.content
+      });
+      
+      return { conversationId, messageResponse };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Message sent!",
         description: `Your message has been sent to ${recipientName}`,
       });
       setMessage("");
       setOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['/api/messages'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/messages/conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/messages', data.conversationId] });
+      
+      // Navigate to messages page to see the conversation
+      setLocation('/messages');
     },
     onError: (error: any) => {
       toast({
@@ -55,10 +75,10 @@ export default function MessageDialog({ recipientName, recipientEmail, children 
   });
 
   const handleSend = () => {
-    if (!message.trim()) return;
+    if (!message.trim() || !currentUser) return;
     
     sendMessageMutation.mutate({
-      recipientEmail,
+      recipientId,
       content: message.trim(),
     });
   };
