@@ -663,6 +663,163 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/messages/debug/selftest - Development diagnostics endpoint
+  app.get("/api/messages/debug/selftest", async (req, res) => {
+    // Only enable in development
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(404).json({ error: "Not found" });
+    }
+
+    const report: any = {
+      pass: true,
+      timestamp: new Date().toISOString(),
+      checks: {},
+    };
+
+    try {
+      // Check 1: JWT presence and decode
+      const token = req.cookies.auth_token;
+      if (!token) {
+        report.checks.jwt = { status: "fail", message: "No auth_token cookie present" };
+        report.pass = false;
+      } else {
+        const { verifyJWT } = await import("./auth/jwt");
+        const decoded = verifyJWT(token);
+        if (decoded) {
+          report.checks.jwt = { 
+            status: "pass", 
+            message: "JWT decoded successfully",
+            payload: { user_id: decoded.user_id, school_id: decoded.school_id }
+          };
+        } else {
+          report.checks.jwt = { status: "fail", message: "JWT verification failed" };
+          report.pass = false;
+        }
+      }
+
+      // Check 2: DB connectivity
+      try {
+        const schools = await storage.getAllSchools();
+        report.checks.dbConnectivity = { 
+          status: "pass", 
+          message: `Connected to database, found ${schools.length} schools`
+        };
+      } catch (dbError) {
+        report.checks.dbConnectivity = { 
+          status: "fail", 
+          message: `Database connection failed: ${dbError}` 
+        };
+        report.pass = false;
+      }
+
+      // Check 3: Required tables exist
+      try {
+        const { db } = await import("./db");
+        const { sql } = await import("drizzle-orm");
+        
+        const tables = ['conversations', 'conversation_participants', 'messages', 'users', 'schools'];
+        const tableChecks: any = {};
+        
+        for (const table of tables) {
+          const result: any = await db.execute(
+            sql.raw(`SELECT EXISTS (
+              SELECT FROM information_schema.tables 
+              WHERE table_schema = 'public' 
+              AND table_name = '${table}'
+            )`)
+          );
+          const exists = result.rows?.[0]?.exists ?? false;
+          tableChecks[table] = exists ? "exists" : "missing";
+          if (!exists) report.pass = false;
+        }
+        
+        report.checks.tables = { 
+          status: report.pass ? "pass" : "fail", 
+          tables: tableChecks 
+        };
+      } catch (tableError) {
+        report.checks.tables = { 
+          status: "fail", 
+          message: `Table check failed: ${tableError}` 
+        };
+        report.pass = false;
+      }
+
+      // Check 4: CRUD test (create temp conversation and message, then cleanup)
+      if (report.checks.jwt?.status === "pass") {
+        try {
+          const { db } = await import("./db");
+          const { conversations, conversation_participants, messages } = await import("@shared/schema");
+          const { eq, and } = await import("drizzle-orm");
+          
+          const decoded = report.checks.jwt.payload;
+          const userId = decoded.user_id;
+          const schoolId = decoded.school_id;
+          
+          // Create a temp conversation
+          const [tempConv] = await db.insert(conversations).values({
+            schoolId,
+            isGroup: 0,
+            title: `[SELFTEST] ${Date.now()}`,
+            createdBy: userId,
+          }).returning();
+          
+          // Add participant
+          await db.insert(conversation_participants).values({
+            conversationId: tempConv.id,
+            userId,
+          });
+          
+          // Create a test message
+          const [tempMsg] = await db.insert(messages).values({
+            conversationId: tempConv.id,
+            senderId: userId,
+            content: "selftest message",
+          }).returning();
+          
+          // Read it back
+          const readBack = await db.query.messages.findFirst({
+            where: eq(messages.id, tempMsg.id)
+          });
+          
+          // Cleanup
+          await db.delete(messages).where(eq(messages.conversationId, tempConv.id));
+          await db.delete(conversation_participants).where(eq(conversation_participants.conversationId, tempConv.id));
+          await db.delete(conversations).where(eq(conversations.id, tempConv.id));
+          
+          if (readBack && readBack.content === "selftest message") {
+            report.checks.crud = { 
+              status: "pass", 
+              message: "Successfully created, read, and deleted test records" 
+            };
+          } else {
+            report.checks.crud = { status: "fail", message: "Message read back did not match" };
+            report.pass = false;
+          }
+        } catch (crudError) {
+          report.checks.crud = { 
+            status: "fail", 
+            message: `CRUD test failed: ${crudError}` 
+          };
+          report.pass = false;
+        }
+      } else {
+        report.checks.crud = { 
+          status: "skipped", 
+          message: "Skipped because JWT check failed" 
+        };
+      }
+
+      res.status(200).json(report);
+    } catch (error) {
+      res.status(500).json({
+        pass: false,
+        error: String(error),
+        checks: report.checks,
+      });
+    }
+  });
+
   // Pregame endpoints - JWT protected, school-scoped
   app.post("/api/pregames", authenticateJWT, async (req, res) => {
     try {
