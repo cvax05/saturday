@@ -65,6 +65,8 @@ Preferred communication style: Simple, everyday language.
 
 **Legacy Route Cleanup (October 2025)**: Removed three email-based messaging endpoints that were causing Express routing conflicts with conversation-based endpoints. The old `/api/messages/:userEmail` route was matching "conversations" as a URL parameter, causing "Access denied" errors. All messaging now uses conversation-based endpoints exclusively.
 
+**Navigation Fix (October 2025)**: Fixed Messages page back button to navigate to `/groups` instead of `/` (registration page), preventing the appearance of being logged out. Also added `credentials: 'include'` to Login and Registration fetch requests to ensure JWT cookies are properly sent and stored during authentication flows.
+
 ### Design System
 **Comprehensive Design Guidelines**: Detailed color palette for dark/light themes, typography using Inter font family, consistent spacing system, and component specifications.
 
