@@ -464,77 +464,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Seeding endpoint removed for security - use proper admin tools for data seeding
 
-  // Message endpoints - JWT protected, school-scoped
-  app.post("/api/messages/send", authenticateJWT, async (req, res) => {
-    try {
-      const { recipientEmail, content } = insertMessageSchema.parse(req.body);
-      
-      // Get sender email from JWT token
-      const senderEmail = req.user!.email;
-      
-      // Validate that recipient exists in the same school
-      const recipient = await storage.getUserByEmailInSchool(recipientEmail, req.user!.school_id);
-      if (!recipient) {
-        return res.status(404).json({ message: "Recipient not found in your school" });
-      }
-      
-      const message = await storage.sendMessageInSchool({
-        recipientEmail,
-        content,
-        isRead: 0
-      }, senderEmail, req.user!.school_id);
-      
-      res.status(201).json({ message: "Message sent", data: message });
-    } catch (error) {
-      console.error("Error sending message:", error);
-      res.status(400).json({ message: "Failed to send message" });
-    }
-  });
-
-  app.get("/api/messages/:userEmail", authenticateJWT, async (req, res) => {
-    try {
-      const { userEmail } = req.params;
-      
-      // Only allow users to access their own messages
-      if (userEmail !== req.user!.email) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-      
-      // Get messages for user in their school
-      const messages = await storage.getMessagesForUserInSchool(userEmail, req.user!.school_id);
-      res.json({ messages });
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-      res.status(500).json({ message: "Failed to fetch messages" });
-    }
-  });
-
-  app.get("/api/messages/conversation/:userEmail1/:userEmail2", authenticateJWT, async (req, res) => {
-    try {
-      const { userEmail1, userEmail2 } = req.params;
-      
-      // Verify that the requesting user is one of the participants
-      if (userEmail1 !== req.user!.email && userEmail2 !== req.user!.email) {
-        return res.status(403).json({ message: "Access denied" });
-      }
-      
-      // Validate that both users exist in the same school
-      const user1 = await storage.getUserByEmailInSchool(userEmail1, req.user!.school_id);
-      const user2 = await storage.getUserByEmailInSchool(userEmail2, req.user!.school_id);
-      
-      if (!user1 || !user2) {
-        return res.status(404).json({ message: "One or both users not found in your school" });
-      }
-      
-      const messages = await storage.getMessagesBetweenUsersInSchool(userEmail1, userEmail2, req.user!.school_id);
-      res.json({ messages });
-    } catch (error) {
-      console.error("Error fetching conversation:", error);
-      res.status(500).json({ message: "Failed to fetch conversation" });
-    }
-  });
-
-  // New messaging endpoints - First-class messaging with conversations
+  // Messaging endpoints - First-class conversation-based messaging with JWT protection and school scoping
+  // Legacy email-based endpoints have been removed to prevent route conflicts
   // POST /api/messages/conversations - Create or get direct conversation
   app.post("/api/messages/conversations", authenticateJWT, async (req, res) => {
     try {
