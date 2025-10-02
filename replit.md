@@ -61,6 +61,10 @@ Preferred communication style: Simple, everyday language.
 
 **Cookie Navigation Fix (October 2025)**: Fixed random logout bug during navigation by setting explicit `path: '/'` on auth cookies and changing `sameSite` from 'strict' to 'lax'. Root cause: cookies without explicit path were scoped to `/api/auth/*`, causing other API calls to miss the cookie. Cookie settings now: `httpOnly: true`, `secure: production only`, `sameSite: 'lax'`, `path: '/'`, `maxAge: 7 days`.
 
+**Auth Hardening (October 2025)**: Created `setAuthCookie` helper function in `server/auth/jwt.ts` to ensure consistent cookie settings across all authentication routes (login, register, profile updates). All auth routes now use this centralized helper for cookie management.
+
+**Legacy Route Cleanup (October 2025)**: Removed three email-based messaging endpoints that were causing Express routing conflicts with conversation-based endpoints. The old `/api/messages/:userEmail` route was matching "conversations" as a URL parameter, causing "Access denied" errors. All messaging now uses conversation-based endpoints exclusively.
+
 ### Design System
 **Comprehensive Design Guidelines**: Detailed color palette for dark/light themes, typography using Inter font family, consistent spacing system, and component specifications.
 
