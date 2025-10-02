@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
 import { insertUserSchema, insertMessageSchema, insertPregameSchema, insertReviewSchema, registerSchema, loginSchema, updateProfileSchema, createConversationSchema, sendMessageSchema, markReadSchema, type AuthResponse, type AuthUser } from "@shared/schema";
-import { signJWT } from "./auth/jwt";
+import { signJWT, setAuthCookie } from "./auth/jwt";
 import { authenticateJWT, optionalAuth } from "./auth/middleware";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -89,14 +89,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           username: user.username,
         });
 
-        // Set httpOnly cookie
-        res.cookie('auth_token', token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax' as const, // Changed from 'strict' to 'lax' to work with navigation
-          path: '/', // Explicitly set path to root
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        });
+        // Set auth cookie with consistent options
+        setAuthCookie(res, token);
         
         // Return user and schools with separated photo structure
         const userSchools = await storage.getUserSchools(user.id);
@@ -207,14 +201,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: user.username,
       });
 
-      // Set httpOnly cookie
-      res.cookie('auth_token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax' as const, // Changed from 'strict' to 'lax' to work with navigation
-        path: '/', // Explicitly set path to root
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
+      // Set auth cookie with consistent options
+      setAuthCookie(res, token);
       
       // Separate profile image and gallery images
       const userProfileImages = user.profileImages || [];
