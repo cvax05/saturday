@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Header from "@/components/Header";
+import Landing from "@/pages/Landing";
 import Registration from "@/pages/Registration";
 import Login from "@/pages/Login";
 import Home from "@/pages/Home";
@@ -22,8 +23,10 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <Switch>
+      {/* Landing page */}
+      <Route path="/" component={Landing} />
+      
       {/* Authentication routes */}
-      <Route path="/" component={Registration} />
       <Route path="/register" component={Registration} />
       <Route path="/login" component={Login} />
       
