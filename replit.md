@@ -81,6 +81,12 @@ Preferred communication style: Simple, everyday language.
 - Groups page immediately displays after registration/login without showing "Authentication Required" message
 - Seamless user experience - no intermediate loading states or auth checks after successful registration/login
 
+**Messages Null Safety Fix (October 2025)**: Fixed runtime error "Cannot read properties of undefined (reading 'length')" when accessing `otherParticipants` in Messages page:
+- Added null/undefined checks to `getConversationDisplayName()` and `getConversationAvatar()` functions
+- Protected all access to `otherParticipants.length` and `otherParticipants[0]` with existence checks
+- Conversation header member count now safely handles missing `otherParticipants` array
+- Messaging works end-to-end without runtime errors
+
 ### Design System
 **Comprehensive Design Guidelines**: Detailed color palette for dark/light themes, typography using Inter font family, consistent spacing system, and component specifications.
 
