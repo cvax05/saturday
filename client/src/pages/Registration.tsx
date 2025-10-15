@@ -214,6 +214,7 @@ export default function Registration() {
               
               {/* Profile Picture */}
               <div className="flex flex-col items-center space-y-3">
+                <Label className="text-center">Profile Photo (shown in feeds)</Label>
                 <Avatar className="h-28 w-28 border-2 border-border">
                   <AvatarImage 
                     src={formData.profileImage} 
@@ -245,9 +246,9 @@ export default function Registration() {
 
               {/* Photo Gallery */}
               <div>
-                <Label>Photo Gallery ({formData.galleryImages.length}/5)</Label>
+                <Label>Additional Photos - Optional ({formData.galleryImages.length}/5)</Label>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Add up to 5 photos of your group/organization
+                  Add up to 5 more photos (shown on your profile page)
                 </p>
                 
                 <div className="grid grid-cols-3 gap-3">

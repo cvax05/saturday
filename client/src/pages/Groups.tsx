@@ -130,7 +130,7 @@ export default function Groups() {
                           <AvatarImage 
                             src={user.avatarUrl || user.profileImages?.[0] || ""} 
                             alt={user.username}
-                            className="object-contain"
+                            className="object-cover"
                           />
                           <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-primary/20 to-primary/5">
                             {(user.username || user.email).slice(0, 2).toUpperCase()}

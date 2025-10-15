@@ -270,7 +270,6 @@ export const registerSchema = createInsertSchema(users).pick({
   password: true,
   school: true, // Keep for backward compatibility 
   displayName: true,
-  avatarUrl: true,
   bio: true,
   classYear: true,
   groupSizeMin: true,
@@ -288,7 +287,6 @@ export const registerSchema = createInsertSchema(users).pick({
       .max(2000000, "Image size too large (max 2MB per image)")
   ).max(5, "Maximum 5 gallery images allowed").optional(),
   schoolSlug: z.string().min(1, "School selection is required"), // New field for school selection
-  avatarUrl: z.string().url().optional(),
   bio: z.string().max(500, "Bio must be 500 characters or less").optional(),
   classYear: z.number().int().min(2020).max(2030).optional(),
   groupSizeMin: z.number().int().min(1).max(100).optional(),

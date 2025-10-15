@@ -88,7 +88,7 @@ export default function UserProfileDetail() {
               description: currentUser.bio || "",
               classYear: undefined,
               profileImage: currentUser.profileImage || null,
-              profileImages: currentUser.profileImages || [],
+              profileImages: currentUser.galleryImages || [],
               createdAt: "",
               photos: [],
               groupSize: "",
@@ -119,6 +119,13 @@ export default function UserProfileDetail() {
           if (userResponse.ok) {
             const userData = await userResponse.json();
             
+            console.log('UserProfileDetail: API response:', {
+              hasAvatarUrl: !!userData.user.avatarUrl,
+              hasProfileImages: !!userData.user.profileImages,
+              profileImagesLength: userData.user.profileImages?.length || 0,
+              avatarUrlPrefix: userData.user.avatarUrl?.substring(0, 30)
+            });
+            
             // Transform the API response to match the UserProfile interface - only use real data
             const profileData = {
               id: userData.user.id,
@@ -129,8 +136,8 @@ export default function UserProfileDetail() {
               school: userData.schools?.[0]?.name || userData.user.school, // Don't add fake "Unknown School"
               description: userData.user.bio, // Don't force empty string
               classYear: userData.user.classYear,
-              profileImage: userData.user.avatarUrl || userData.user.profileImages?.[0] || null,
-              profileImages: userData.user.profileImages || [], // Registration photos
+              profileImage: userData.user.avatarUrl || null,
+              profileImages: userData.user.profileImages || [], // Gallery photos
               createdAt: userData.user.createdAt,
               photos: userData.photos || [],
               // Legacy fields - don't add fake data
@@ -140,6 +147,11 @@ export default function UserProfileDetail() {
               preferredAlcohol: userData.user.preferredAlcohol,
               availability: userData.user.availability
             };
+            
+            console.log('UserProfileDetail: Profile data:', {
+              profileImage: profileData.profileImage?.substring(0, 30),
+              profileImagesCount: profileData.profileImages.length
+            });
             
             setUserProfile(profileData);
             console.log('UserProfileDetail: Loaded profile with pregame prefs:', {

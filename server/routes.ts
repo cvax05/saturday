@@ -2,9 +2,32 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
-import { insertUserSchema, insertMessageSchema, insertPregameSchema, insertReviewSchema, registerSchema, loginSchema, updateProfileSchema, createConversationSchema, sendMessageSchema, markReadSchema, type AuthResponse, type AuthUser } from "@shared/schema";
+import { insertUserSchema, insertMessageSchema, insertPregameSchema, insertReviewSchema, registerSchema, loginSchema, updateProfileSchema, createConversationSchema, sendMessageSchema, markReadSchema, type AuthResponse, type AuthUser, type User } from "@shared/schema";
 import { signJWT, setAuthCookie } from "./auth/jwt";
 import { authenticateJWT, optionalAuth } from "./auth/middleware";
+
+// Centralized user serializer for consistent API responses
+function mapUserToClient(user: User): AuthUser & { avatarUrl?: string | null } {
+  // Backward compatibility: fallback to profileImages[0] if avatarUrl is null (legacy users)
+  const primaryPhoto = user.avatarUrl || user.profileImages?.[0] || null;
+  
+  return {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    displayName: user.displayName,
+    avatarUrl: primaryPhoto, // Include avatarUrl for frontend compatibility (with fallback)
+    profileImage: primaryPhoto,
+    galleryImages: user.profileImages || [],
+    profileImages: user.profileImages, // Keep for backward compatibility
+    school: user.school,
+    bio: user.bio,
+    groupSizeMin: user.groupSizeMin,
+    groupSizeMax: user.groupSizeMax,
+    preferredAlcohol: user.preferredAlcohol,
+    availability: user.availability,
+  };
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Schools endpoint - public for registration
@@ -36,14 +59,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         availability
       } = registerSchema.parse(req.body);
       
-      // Combine profileImage and galleryImages into profileImages array for database storage
-      const profileImages: string[] = [];
-      if (profileImage) {
-        profileImages.push(profileImage);
-      }
-      if (galleryImages && Array.isArray(galleryImages)) {
-        profileImages.push(...galleryImages);
-      }
+      // Store primary photo in avatarUrl, additional photos in profileImages
+      const galleryPhotos: string[] = galleryImages && Array.isArray(galleryImages) ? galleryImages : [];
       
       // Check if user already exists (by username or email)
       const existingUser = await storage.getUserByUsername(username);
@@ -66,7 +83,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email,
           password: hashedPassword,
           displayName: displayName || null,
-          profileImages: profileImages,
+          avatarUrl: profileImage || null,
+          profileImages: galleryPhotos,
           bio: bio || null,
           groupSizeMin: groupSizeMin || null,
           groupSizeMax: groupSizeMax || null,
@@ -94,23 +112,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Return user and schools with separated photo structure
         const userSchools = await storage.getUserSchools(user.id);
-        const userProfileImages = user.profileImages || [];
         const authResponse: AuthResponse = {
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            displayName: user.displayName,
-            profileImage: userProfileImages[0] || null,
-            galleryImages: userProfileImages.slice(1),
-            profileImages: user.profileImages, // Keep for backward compatibility
-            school: user.school,
-            bio: user.bio,
-            groupSizeMin: user.groupSizeMin,
-            groupSizeMax: user.groupSizeMax,
-            preferredAlcohol: user.preferredAlcohol,
-            availability: user.availability,
-          },
+          user: mapUserToClient(user),
           schools: userSchools.map(s => ({
             id: s.id,
             slug: s.slug,
@@ -161,18 +164,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If multiple schools and no specific school requested, return schools for selection
       if (userSchools.length > 1 && !schoolSlug) {
-        const userProfileImages = user.profileImages || [];
         const authResponse: AuthResponse = {
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            displayName: user.displayName,
-            profileImage: userProfileImages[0] || null,
-            galleryImages: userProfileImages.slice(1),
-            profileImages: user.profileImages, // Keep for backward compatibility
-            school: user.school,
-          },
+          user: mapUserToClient(user),
           schools: userSchools.map(s => ({
             id: s.id,
             slug: s.slug,
@@ -204,24 +197,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set auth cookie with consistent options
       setAuthCookie(res, token);
       
-      // Separate profile image and gallery images
-      const userProfileImages = user.profileImages || [];
+      // Use centralized mapper for consistent response
       const authResponse: AuthResponse = {
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          displayName: user.displayName,
-          profileImage: userProfileImages[0] || null,
-          galleryImages: userProfileImages.slice(1),
-          profileImages: user.profileImages, // Keep for backward compatibility
-          school: user.school,
-          bio: user.bio,
-          groupSizeMin: user.groupSizeMin,
-          groupSizeMax: user.groupSizeMax,
-          preferredAlcohol: user.preferredAlcohol,
-          availability: user.availability,
-        },
+        user: mapUserToClient(user),
         schools: userSchools.map(s => ({
           id: s.id,
           slug: s.slug,
@@ -252,24 +230,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get user's schools
       const userSchools = await storage.getUserSchools(user.id);
       
-      // Separate profile image and gallery images
-      const userProfileImages = user.profileImages || [];
+      // Use centralized mapper for consistent response
       const authResponse: AuthResponse = {
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          displayName: user.displayName,
-          profileImage: userProfileImages[0] || null,
-          galleryImages: userProfileImages.slice(1),
-          profileImages: user.profileImages, // Keep for backward compatibility
-          school: user.school,
-          bio: user.bio,
-          groupSizeMin: user.groupSizeMin,
-          groupSizeMax: user.groupSizeMax,
-          preferredAlcohol: user.preferredAlcohol,
-          availability: user.availability,
-        },
+        user: mapUserToClient(user),
         schools: userSchools.map(s => ({
           id: s.id,
           slug: s.slug,
@@ -302,44 +265,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Unauthorized: User not in this school" });
       }
       
-      // Combine profileImage and galleryImages into profileImages array for database storage
-      let profileImages: string[] | undefined = undefined;
-      if (profileData.profileImage !== undefined || profileData.galleryImages !== undefined) {
-        profileImages = [];
-        if (profileData.profileImage) {
-          profileImages.push(profileData.profileImage);
-        }
-        if (profileData.galleryImages && Array.isArray(profileData.galleryImages)) {
-          profileImages.push(...profileData.galleryImages);
-        }
-      }
-      
-      // Only update allowed fields (restrict to profile-editable fields only)
-      const updatedUser = await storage.updateUserProfile(userId, {
+      // Store primary photo in avatarUrl, gallery photos in profileImages
+      const updateData: any = {
         displayName: profileData.displayName,
         bio: profileData.bio,
         groupSizeMin: profileData.groupSizeMin,
         groupSizeMax: profileData.groupSizeMax,
         preferredAlcohol: profileData.preferredAlcohol,
         availability: profileData.availability,
-        profileImages: profileImages,
-      });
+      };
+      
+      if (profileData.profileImage !== undefined) {
+        updateData.avatarUrl = profileData.profileImage;
+      }
+      
+      if (profileData.galleryImages !== undefined) {
+        updateData.profileImages = profileData.galleryImages;
+      }
+      
+      // Update user profile
+      const updatedUser = await storage.updateUserProfile(userId, updateData);
       
       if (!updatedUser) {
         return res.status(404).json({ error: "User not found" });
       }
       
-      // Split profileImages back into profileImage and galleryImages for response
-      const userProfileImages = updatedUser.profileImages || [];
-      
-      // Return updated user without password
-      const { password: _, ...userWithoutPassword } = updatedUser;
+      // Return updated user using centralized mapper
       res.status(200).json({
-        user: {
-          ...userWithoutPassword,
-          profileImage: userProfileImages[0] || null,
-          galleryImages: userProfileImages.slice(1),
-        }
+        user: mapUserToClient(updatedUser)
       });
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -407,11 +360,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Return user without password and filter schools to current school only
-      const { password: _, ...userWithoutPassword } = userProfile.user;
       const currentSchool = userProfile.schools.find(s => s.id === req.user!.school_id);
       
       res.status(200).json({
-        user: userWithoutPassword,
+        user: mapUserToClient(userProfile.user),
         photos: userProfile.photos,
         schools: currentSchool ? [currentSchool] : []
       });
