@@ -214,7 +214,7 @@ export default function Messages() {
   
   const getConversationDisplayName = (conv: Conversation) => {
     if (conv.title) return conv.title;
-    if (conv.otherParticipants.length === 0) return "Unknown";
+    if (!conv.otherParticipants || conv.otherParticipants.length === 0) return "Unknown";
     if (conv.otherParticipants.length === 1) {
       const user = conv.otherParticipants[0];
       return user.displayName || user.username;
@@ -223,7 +223,7 @@ export default function Messages() {
   };
 
   const getConversationAvatar = (conv: Conversation) => {
-    if (conv.otherParticipants.length > 0) {
+    if (conv.otherParticipants && conv.otherParticipants.length > 0) {
       const participant = conv.otherParticipants[0];
       if (participant.profileImages && participant.profileImages.length > 0) {
         return participant.profileImages[0];
@@ -372,7 +372,7 @@ export default function Messages() {
                     <h3 className="font-semibold" data-testid="conversation-header-name">
                       {getConversationDisplayName(selectedConversation)}
                     </h3>
-                    {selectedConversation.isGroup && (
+                    {selectedConversation.isGroup && selectedConversation.otherParticipants && (
                       <p className="text-xs text-muted-foreground">
                         {selectedConversation.otherParticipants.length + 1} members
                       </p>
