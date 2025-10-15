@@ -12,7 +12,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArrowLeft, Upload, X, Plus } from "lucide-react";
 import { compressImage } from "@/lib/imageUtils";
 import { useQuery } from "@tanstack/react-query";
-import { authQueryFn } from "@/lib/queryClient";
+import { authQueryFn, queryClient } from "@/lib/queryClient";
 import type { AuthResponse } from "@shared/schema";
 
 export default function ProfileEdit() {
@@ -180,7 +180,10 @@ export default function ProfileEdit() {
         return;
       }
 
-      // Profile updated successfully - JWT cookie already contains updated auth
+      // Profile updated successfully - invalidate user cache to fetch fresh data
+      await queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+      await queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      
       // Redirect to groups page
       setLocation("/groups");
     } catch (error) {

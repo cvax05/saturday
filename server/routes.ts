@@ -362,6 +362,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return user without password and filter schools to current school only
       const currentSchool = userProfile.schools.find(s => s.id === req.user!.school_id);
       
+      // Prevent caching to ensure fresh profile data after updates
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
       res.status(200).json({
         user: mapUserToClient(userProfile.user),
         photos: userProfile.photos,

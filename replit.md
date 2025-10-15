@@ -67,6 +67,15 @@ Preferred communication style: Simple, everyday language.
 
 **Navigation Fix (October 2025)**: Fixed Messages page back button to navigate to `/groups` instead of `/` (registration page), preventing the appearance of being logged out. Also added `credentials: 'include'` to Login and Registration fetch requests to ensure JWT cookies are properly sent and stored during authentication flows.
 
+**Profile Photo System (October 2025)**: Complete two-tier profile photo architecture with primary photo and optional gallery:
+- **Database Schema**: `users.avatar_url` stores primary profile photo (base64 data URL), `users.profile_images` stores gallery photos array
+- **Centralized User Mapper**: `mapUserToClient()` function in `server/routes.ts` ensures consistent API responses across all endpoints (register, login, auth/me, users/:id, profile update)
+- **Backward Compatibility**: Mapper falls back to `profileImages[0]` when `avatar_url` is null to support legacy users
+- **Cache Management**: Added cache-control headers to GET `/api/users/:id` and ProfileEdit invalidates TanStack Query cache after updates
+- **Groups Feed Design**: Uses `object-cover` CSS for better photo fitting; intentionally filters out current user (line 118) similar to dating app UX
+- **Profile Detail**: Displays primary photo from `avatarUrl` with `object-cover`, gallery photos shown separately
+- **Registration UI**: Clear labels distinguish primary photo ("Profile Photo - shown when others see you") from optional gallery photos
+
 ### Design System
 **Comprehensive Design Guidelines**: Detailed color palette for dark/light themes, typography using Inter font family, consistent spacing system, and component specifications.
 
