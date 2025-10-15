@@ -11,6 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, X } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
 import { compressImage } from "@/lib/imageUtils";
+import { queryClient } from "@/lib/queryClient";
+import type { AuthResponse } from "@shared/schema";
 
 export default function Registration() {
   const [, setLocation] = useLocation();
@@ -188,8 +190,14 @@ export default function Registration() {
         return;
       }
       
+      // Parse the auth response and cache it
+      const authResponse: AuthResponse = await response.json();
+      
+      // Cache the auth data so Groups page has it immediately
+      queryClient.setQueryData(['/api/auth/me'], authResponse);
+      
       // JWT token is automatically stored in httpOnly cookie by server
-      // Redirect to groups page after successful registration
+      // Redirect to groups page - auth data already cached
       setLocation("/groups");
     } catch (error) {
       console.error('Registration error:', error);

@@ -76,6 +76,11 @@ Preferred communication style: Simple, everyday language.
 - **Profile Detail**: Displays primary photo from `avatarUrl` with `object-cover`, gallery photos shown separately
 - **Registration UI**: Clear labels distinguish primary photo ("Profile Photo - shown when others see you") from optional gallery photos
 
+**Auth Flow Optimization (October 2025)**: Fixed registration and login flows to cache auth data before redirecting:
+- Registration and Login pages now parse the API response and cache it in TanStack Query using `queryClient.setQueryData()`
+- Groups page immediately displays after registration/login without showing "Authentication Required" message
+- Seamless user experience - no intermediate loading states or auth checks after successful registration/login
+
 ### Design System
 **Comprehensive Design Guidelines**: Detailed color palette for dark/light themes, typography using Inter font family, consistent spacing system, and component specifications.
 

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SITE_NAME } from "@/lib/constants";
+import { queryClient } from "@/lib/queryClient";
+import type { AuthResponse } from "@shared/schema";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -40,8 +42,14 @@ export default function Login() {
         return;
       }
       
+      // Parse the auth response and cache it
+      const authResponse: AuthResponse = await response.json();
+      
+      // Cache the auth data so Groups page has it immediately
+      queryClient.setQueryData(['/api/auth/me'], authResponse);
+      
       // JWT token is automatically stored in httpOnly cookie by server
-      // Redirect to groups page
+      // Redirect to groups page - auth data already cached
       setLocation("/groups");
     } catch (error) {
       console.error('Login error:', error);
