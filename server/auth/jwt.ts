@@ -10,8 +10,8 @@ if (!JWT_SECRET) {
   process.exit(1);
 }
 
-const JWT_EXPIRES_IN = '7d'; // 7 days
-const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+const JWT_EXPIRES_IN = '30d'; // 30 days - keep users logged in
+const COOKIE_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
 
 export function signJWT(payload: Omit<JWTPayload, 'exp'>): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
