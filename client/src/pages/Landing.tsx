@@ -16,7 +16,7 @@ export default function Landing() {
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
       
       {/* Content */}
-      <div className="relative z-10 flex h-full flex-col items-center justify-start pt-20 px-4 text-center sm:pt-24 md:pt-32">
+      <div className="relative z-10 flex h-full flex-col items-center justify-start pt-8 px-4 text-center sm:pt-12 md:pt-16">
         <h1 className="mb-8 text-5xl font-bold text-white sm:text-6xl md:text-7xl lg:text-8xl">
           Join your Campus<br />Pregame Community
         </h1>
