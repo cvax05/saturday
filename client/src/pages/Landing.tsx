@@ -8,8 +8,8 @@ export default function Landing() {
     <div className="relative h-screen w-full overflow-hidden">
       {/* Hero Image */}
       <div 
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(/attached_assets/IMG_8108_1760544472794.JPG)` }}
+        className="absolute inset-0 bg-cover bg-center bg-black"
+        style={{ backgroundImage: `url(/attached_assets/IMG_8108_1760544472794.JPG?v=2)` }}
       />
       
       {/* Dark wash overlay for text readability */}
