@@ -9,7 +9,7 @@ export default function Landing() {
       {/* Hero Image */}
       <div 
         className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(/attached_assets/IMG_8108_1760420923892.JPG)` }}
+        style={{ backgroundImage: `url(/attached_assets/IMG_8108_1760544472794.JPG)` }}
       />
       
       {/* Dark wash overlay for text readability */}
