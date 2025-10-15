@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
+import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
@@ -8,6 +9,9 @@ app.set('trust proxy', 1); // Trust Replit proxy for secure cookies in productio
 app.use(express.json({ limit: '15mb' })); // Allow up to 15MB for multiple images (5 images * ~2-3MB each)
 app.use(express.urlencoded({ extended: false, limit: '15mb' }));
 app.use(cookieParser()); // Add cookie parser for JWT authentication
+
+// Serve static files from attached_assets directory
+app.use('/attached_assets', express.static(path.resolve(import.meta.dirname, '..', 'attached_assets')));
 
 app.use((req, res, next) => {
   const start = Date.now();
