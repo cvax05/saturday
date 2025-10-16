@@ -99,8 +99,11 @@ export interface IStorage {
   // Pregame methods (school-scoped)
   createPregame(pregame: InsertPregame, creatorEmail: string): Promise<Pregame>; // Legacy method
   createPregameInSchool(pregame: InsertPregame, creatorEmail: string, schoolId: string): Promise<Pregame>;
+  createPregameInConversation(conversationId: string, creatorId: string, date: string, time: string, location: string, notes: string | undefined, schoolId: string): Promise<Pregame>;
   getPregamesForUser(userEmail: string): Promise<Pregame[]>; // Legacy method
   getPregamesForUserInSchool(userEmail: string, schoolId: string): Promise<Pregame[]>;
+  getPregamesForConversation(conversationId: string, userId: string): Promise<Pregame[]>;
+  getPregamesForUserCalendar(userId: string, schoolId: string): Promise<Pregame[]>;
   deletePregame(id: string): Promise<void>;
   deletePregameInSchool(id: string, creatorEmail: string, schoolId: string): Promise<boolean>;
   updatePregame(id: string, updates: Partial<InsertPregame>): Promise<Pregame>;
@@ -919,6 +922,80 @@ export class DatabaseStorage implements IStorage {
       )
       .returning();
     return pregame || null;
+  }
+
+  // New conversation-based pregame methods
+  async createPregameInConversation(
+    conversationId: string,
+    creatorId: string,
+    date: string,
+    time: string,
+    location: string,
+    notes: string | undefined,
+    schoolId: string
+  ): Promise<Pregame> {
+    // Get the creator's info
+    const creator = await this.getUser(creatorId);
+    if (!creator) {
+      throw new Error("Creator not found");
+    }
+
+    // Get conversation participants to find the other user
+    const participants = await db
+      .select({ userId: conversationParticipants.userId })
+      .from(conversationParticipants)
+      .where(eq(conversationParticipants.conversationId, conversationId));
+
+    const otherParticipantId = participants.find(p => p.userId !== creatorId)?.userId;
+    const otherUser = otherParticipantId ? await this.getUser(otherParticipantId) : undefined;
+
+    const [pregame] = await db
+      .insert(pregames)
+      .values({
+        conversationId,
+        creatorId,
+        creatorEmail: creator.email,
+        participantId: otherParticipantId || null,
+        participantEmail: otherUser?.email || "",
+        date,
+        time,
+        location,
+        notes: notes || null,
+        schoolId,
+        status: "scheduled",
+      })
+      .returning();
+    return pregame;
+  }
+
+  async getPregamesForConversation(conversationId: string, userId: string): Promise<Pregame[]> {
+    // Verify user is in the conversation
+    const isInConversation = await this.isUserInConversation(conversationId, userId);
+    if (!isInConversation) {
+      return [];
+    }
+
+    const pregameList = await db
+      .select()
+      .from(pregames)
+      .where(eq(pregames.conversationId, conversationId))
+      .orderBy(desc(pregames.date), desc(pregames.time));
+    return pregameList;
+  }
+
+  async getPregamesForUserCalendar(userId: string, schoolId: string): Promise<Pregame[]> {
+    const pregameList = await db
+      .select()
+      .from(pregames)
+      .where(
+        and(
+          or(eq(pregames.creatorId, userId), eq(pregames.participantId, userId)),
+          eq(pregames.schoolId, schoolId),
+          eq(pregames.status, "scheduled")
+        )
+      )
+      .orderBy(pregames.date, pregames.time);
+    return pregameList;
   }
 
   // Review methods

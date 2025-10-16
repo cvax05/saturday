@@ -772,6 +772,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New conversation-based pregame endpoints
+  app.post("/api/conversations/:conversationId/pregames", authenticateJWT, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      const { date, time, location, notes } = req.body;
+      
+      // Validate user is in the conversation
+      const isInConversation = await storage.isUserInConversation(conversationId, req.user!.user_id);
+      if (!isInConversation) {
+        return res.status(403).json({ message: "Access denied - not in this conversation" });
+      }
+      
+      const pregame = await storage.createPregameInConversation(
+        conversationId,
+        req.user!.user_id,
+        date,
+        time,
+        location,
+        notes,
+        req.user!.school_id
+      );
+      
+      res.status(201).json({ pregame });
+    } catch (error) {
+      console.error("Error scheduling pregame:", error);
+      res.status(400).json({ message: "Failed to schedule pregame" });
+    }
+  });
+
+  app.get("/api/conversations/:conversationId/pregames", authenticateJWT, async (req, res) => {
+    try {
+      const { conversationId } = req.params;
+      
+      const pregames = await storage.getPregamesForConversation(conversationId, req.user!.user_id);
+      res.json({ pregames });
+    } catch (error) {
+      console.error("Error fetching conversation pregames:", error);
+      res.status(500).json({ message: "Failed to fetch pregames" });
+    }
+  });
+
+  app.get("/api/pregames/calendar", authenticateJWT, async (req, res) => {
+    try {
+      const pregames = await storage.getPregamesForUserCalendar(req.user!.user_id, req.user!.school_id);
+      res.json({ pregames });
+    } catch (error) {
+      console.error("Error fetching calendar pregames:", error);
+      res.status(500).json({ message: "Failed to fetch calendar" });
+    }
+  });
+
   app.put("/api/pregames/:pregameId", authenticateJWT, async (req, res) => {
     try {
       const { pregameId } = req.params;
