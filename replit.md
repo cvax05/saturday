@@ -87,6 +87,14 @@ Preferred communication style: Simple, everyday language.
 - Conversation header member count now safely handles missing `otherParticipants` array
 - Messaging works end-to-end without runtime errors
 
+**Schedule Pregame Feature (October 2025)**: Complete conversation-based pregame scheduling system:
+- **Database Schema**: Added conversationId, status, and googleCalendarEventId fields to pregames table
+- **Backend API**: Three new endpoints (POST/GET conversations/:id/pregames, GET pregames/calendar) with proper JWT auth and conversation membership validation
+- **Frontend UI**: Schedule Pregame button/dialog in Messages, displays scheduled pregames above messages, Calendar page integration
+- **Bug Fixes Applied**:
+  - Fixed route ordering issue: `/api/pregames/calendar` now registered before `/api/pregames/:userEmail` to prevent "calendar" being matched as email parameter
+  - Active investigation: Conversation deduplication issue causing pregames to appear in wrong conversation
+
 ### Design System
 **Comprehensive Design Guidelines**: Detailed color palette for dark/light themes, typography using Inter font family, consistent spacing system, and component specifications.
 

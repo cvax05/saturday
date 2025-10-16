@@ -737,6 +737,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // IMPORTANT: Calendar route must come BEFORE the dynamic :userEmail route
+  app.get("/api/pregames/calendar", authenticateJWT, async (req, res) => {
+    try {
+      const pregames = await storage.getPregamesForUserCalendar(req.user!.user_id, req.user!.school_id);
+      res.json({ pregames });
+    } catch (error) {
+      console.error("Error fetching calendar pregames:", error);
+      res.status(500).json({ message: "Failed to fetch calendar" });
+    }
+  });
+
   app.get("/api/pregames/:userEmail", authenticateJWT, async (req, res) => {
     try {
       const { userEmail } = req.params;
@@ -810,16 +821,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching conversation pregames:", error);
       res.status(500).json({ message: "Failed to fetch pregames" });
-    }
-  });
-
-  app.get("/api/pregames/calendar", authenticateJWT, async (req, res) => {
-    try {
-      const pregames = await storage.getPregamesForUserCalendar(req.user!.user_id, req.user!.school_id);
-      res.json({ pregames });
-    } catch (error) {
-      console.error("Error fetching calendar pregames:", error);
-      res.status(500).json({ message: "Failed to fetch calendar" });
     }
   });
 

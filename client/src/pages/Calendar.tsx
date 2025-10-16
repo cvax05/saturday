@@ -52,8 +52,9 @@ export default function Calendar() {
 
   // Fetch pregames for current user from API (JWT automatically provides school scoping)
   const { data: pregamesData, isLoading } = useQuery({
-    queryKey: [`/api/pregames/${currentUserEmail}`],
-    enabled: !!currentUser?.email,
+    queryKey: ['/api/pregames/calendar'],
+    enabled: !!currentUser?.id,
+    refetchInterval: 10000, // Refresh every 10 seconds to stay in sync
   });
 
   // Fetch reviews submitted BY current user to check which pregames have been reviewed

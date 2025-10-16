@@ -5,11 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Loader2, MessageCircle, Send } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, Loader2, MessageCircle, Send, Calendar } from "lucide-react";
 import { authQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import type { AuthResponse } from "@shared/schema";
 import { useState, useEffect, useRef } from "react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 
 interface Message {
   id: string;
@@ -45,6 +48,15 @@ export default function Messages() {
   const lastMarkedMessageId = useRef<string | null>(null);
   const lastMarkReadTime = useRef(0);
   const prevScrollHeightRef = useRef(0);
+  
+  // Schedule pregame dialog state
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [pregameForm, setPregameForm] = useState({
+    date: "",
+    time: "",
+    location: "",
+    notes: ""
+  });
 
   // Get current user
   const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
@@ -127,6 +139,29 @@ export default function Messages() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/messages/conversations'] });
+    },
+  });
+
+  // Fetch pregames for conversation
+  const { data: pregamesData } = useQuery({
+    queryKey: ['/api/conversations', selectedConversationId, 'pregames'],
+    enabled: !!selectedConversationId,
+    refetchInterval: 5000, // Poll every 5 seconds for new pregames
+  });
+
+  const pregames = (pregamesData as any)?.pregames || [];
+
+  // Schedule pregame mutation
+  const schedulePregameMutation = useMutation({
+    mutationFn: async (formData: typeof pregameForm) => {
+      if (!selectedConversationId) throw new Error("No conversation selected");
+      return apiRequest("POST", `/api/conversations/${selectedConversationId}/pregames`, formData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations', selectedConversationId, 'pregames'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/pregames/calendar'] });
+      setShowScheduleDialog(false);
+      setPregameForm({ date: "", time: "", location: "", notes: "" });
     },
   });
 
@@ -361,25 +396,129 @@ export default function Messages() {
             <>
               {/* Conversation header */}
               <div className="p-4 border-b">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={getConversationAvatar(selectedConversation)} />
-                    <AvatarFallback>
-                      {getConversationDisplayName(selectedConversation).substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-semibold" data-testid="conversation-header-name">
-                      {getConversationDisplayName(selectedConversation)}
-                    </h3>
-                    {selectedConversation.isGroup && selectedConversation.otherParticipants && (
-                      <p className="text-xs text-muted-foreground">
-                        {selectedConversation.otherParticipants.length + 1} members
-                      </p>
-                    )}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={getConversationAvatar(selectedConversation)} />
+                      <AvatarFallback>
+                        {getConversationDisplayName(selectedConversation).substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-semibold" data-testid="conversation-header-name">
+                        {getConversationDisplayName(selectedConversation)}
+                      </h3>
+                      {selectedConversation.isGroup && selectedConversation.otherParticipants && (
+                        <p className="text-xs text-muted-foreground">
+                          {selectedConversation.otherParticipants.length + 1} members
+                        </p>
+                      )}
+                    </div>
                   </div>
+                  
+                  <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" data-testid="button-schedule-pregame">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Schedule Pregame
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Schedule Pregame</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="date">Date</Label>
+                          <Input
+                            id="date"
+                            type="date"
+                            value={pregameForm.date}
+                            onChange={(e) => setPregameForm({ ...pregameForm, date: e.target.value })}
+                            data-testid="input-pregame-date"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="time">Time</Label>
+                          <Input
+                            id="time"
+                            type="time"
+                            value={pregameForm.time}
+                            onChange={(e) => setPregameForm({ ...pregameForm, time: e.target.value })}
+                            data-testid="input-pregame-time"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="location">Location</Label>
+                          <Input
+                            id="location"
+                            type="text"
+                            placeholder="Enter location"
+                            value={pregameForm.location}
+                            onChange={(e) => setPregameForm({ ...pregameForm, location: e.target.value })}
+                            data-testid="input-pregame-location"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="notes">Notes (Optional)</Label>
+                          <Textarea
+                            id="notes"
+                            placeholder="Add any additional details..."
+                            value={pregameForm.notes}
+                            onChange={(e) => setPregameForm({ ...pregameForm, notes: e.target.value })}
+                            data-testid="input-pregame-notes"
+                          />
+                        </div>
+                        <Button 
+                          onClick={() => schedulePregameMutation.mutate(pregameForm)}
+                          disabled={!pregameForm.date || !pregameForm.time || !pregameForm.location || schedulePregameMutation.isPending}
+                          className="w-full"
+                          data-testid="button-submit-pregame"
+                        >
+                          {schedulePregameMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Scheduling...
+                            </>
+                          ) : (
+                            "Schedule Pregame"
+                          )}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
+
+              {/* Scheduled Pregames */}
+              {pregames.length > 0 && (
+                <div className="p-4 border-b bg-muted/30">
+                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Scheduled Pregames
+                  </h4>
+                  <div className="space-y-2">
+                    {pregames.map((pregame: any) => (
+                      <div key={pregame.id} className="bg-card border rounded-lg p-3" data-testid={`pregame-${pregame.id}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1">
+                            <p className="font-medium">{pregame.location}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {format(new Date(pregame.date + 'T00:00:00'), 'MMM d, yyyy')} at {pregame.time}
+                            </p>
+                            {pregame.notes && (
+                              <p className="text-sm text-muted-foreground mt-1">{pregame.notes}</p>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {pregame.creatorId === currentUser?.id ? "You scheduled" : "Scheduled"}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Messages */}
               <div className="flex-1 overflow-auto p-4" ref={scrollViewportRef} onScroll={checkIfNearBottom}>
