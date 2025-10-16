@@ -273,7 +273,7 @@ export default function UserProfileDetail() {
                       )}
                     </div>
                     
-                    <div className="flex items-center gap-2 text-lg text-muted-foreground mb-2">
+                    <div className="flex items-center gap-2 text-lg text-muted-foreground mb-4">
                       <GraduationCap className="h-5 w-5" />
                       <span data-testid="profile-school">{userProfile.school}</span>
                       {userProfile.classYear && (
@@ -281,16 +281,6 @@ export default function UserProfileDetail() {
                           Class of '{String(userProfile.classYear).slice(-2)}
                         </Badge>
                       )}
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                      <Calendar className="h-4 w-4" />
-                      <span data-testid="profile-member-since">
-                        Member since {new Date(userProfile.createdAt).toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long' 
-                        })}
-                      </span>
                     </div>
                   </div>
                   
