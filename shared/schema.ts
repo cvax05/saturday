@@ -173,6 +173,7 @@ export const messages = pgTable("messages", {
 export const pregames = pgTable("pregames", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   schoolId: varchar("school_id"), // Add school scoping
+  conversationId: varchar("conversation_id"), // Link to conversation
   creatorEmail: text("creator_email").notNull(), // Keep for backward compatibility
   participantEmail: text("participant_email").notNull(), // Keep for backward compatibility
   creatorId: varchar("creator_id"), // New way: link to user IDs
@@ -181,6 +182,8 @@ export const pregames = pgTable("pregames", {
   time: text("time").notNull(), // Format: HH:MM
   location: text("location"),
   notes: text("notes"),
+  status: text("status").default("scheduled").notNull(), // scheduled, confirmed, cancelled
+  googleCalendarEventId: text("google_calendar_event_id"), // For Google Calendar sync
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
 }, (table) => ({
   // Foreign keys
@@ -188,6 +191,10 @@ export const pregames = pgTable("pregames", {
     columns: [table.schoolId],
     foreignColumns: [schools.id],
   }),
+  conversationFK: foreignKey({
+    columns: [table.conversationId],
+    foreignColumns: [conversations.id],
+  }).onDelete("cascade"),
   creatorFK: foreignKey({
     columns: [table.creatorId],
     foreignColumns: [users.id],
@@ -198,6 +205,7 @@ export const pregames = pgTable("pregames", {
   }),
   // Indexes for performance
   schoolIndex: index().on(table.schoolId),
+  conversationIndex: index().on(table.conversationId),
   creatorIndex: index().on(table.creatorId),
   participantIndex: index().on(table.participantId),
 }));
@@ -373,6 +381,16 @@ export const insertPregameSchema = createInsertSchema(pregames).omit({
   creatorEmail: true, // Remove creatorEmail from client input - will be derived server-side
   creatorId: true, // Will be derived from JWT
   schoolId: true, // Will be derived from JWT
+  conversationId: true, // Will be derived from route parameter
+  googleCalendarEventId: true, // Managed by backend
+});
+
+// Schema for scheduling pregames from conversations
+export const schedulePregameSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
+  time: z.string().regex(/^\d{2}:\d{2}$/, "Time must be in HH:MM format"),
+  location: z.string().min(1, "Location is required").max(200, "Location too long"),
+  notes: z.string().max(500, "Notes too long").optional(),
 });
 
 export const insertReviewSchema = createInsertSchema(reviews).omit({
@@ -450,6 +468,7 @@ export type Review = typeof reviews.$inferSelect;
 export type CreateConversationRequest = z.infer<typeof createConversationSchema>;
 export type SendMessageRequest = z.infer<typeof sendMessageSchema>;
 export type MarkReadRequest = z.infer<typeof markReadSchema>;
+export type SchedulePregameRequest = z.infer<typeof schedulePregameSchema>;
 
 // Conversation with participants for API responses
 export interface ConversationWithParticipants extends Conversation {
