@@ -540,6 +540,14 @@ export class DatabaseStorage implements IStorage {
           displayName: p.displayName,
           profileImage: p.profileImage,
         })),
+        otherParticipants: participants
+          .filter(p => p.id !== userId)
+          .map(p => ({
+            id: p.id,
+            username: p.username,
+            displayName: p.displayName,
+            profileImage: p.profileImage,
+          })),
         lastMessage: row.lastMessage?.id ? {
           id: row.lastMessage.id,
           content: row.lastMessage.content,

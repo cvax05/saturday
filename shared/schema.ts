@@ -483,6 +483,12 @@ export interface ConversationListItem extends Conversation {
     displayName?: string | null;
     profileImage?: string | null;
   }>;
+  otherParticipants: Array<{
+    id: string;
+    username: string;
+    displayName?: string | null;
+    profileImage?: string | null;
+  }>;
   lastMessage?: {
     id: string;
     content: string;
