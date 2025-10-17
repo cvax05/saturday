@@ -503,7 +503,7 @@ export class DatabaseStorage implements IStorage {
           id: users.id,
           username: users.username,
           displayName: users.displayName,
-          profileImage: sql<string>`CASE WHEN ${users.profileImages}[1] IS NOT NULL THEN ${users.profileImages}[1] ELSE NULL END`.as('profileImage'),
+          profileImage: sql<string>`COALESCE(${users.avatarUrl}, ${users.profileImages}[1])`.as('profileImage'),
         })
         .from(users)
         .innerJoin(conversationParticipants, eq(users.id, conversationParticipants.userId))
@@ -586,7 +586,7 @@ export class DatabaseStorage implements IStorage {
           id: users.id,
           username: users.username,
           displayName: users.displayName,
-          profileImage: sql<string>`CASE WHEN ${users.profileImages}[1] IS NOT NULL THEN ${users.profileImages}[1] ELSE NULL END`.as('profileImage'),
+          profileImage: sql<string>`COALESCE(${users.avatarUrl}, ${users.profileImages}[1])`.as('profileImage'),
         },
       })
       .from(messages)

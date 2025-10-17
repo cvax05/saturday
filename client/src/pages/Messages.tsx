@@ -26,7 +26,7 @@ interface ConversationUser {
   id: string;
   displayName: string | null;
   username: string;
-  profileImages: string[];
+  profileImage: string | null;
 }
 
 interface Conversation {
@@ -260,9 +260,7 @@ export default function Messages() {
   const getConversationAvatar = (conv: Conversation) => {
     if (conv.otherParticipants && conv.otherParticipants.length > 0) {
       const participant = conv.otherParticipants[0];
-      if (participant.profileImages && participant.profileImages.length > 0) {
-        return participant.profileImages[0];
-      }
+      return participant.profileImage || undefined;
     }
     return undefined;
   };
