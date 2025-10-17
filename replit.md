@@ -75,6 +75,10 @@ Preferred communication style: Simple, everyday language.
 - **Groups Feed Design**: Uses `object-cover` CSS for better photo fitting; intentionally filters out current user (line 118) similar to dating app UX
 - **Profile Detail**: Displays primary photo from `avatarUrl` with `object-cover`, gallery photos shown separately
 - **Registration UI**: Clear labels distinguish primary photo ("Profile Photo - shown when others see you") from optional gallery photos
+- **Messages Display Fix (October 2025)**: Fixed conversation participant profile photos in Messages page
+  - Updated storage layer to use `COALESCE(avatar_url, profile_images[1])` for consistent photo retrieval with avatarUrl priority
+  - Fixed ConversationUser interface to use `profileImage: string | null` matching API response format
+  - Profile photos now display correctly in conversation list, headers, and message senders
 
 **Auth Flow Optimization (October 2025)**: Fixed registration and login flows to cache auth data before redirecting:
 - Registration and Login pages now parse the API response and cache it in TanStack Query using `queryClient.setQueryData()`
@@ -94,6 +98,12 @@ Preferred communication style: Simple, everyday language.
 - **Bug Fixes Applied**:
   - Fixed route ordering issue: `/api/pregames/calendar` now registered before `/api/pregames/:userEmail` to prevent "calendar" being matched as email parameter
   - Active investigation: Conversation deduplication issue causing pregames to appear in wrong conversation
+
+**Database Cleanup (October 2025)**: Removed all test and mock data from production database:
+- Deleted 11 test accounts (emails with @test.com and @example.com domains)
+- Properly cascaded deletions through all related tables: school_memberships, conversation_participants, messages, pregames, reviews, conversations, and users
+- Only real user accounts remain: dogs@gmail.com (password: dogs) and cats@gmail.com (password: cats)
+- Application now contains authentic user data only
 
 ### Design System
 **Comprehensive Design Guidelines**: Detailed color palette for dark/light themes, typography using Inter font family, consistent spacing system, and component specifications.
