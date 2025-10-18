@@ -112,6 +112,18 @@ Preferred communication style: Simple, everyday language.
 
 **Mobile-First Responsive**: Tailwind-based responsive design with mobile-optimized layouts and touch-friendly interactions.
 
+**Mobile Navigation (October 2025)**: Complete mobile-responsive implementation across all pages:
+- **Bottom Tab Bar**: Fixed bottom navigation on mobile with Groups, Messages, and Calendar tabs (hidden on desktop md:)
+- **Single-Pane Messages**: Messages page shows conversation list OR chat view on mobile, not both simultaneously
+- **Touch Targets**: All interactive elements meet 44px minimum height for proper touch interaction
+- **Responsive Layouts**: Mobile-first designs using Tailwind breakpoints (sm:, md:, lg:)
+  - Registration/Login: Full-width forms, single-column layouts on mobile
+  - Groups: Card grid stacks to single column on mobile
+  - Calendar: Smaller calendar cells and single-column event list on mobile
+  - Profile pages: Forms and content stack vertically on mobile
+- **No Horizontal Scroll**: All pages verified to fit 375px viewport width without scrolling
+- **Content Padding**: Main content includes pb-16 on mobile for bottom nav clearance
+
 ## External Dependencies
 
 ### UI & Styling
