@@ -58,23 +58,23 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 flex items-center justify-center">
+    <div className="min-h-screen bg-background p-4 sm:p-6 flex items-center justify-center">
       <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-2">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-2">
             {SITE_NAME}
           </h1>
-          <p className="text-muted-foreground">Welcome back!</p>
+          <p className="text-sm sm:text-base text-muted-foreground">Welcome back!</p>
         </div>
 
-        <Card>
+        <Card className="w-full">
           <CardHeader>
-            <CardTitle>Sign In</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl">Sign In</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sm sm:text-base">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -82,11 +82,12 @@ export default function Login() {
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   required
                   data-testid="input-login-email"
+                  className="w-full"
                 />
               </div>
 
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -94,22 +95,23 @@ export default function Login() {
                   onChange={(e) => handleInputChange("password", e.target.value)}
                   required
                   data-testid="input-login-password"
+                  className="w-full"
                 />
               </div>
 
-              <Button type="submit" className="w-full" data-testid="button-login">
+              <Button type="submit" className="w-full min-h-[44px]" data-testid="button-login">
                 Sign In
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        <p className="text-center text-sm text-muted-foreground mt-4">
+        <p className="text-center text-xs sm:text-sm text-muted-foreground mt-4 mb-6">
           Don't have an account?{" "}
           <button
             type="button"
             onClick={() => setLocation("/register")}
-            className="text-primary hover:underline"
+            className="text-primary hover:underline min-h-[44px] inline-flex items-center"
             data-testid="link-register"
           >
             Sign up

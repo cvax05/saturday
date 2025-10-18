@@ -199,36 +199,37 @@ export default function ProfileEdit() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-        <div className="flex items-center justify-between p-4 max-w-2xl mx-auto">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between p-3 sm:p-4 max-w-2xl mx-auto">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Button
               variant="ghost"
               size="icon"
               onClick={handleBack}
               data-testid="button-back"
+              className="shrink-0"
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <h1 className="text-2xl font-bold">Edit Profile</h1>
+            <h1 className="text-xl sm:text-2xl font-bold">Edit Profile</h1>
           </div>
           <ThemeToggle />
         </div>
       </header>
 
-      <main className="max-w-md mx-auto p-4">
-        <Card>
-          <CardContent className="pt-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
+      <main className="max-w-md mx-auto p-4 sm:p-6 pb-24">
+        <Card className="w-full">
+          <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               
               {/* Profile Picture */}
-              <div className="flex flex-col items-center space-y-3">
-                <Avatar className="h-28 w-28 border-2 border-border">
+              <div className="flex flex-col items-center space-y-3 py-2">
+                <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-2 border-border">
                   <AvatarImage 
                     src={formData.profileImage} 
                     alt={formData.name}
                     className="object-cover"
                   />
-                  <AvatarFallback className="text-2xl font-bold bg-muted">
+                  <AvatarFallback className="text-xl sm:text-2xl font-bold bg-muted">
                     {formData.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
@@ -242,9 +243,10 @@ export default function ProfileEdit() {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  size="sm" 
+                  size="default"
                   onClick={handleUploadClick}
                   data-testid="button-upload-photo"
+                  className="w-full sm:w-auto"
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   {formData.profileImage ? 'Change Photo' : 'Add Photo'}
@@ -253,12 +255,12 @@ export default function ProfileEdit() {
 
               {/* Photo Gallery */}
               <div>
-                <Label>Photo Gallery ({formData.galleryImages.length}/5)</Label>
-                <p className="text-sm text-muted-foreground mb-3">
+                <Label className="text-sm sm:text-base">Photo Gallery ({formData.galleryImages.length}/5)</Label>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-3">
                   Add up to 5 photos of your group/organization
                 </p>
                 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {formData.galleryImages.map((image, index) => (
                     <div key={index} className="relative group aspect-square">
                       <img 
@@ -304,19 +306,20 @@ export default function ProfileEdit() {
               </div>
 
               {/* Basic Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Group/Organization</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <Label htmlFor="name" className="text-sm sm:text-base">Group/Organization</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     required
                     data-testid="input-name"
+                    className="w-full"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="groupSize"># in Group/Organization</Label>
+                <div className="sm:col-span-2">
+                  <Label htmlFor="groupSize" className="text-sm sm:text-base"># in Group/Organization</Label>
                   <Input
                     id="groupSize"
                     type="number"
@@ -325,12 +328,13 @@ export default function ProfileEdit() {
                     onChange={(e) => handleInputChange("groupSize", e.target.value)}
                     required
                     data-testid="input-group-size"
+                    className="w-full"
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sm sm:text-base">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -338,6 +342,7 @@ export default function ProfileEdit() {
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   required
                   data-testid="input-email"
+                  className="w-full"
                 />
               </div>
 
@@ -351,7 +356,7 @@ export default function ProfileEdit() {
               />
 
               <div>
-                <Label htmlFor="description">About You (1-2 sentences)</Label>
+                <Label htmlFor="description" className="text-sm sm:text-base">About You (1-2 sentences)</Label>
                 <Textarea
                   id="description"
                   placeholder="Tell others about yourself and what you're looking for in pregame activities..."
@@ -360,6 +365,7 @@ export default function ProfileEdit() {
                   maxLength={200}
                   required
                   data-testid="textarea-description"
+                  className="w-full min-h-[80px] resize-none"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   {formData.description.length}/200 characters
@@ -367,10 +373,10 @@ export default function ProfileEdit() {
               </div>
 
               <div>
-                <Label>Group Size Preference</Label>
-                <div className="grid grid-cols-2 gap-4">
+                <Label className="text-sm sm:text-base">Group Size Preference</Label>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="groupSizeMin" className="text-sm">Min People</Label>
+                    <Label htmlFor="groupSizeMin" className="text-xs sm:text-sm">Min People</Label>
                     <Input
                       id="groupSizeMin"
                       type="number"
@@ -379,10 +385,11 @@ export default function ProfileEdit() {
                       onChange={(e) => handleInputChange("groupSizeMin", e.target.value)}
                       required
                       data-testid="input-group-min"
+                      className="w-full"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="groupSizeMax" className="text-sm">Max People</Label>
+                    <Label htmlFor="groupSizeMax" className="text-xs sm:text-sm">Max People</Label>
                     <Input
                       id="groupSizeMax"
                       type="number"
@@ -391,15 +398,16 @@ export default function ProfileEdit() {
                       onChange={(e) => handleInputChange("groupSizeMax", e.target.value)}
                       required
                       data-testid="input-group-max"
+                      className="w-full"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="preferredAlcohol">Preferred Alcohol</Label>
+                <Label htmlFor="preferredAlcohol" className="text-sm sm:text-base">Preferred Alcohol</Label>
                 <Select value={formData.preferredAlcohol} onValueChange={(value) => handleInputChange("preferredAlcohol", value)} required>
-                  <SelectTrigger data-testid="select-alcohol">
+                  <SelectTrigger data-testid="select-alcohol" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -413,78 +421,29 @@ export default function ProfileEdit() {
               </div>
 
               <div>
-                <Label htmlFor="availability">Availability</Label>
+                <Label htmlFor="availability" className="text-sm sm:text-base">Availability</Label>
                 <Input
                   id="availability"
-                  placeholder="e.g., Weekends, Friday nights, Most evenings"
+                  placeholder="e.g., Weekends, Friday nights"
                   value={formData.availability}
                   onChange={(e) => handleInputChange("availability", e.target.value)}
                   required
                   data-testid="input-availability"
+                  className="w-full"
                 />
               </div>
 
-              {/* Photo Gallery */}
-              <div>
-                <Label>Photo Gallery ({formData.galleryImages.length}/5)</Label>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Add up to 5 photos that people can view when they visit your profile
-                </p>
-                
-                <div className="grid grid-cols-3 gap-3">
-                  {formData.galleryImages.map((image, index) => (
-                    <div key={index} className="relative group aspect-square">
-                      <img 
-                        src={image} 
-                        alt={`Gallery ${index + 1}`}
-                        className="w-full h-full object-cover rounded-lg border"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeGalleryImage(index)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                  
-                  {formData.galleryImages.length < 5 && (
-                    <div 
-                      className="aspect-square border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
-                      onClick={handleGalleryUploadClick}
-                    >
-                      <div className="text-center">
-                        <Plus className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Add Photo</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <input
-                  type="file"
-                  ref={galleryInputRef}
-                  onChange={handleGalleryUpload}
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Button 
                   type="button" 
                   variant="outline" 
                   onClick={handleBack}
-                  className="flex-1"
+                  className="flex-1 min-h-[44px]"
                   data-testid="button-cancel"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="flex-1" data-testid="button-save">
+                <Button type="submit" className="flex-1 min-h-[44px]" data-testid="button-save">
                   Save Changes
                 </Button>
               </div>
@@ -493,25 +452,25 @@ export default function ProfileEdit() {
         </Card>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-        <div className="flex items-center justify-around py-2 px-4 max-w-lg mx-auto">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50 safe-area-inset-bottom">
+        <div className="flex items-center justify-around py-2 px-2 sm:px-4 max-w-lg mx-auto">
           <button
             onClick={() => setLocation("/home")}
-            className="flex flex-col items-center py-2 px-4 rounded-lg text-muted-foreground hover:text-foreground"
+            className="flex flex-col items-center py-2 px-3 sm:px-4 rounded-lg text-muted-foreground hover:text-foreground min-h-[44px] touch-manipulation"
             data-testid="nav-home"
           >
             <span className="text-xs font-medium">Home</span>
           </button>
           <button
             onClick={() => setLocation("/messages")}
-            className="flex flex-col items-center py-2 px-4 rounded-lg text-muted-foreground hover:text-foreground"
+            className="flex flex-col items-center py-2 px-3 sm:px-4 rounded-lg text-muted-foreground hover:text-foreground min-h-[44px] touch-manipulation"
             data-testid="nav-messages"
           >
             <span className="text-xs font-medium">Messages</span>
           </button>
           <button
             onClick={() => setLocation("/profile/edit")}
-            className="flex flex-col items-center py-2 px-4 rounded-lg text-primary bg-primary/10"
+            className="flex flex-col items-center py-2 px-3 sm:px-4 rounded-lg text-primary bg-primary/10 min-h-[44px] touch-manipulation"
             data-testid="nav-profile"
           >
             <span className="text-xs font-medium">Profile</span>

@@ -305,18 +305,37 @@ export default function Messages() {
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setLocation('/groups')}
-              data-testid="button-back-home"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back
-            </Button>
+            {/* Show back button on mobile when viewing a conversation */}
+            {selectedConversationId ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedConversationId(null)}
+                data-testid="button-back-conversations"
+                className="md:hidden text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLocation('/groups')}
+                data-testid="button-back-home"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+            )}
             <div>
-              <h1 className="text-xl font-semibold" data-testid="messages-title">Messages</h1>
+              <h1 className="text-xl font-semibold" data-testid="messages-title">
+                {selectedConversationId && selectedConversation ? (
+                  <span className="md:hidden">{getConversationDisplayName(selectedConversation)}</span>
+                ) : null}
+                <span className={selectedConversationId ? "hidden md:inline" : ""}>Messages</span>
+              </h1>
               <p className="text-sm text-muted-foreground">
                 {currentUser?.school || "Your School"}
               </p>
@@ -326,10 +345,10 @@ export default function Messages() {
         </div>
       </div>
 
-      {/* Main 2-pane layout */}
+      {/* Main 2-pane layout - single pane on mobile */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left pane: Conversation list */}
-        <div className="w-80 border-r flex flex-col">
+        {/* Left pane: Conversation list - hidden on mobile when conversation is selected */}
+        <div className={`w-full md:w-80 md:border-r flex flex-col ${selectedConversationId ? 'hidden md:flex' : ''}`}>
           <div className="p-4 border-b">
             <h2 className="font-semibold">Conversations</h2>
           </div>
@@ -388,8 +407,8 @@ export default function Messages() {
           </ScrollArea>
         </div>
 
-        {/* Right pane: Message thread */}
-        <div className="flex-1 flex flex-col">
+        {/* Right pane: Message thread - full width on mobile when conversation is selected */}
+        <div className={`flex-1 flex flex-col ${!selectedConversationId ? 'hidden md:flex' : ''}`}>
           {selectedConversationId && selectedConversation ? (
             <>
               {/* Conversation header */}

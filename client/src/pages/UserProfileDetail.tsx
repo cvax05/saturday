@@ -222,62 +222,66 @@ export default function UserProfileDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-background p-4 sm:p-6">
+      <div className="max-w-6xl mx-auto w-full">
         {/* Back Button */}
         <Button 
           variant="ghost" 
-          size="sm" 
+          size="default"
           onClick={() => setLocation("/groups")}
-          className="mb-6"
+          className="mb-4 sm:mb-6 min-h-[44px]"
           data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
 
-        {/* Profile Card - Horizontal Layout */}
-        <Card className="mb-6">
-          <CardHeader className="pb-6">
-            <div className="flex items-start gap-8">
-              {/* Larger Avatar */}
-              <Avatar className="h-48 w-48 border-4 border-border">
+        {/* Profile Card - Horizontal on large screens, vertical on mobile */}
+        <Card className="mb-6 w-full">
+          <CardHeader className="pb-4 sm:pb-6">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-8">
+              {/* Avatar - centered on mobile, left on desktop */}
+              <Avatar className="h-32 w-32 sm:h-40 sm:w-40 md:h-48 md:w-48 border-2 sm:border-4 border-border shrink-0">
                 <AvatarImage 
                   src={userProfile.profileImage || ""} 
                   alt={userProfile.name || ""} 
                   className="object-cover"
                 />
-                <AvatarFallback className="text-6xl font-bold bg-muted">
+                <AvatarFallback className="text-3xl sm:text-5xl md:text-6xl font-bold bg-muted">
                   {(userProfile.name || "").split(' ').map((word: string) => word[0]).join('').slice(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               
               {/* Main Profile Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="flex-1">
-                    <CardTitle className="text-4xl mb-3" data-testid="profile-name">
+              <div className="flex-1 min-w-0 w-full text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between mb-4 sm:mb-6 gap-3">
+                  <div className="flex-1 w-full">
+                    <CardTitle className="text-2xl sm:text-3xl md:text-4xl mb-2 sm:mb-3 break-words" data-testid="profile-name">
                       {userProfile.name}
                     </CardTitle>
                     
-                    <div className="flex items-center gap-2 text-lg text-muted-foreground mb-2">
-                      <Mail className="h-5 w-5" />
-                      <span data-testid="profile-email">{userProfile.email}</span>
+                    <div className="flex items-center justify-center sm:justify-start gap-2 text-sm sm:text-base md:text-lg text-muted-foreground mb-2">
+                      <Mail className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                      <span className="truncate" data-testid="profile-email">{userProfile.email}</span>
                     </div>
                     
-                    <div className="flex items-center gap-2 text-lg text-muted-foreground mb-2">
-                      <User className="h-5 w-5" />
-                      <span data-testid="profile-username">@{userProfile.username}</span>
+                    <div className="flex items-center justify-center sm:justify-start gap-2 text-sm sm:text-base md:text-lg text-muted-foreground mb-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                        <span data-testid="profile-username">@{userProfile.username}</span>
+                      </div>
                       {userProfile.displayName && userProfile.displayName !== userProfile.username && (
-                        <span className="text-sm">({userProfile.displayName})</span>
+                        <span className="text-xs sm:text-sm">({userProfile.displayName})</span>
                       )}
                     </div>
                     
-                    <div className="flex items-center gap-2 text-lg text-muted-foreground mb-4">
-                      <GraduationCap className="h-5 w-5" />
-                      <span data-testid="profile-school">{userProfile.school}</span>
+                    <div className="flex items-center justify-center sm:justify-start gap-2 text-sm sm:text-base md:text-lg text-muted-foreground mb-4 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                        <span className="truncate" data-testid="profile-school">{userProfile.school}</span>
+                      </div>
                       {userProfile.classYear && (
-                        <Badge variant="secondary" className="ml-2">
+                        <Badge variant="secondary" className="ml-0 sm:ml-2">
                           Class of '{String(userProfile.classYear).slice(-2)}
                         </Badge>
                       )}
@@ -290,6 +294,7 @@ export default function UserProfileDetail() {
                       variant="outline" 
                       onClick={() => setLocation("/profile/edit")}
                       data-testid="button-edit-profile"
+                      className="min-h-[44px] w-full sm:w-auto"
                     >
                       <Edit className="h-4 w-4 mr-2" />
                       Edit Profile
@@ -300,8 +305,8 @@ export default function UserProfileDetail() {
                 {/* About Section in Header */}
                 {userProfile.description && (
                   <div className="mb-4">
-                    <h3 className="text-xl font-semibold mb-3">About</h3>
-                    <p className="text-muted-foreground text-lg leading-relaxed" data-testid="profile-description">
+                    <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">About</h3>
+                    <p className="text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed break-words" data-testid="profile-description">
                       {userProfile.description}
                     </p>
                   </div>
@@ -309,11 +314,13 @@ export default function UserProfileDetail() {
 
                 {/* Message button - only show for other users' profiles */}
                 {!isOwnProfile && (
-                  <MessageDialog 
-                    recipientName={userProfile.name} 
-                    recipientEmail={userProfile.email}
-                    recipientId={userProfile.id}
-                  />
+                  <div className="w-full sm:w-auto">
+                    <MessageDialog 
+                      recipientName={userProfile.name} 
+                      recipientEmail={userProfile.email}
+                      recipientId={userProfile.id}
+                    />
+                  </div>
                 )}
               </div>
             </div>
@@ -321,22 +328,22 @@ export default function UserProfileDetail() {
 
         </Card>
 
-        {/* Content Grid - More Horizontal Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Content Grid - Stack on mobile, side-by-side on large screens */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Left Column */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Pregame Preferences - Only show if user has filled out preferences */}
             {(userProfile.preferredAlcohol || userProfile.groupSize || userProfile.groupSizeMin || userProfile.groupSizeMax || userProfile.availability) && (
-              <Card>
+              <Card className="w-full">
                 <CardHeader>
-                  <h3 className="text-xl font-semibold">Pregame Preferences</h3>
+                  <h3 className="text-lg sm:text-xl font-semibold">Pregame Preferences</h3>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-3 sm:space-y-4">
                   {/* Preferred Alcohol */}
                   {userProfile.preferredAlcohol && (
-                    <div className="flex items-center gap-3">
-                      <Wine className="h-5 w-5 text-muted-foreground" />
-                      <span className="font-medium">Preferred Drinks:</span>
+                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                      <Wine className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
+                      <span className="font-medium text-sm sm:text-base">Preferred Drinks:</span>
                       <Badge className={getPreferredAlcoholColor(userProfile.preferredAlcohol)} data-testid="profile-alcohol">
                         {userProfile.preferredAlcohol}
                       </Badge>
@@ -345,9 +352,9 @@ export default function UserProfileDetail() {
 
                   {/* Group Size Preference */}
                   {userProfile.groupSize && (
-                    <div className="flex items-center gap-3">
-                      <Users className="h-5 w-5 text-muted-foreground" />
-                      <span className="font-medium">Group Size:</span>
+                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                      <Users className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
+                      <span className="font-medium text-sm sm:text-base">Group Size:</span>
                       <Badge variant="secondary" data-testid="profile-group-size">
                         {userProfile.groupSize}
                       </Badge>
@@ -356,9 +363,9 @@ export default function UserProfileDetail() {
 
                   {/* Group Size Range */}
                   {(userProfile.groupSizeMin || userProfile.groupSizeMax) && (
-                    <div className="flex items-center gap-3">
-                      <Users className="h-5 w-5 text-muted-foreground" />
-                      <span className="font-medium">Looking for groups of:</span>
+                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                      <Users className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
+                      <span className="font-medium text-sm sm:text-base">Looking for groups of:</span>
                       <Badge variant="outline" data-testid="profile-group-range">
                         {userProfile.groupSizeMin || '?'} - {userProfile.groupSizeMax || '?'} people
                       </Badge>
@@ -367,10 +374,10 @@ export default function UserProfileDetail() {
 
                   {/* Availability */}
                   {userProfile.availability && (
-                    <div className="flex items-center gap-3">
-                      <Calendar className="h-5 w-5 text-muted-foreground" />
-                      <span className="font-medium">Availability:</span>
-                      <Badge variant="outline" data-testid="profile-availability">
+                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                      <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
+                      <span className="font-medium text-sm sm:text-base">Availability:</span>
+                      <Badge variant="outline" data-testid="profile-availability" className="max-w-full break-words">
                         {userProfile.availability}
                       </Badge>
                     </div>
@@ -382,15 +389,15 @@ export default function UserProfileDetail() {
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Photo Gallery - Always show if there are ANY photos */}
             {userProfile.profileImages && userProfile.profileImages.length > 0 && (
-              <Card>
+              <Card className="w-full">
                 <CardHeader>
-                  <h3 className="text-xl font-semibold">Photos ({userProfile.profileImages.length})</h3>
+                  <h3 className="text-lg sm:text-xl font-semibold">Photos ({userProfile.profileImages.length})</h3>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4" data-testid="photo-gallery">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4" data-testid="photo-gallery">
                     {userProfile.profileImages.map((imageUrl, index) => (
                       <div key={`profile-${index}`} className="relative aspect-square overflow-hidden rounded-lg border">
                         <img
@@ -425,12 +432,12 @@ function ReviewsSection({ userId }: { userId: string }) {
 
   if (isLoading) {
     return (
-      <Card className="mt-6">
+      <Card className="mt-4 sm:mt-6 w-full">
         <CardHeader>
-          <h3 className="text-xl font-semibold">Reviews</h3>
+          <h3 className="text-lg sm:text-xl font-semibold">Reviews</h3>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-sm">Loading reviews...</p>
+          <p className="text-muted-foreground text-xs sm:text-sm">Loading reviews...</p>
         </CardContent>
       </Card>
     );
@@ -443,16 +450,16 @@ function ReviewsSection({ userId }: { userId: string }) {
   const averageRating = reviews.reduce((sum: number, review: any) => sum + review.rating, 0) / reviews.length;
 
   return (
-    <Card className="mt-6">
+    <Card className="mt-4 sm:mt-6 w-full">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <h3 className="text-xl font-semibold">Reviews</h3>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <h3 className="text-lg sm:text-xl font-semibold">Reviews</h3>
           <div className="flex items-center gap-2">
             <div className="flex">
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star
                   key={star}
-                  className={`h-5 w-5 ${
+                  className={`h-4 w-4 sm:h-5 sm:w-5 ${
                     star <= Math.round(averageRating)
                       ? "fill-yellow-400 text-yellow-400"
                       : "text-muted-foreground"
@@ -460,22 +467,22 @@ function ReviewsSection({ userId }: { userId: string }) {
                 />
               ))}
             </div>
-            <span className="text-sm text-muted-foreground">
+            <span className="text-xs sm:text-sm text-muted-foreground">
               {averageRating.toFixed(1)} ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
             </span>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {reviews.map((review: any) => (
-            <div key={review.id} className="border-b last:border-0 pb-4 last:pb-0" data-testid={`review-${review.id}`}>
-              <div className="flex items-center gap-2 mb-2">
+            <div key={review.id} className="border-b last:border-0 pb-3 sm:pb-4 last:pb-0" data-testid={`review-${review.id}`}>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <div className="flex">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
                       key={star}
-                      className={`h-4 w-4 ${
+                      className={`h-3 w-3 sm:h-4 sm:w-4 ${
                         star <= review.rating
                           ? "fill-yellow-400 text-yellow-400"
                           : "text-muted-foreground"
@@ -492,7 +499,7 @@ function ReviewsSection({ userId }: { userId: string }) {
                 </span>
               </div>
               {review.message && (
-                <p className="text-sm text-muted-foreground" data-testid={`review-message-${review.id}`}>
+                <p className="text-xs sm:text-sm text-muted-foreground break-words" data-testid={`review-message-${review.id}`}>
                   {review.message}
                 </p>
               )}

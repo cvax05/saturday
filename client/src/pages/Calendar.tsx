@@ -192,54 +192,57 @@ export default function Calendar() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-4xl mx-auto p-4">
+      <main className="max-w-4xl mx-auto p-4 sm:p-6">
         {/* Calendar Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <CalendarIcon className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold" data-testid="calendar-title">Calendar</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <CalendarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+            <h1 className="text-2xl sm:text-3xl font-bold" data-testid="calendar-title">Calendar</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
               onClick={() => navigateMonth('prev')}
               data-testid="button-prev-month"
+              className="shrink-0"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <div className="min-w-[200px] text-center">
-              <h2 className="text-xl font-semibold" data-testid="current-month">
+            <div className="flex-1 sm:min-w-[200px] text-center">
+              <h2 className="text-lg sm:text-xl font-semibold" data-testid="current-month">
                 {format(currentDate, 'MMMM yyyy')}
               </h2>
             </div>
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
               onClick={() => navigateMonth('next')}
               data-testid="button-next-month"
+              className="shrink-0"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Calendar Grid */}
           <div className="lg:col-span-2">
-            <Card>
-              <CardContent className="p-4">
+            <Card className="w-full overflow-hidden">
+              <CardContent className="p-2 sm:p-4">
                 {/* Day Headers */}
-                <div className="grid grid-cols-7 gap-1 mb-2">
+                <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-2">
                   {dayNames.map(day => (
-                    <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
-                      {day}
+                    <div key={day} className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-1 sm:py-2">
+                      <span className="hidden sm:inline">{day}</span>
+                      <span className="sm:hidden">{day.substring(0, 1)}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* Calendar Days */}
-                <div className="grid grid-cols-7 gap-1">
+                <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
                   {calendarDays.map(day => {
                     const dayStr = format(day, 'yyyy-MM-dd');
                     const dayPregames = pregamesByDate[dayStr] || [];
@@ -252,22 +255,22 @@ export default function Calendar() {
                         key={dayStr}
                         variant={isSelected ? "default" : "ghost"}
                         className={`
-                          h-20 p-1 flex flex-col items-center justify-start relative
+                          h-14 sm:h-20 p-0.5 sm:p-1 flex flex-col items-center justify-start relative touch-manipulation
                           ${!isCurrentMonth ? 'opacity-50' : ''}
-                          ${isTodayDate ? 'ring-2 ring-primary ring-opacity-50' : ''}
+                          ${isTodayDate ? 'ring-1 sm:ring-2 ring-primary ring-opacity-50' : ''}
                           hover:bg-muted
                         `}
                         onClick={() => handleDateClick(day)}
                         data-testid={`calendar-day-${dayStr}`}
                       >
-                        <span className={`text-sm ${isTodayDate ? 'font-bold' : ''} relative z-20`}>
+                        <span className={`text-xs sm:text-sm ${isTodayDate ? 'font-bold' : ''} relative z-20`}>
                           {format(day, 'd')}
                         </span>
                         
                         {/* Pregame indicator - Beer icon */}
                         {dayPregames.length > 0 && (
-                          <div className="absolute inset-0 z-10 flex items-center justify-center pt-6 pointer-events-none" data-testid={`beer-icon-${dayStr}`}>
-                            <Beer className="h-16 w-16 text-orange-500 dark:text-orange-400 drop-shadow-lg" strokeWidth={3} />
+                          <div className="absolute inset-0 z-10 flex items-center justify-center pt-4 sm:pt-6 pointer-events-none" data-testid={`beer-icon-${dayStr}`}>
+                            <Beer className="h-10 w-10 sm:h-16 sm:w-16 text-orange-500 dark:text-orange-400 drop-shadow-lg" strokeWidth={3} />
                           </div>
                         )}
                       </Button>
@@ -280,9 +283,9 @@ export default function Calendar() {
 
           {/* Selected Date Details */}
           <div className="space-y-4">
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="font-semibold mb-3" data-testid="selected-date-header">
+            <Card className="w-full">
+              <CardContent className="p-3 sm:p-4">
+                <h3 className="font-semibold mb-3 text-sm sm:text-base" data-testid="selected-date-header">
                   {selectedDate 
                     ? format(selectedDate, 'EEEE, MMMM d, yyyy')
                     : 'Select a date'
@@ -291,14 +294,14 @@ export default function Calendar() {
                 
                 {isLoading && (
                   <div className="text-center py-4">
-                    <p className="text-muted-foreground text-sm">Loading pregames...</p>
+                    <p className="text-muted-foreground text-xs sm:text-sm">Loading pregames...</p>
                   </div>
                 )}
 
                 {selectedDate && selectedDatePregames.length === 0 && !isLoading && (
-                  <div className="text-center py-4">
-                    <CalendarIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground text-sm">No pregames scheduled</p>
+                  <div className="text-center py-4 sm:py-6">
+                    <CalendarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-muted-foreground text-xs sm:text-sm">No pregames scheduled</p>
                   </div>
                 )}
 
@@ -307,30 +310,30 @@ export default function Calendar() {
                     {selectedDatePregames.map(pregame => (
                       <div
                         key={pregame.id}
-                        className="border rounded-lg p-3"
+                        className="border rounded-lg p-3 touch-manipulation"
                         data-testid={`selected-pregame-${pregame.id}`}
                       >
                         <div className="flex items-start gap-3">
-                          <Avatar className="h-8 w-8">
+                          <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0">
                             <AvatarImage src={pregame.participantImage} alt={pregame.participantName} />
-                            <AvatarFallback className="text-xs">
+                            <AvatarFallback className="text-xs sm:text-sm">
                               {pregame.participantName.split(' ').map((n: string) => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
                           
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm mb-1">Pregaming with {pregame.participantName}</h4>
+                            <h4 className="font-medium text-xs sm:text-sm mb-1 break-words">Pregaming with {pregame.participantName}</h4>
                             
                             <div className="space-y-1 text-xs text-muted-foreground">
                               <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                <span>{pregame.time}</span>
+                                <Clock className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{pregame.time}</span>
                               </div>
                               
                               {pregame.location && (
                                 <div className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  <span>{pregame.location}</span>
+                                  <MapPin className="h-3 w-3 shrink-0" />
+                                  <span className="truncate">{pregame.location}</span>
                                 </div>
                               )}
                             </div>
@@ -339,7 +342,7 @@ export default function Calendar() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleMessageParticipant(pregame)}
-                              className="mt-2 h-7 text-xs"
+                              className="mt-2 min-h-[36px] text-xs w-full sm:w-auto"
                               data-testid={`button-message-selected-${pregame.id}`}
                             >
                               <MessageSquare className="h-3 w-3 mr-1" />

@@ -206,30 +206,30 @@ export default function Registration() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-md mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-2">Saturday </h1>
-          <p className="text-muted-foreground">Join your campus pregame community</p>
+    <div className="min-h-screen bg-background p-4 sm:p-6">
+      <div className="max-w-md mx-auto w-full">
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-2">Saturday </h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Join your campus pregame community</p>
         </div>
 
-        <Card>
+        <Card className="w-full">
           <CardHeader>
-            <CardTitle>Create Your Profile</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl">Create Your Profile</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               
               {/* Profile Picture */}
-              <div className="flex flex-col items-center space-y-3">
-                <Label className="text-center">Profile Photo (shown in feeds)</Label>
-                <Avatar className="h-28 w-28 border-2 border-border">
+              <div className="flex flex-col items-center space-y-3 py-2">
+                <Label className="text-center text-sm sm:text-base">Profile Photo (shown in feeds)</Label>
+                <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-2 border-border">
                   <AvatarImage 
                     src={formData.profileImage} 
                     alt={formData.name}
                     className="object-cover"
                   />
-                  <AvatarFallback className="text-2xl font-bold bg-muted">
+                  <AvatarFallback className="text-xl sm:text-2xl font-bold bg-muted">
                     {formData.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
@@ -243,9 +243,10 @@ export default function Registration() {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  size="sm" 
+                  size="default"
                   onClick={handleUploadClick}
                   data-testid="button-upload-photo"
+                  className="w-full sm:w-auto"
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   {formData.profileImage ? 'Change Photo' : 'Add Photo'}
@@ -254,12 +255,12 @@ export default function Registration() {
 
               {/* Photo Gallery */}
               <div>
-                <Label>Additional Photos - Optional ({formData.galleryImages.length}/5)</Label>
-                <p className="text-sm text-muted-foreground mb-3">
+                <Label className="text-sm sm:text-base">Additional Photos - Optional ({formData.galleryImages.length}/5)</Label>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-3">
                   Add up to 5 more photos (shown on your profile page)
                 </p>
                 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {formData.galleryImages.map((image, index) => (
                     <div key={index} className="relative group aspect-square">
                       <img 
@@ -305,19 +306,20 @@ export default function Registration() {
               </div>
 
               {/* Basic Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Group/Organization</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <Label htmlFor="name" className="text-sm sm:text-base">Group/Organization</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     required
                     data-testid="input-name"
+                    className="w-full"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="groupSize">~# in Group/Organization</Label>
+                <div className="sm:col-span-2">
+                  <Label htmlFor="groupSize" className="text-sm sm:text-base">~# in Group/Organization</Label>
                   <Input
                     id="groupSize"
                     type="number"
@@ -326,12 +328,13 @@ export default function Registration() {
                     onChange={(e) => handleInputChange("groupSize", e.target.value)}
                     required
                     data-testid="input-group-size"
+                    className="w-full"
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sm sm:text-base">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -339,11 +342,12 @@ export default function Registration() {
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   required
                   data-testid="input-email"
+                  className="w-full"
                 />
               </div>
 
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -351,6 +355,7 @@ export default function Registration() {
                   onChange={(e) => handleInputChange("password", e.target.value)}
                   required
                   data-testid="input-password"
+                  className="w-full"
                 />
               </div>
 
@@ -364,7 +369,7 @@ export default function Registration() {
               />
 
               <div>
-                <Label htmlFor="description">About You (1-2 sentences)</Label>
+                <Label htmlFor="description" className="text-sm sm:text-base">About You (1-2 sentences)</Label>
                 <Textarea
                   id="description"
                   placeholder="Tell others about yourself and what you're looking for in pregame activities..."
@@ -373,6 +378,7 @@ export default function Registration() {
                   maxLength={200}
                   required
                   data-testid="textarea-description"
+                  className="w-full min-h-[80px] resize-none"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   {formData.description.length}/200 characters
@@ -380,10 +386,10 @@ export default function Registration() {
               </div>
 
               <div>
-                <Label>Ideal Group/Organization Size</Label>
-                <div className="grid grid-cols-2 gap-4">
+                <Label className="text-sm sm:text-base">Ideal Group/Organization Size</Label>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="groupSizeMin" className="text-sm">Min People</Label>
+                    <Label htmlFor="groupSizeMin" className="text-xs sm:text-sm">Min People</Label>
                     <Input
                       id="groupSizeMin"
                       type="number"
@@ -393,10 +399,11 @@ export default function Registration() {
                       onChange={(e) => handleInputChange("groupSizeMin", e.target.value)}
                       required
                       data-testid="input-group-min"
+                      className="w-full"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="groupSizeMax" className="text-sm">Max People</Label>
+                    <Label htmlFor="groupSizeMax" className="text-xs sm:text-sm">Max People</Label>
                     <Input
                       id="groupSizeMax"
                       type="number"
@@ -406,15 +413,16 @@ export default function Registration() {
                       onChange={(e) => handleInputChange("groupSizeMax", e.target.value)}
                       required
                       data-testid="input-group-max"
+                      className="w-full"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="preferredAlcohol">Preferred Alcohol</Label>
+                <Label htmlFor="preferredAlcohol" className="text-sm sm:text-base">Preferred Alcohol</Label>
                 <Select onValueChange={(value) => handleInputChange("preferredAlcohol", value)} required>
-                  <SelectTrigger data-testid="select-alcohol">
+                  <SelectTrigger data-testid="select-alcohol" className="w-full">
                     <SelectValue placeholder="What do you prefer?" />
                   </SelectTrigger>
                   <SelectContent>
@@ -428,30 +436,31 @@ export default function Registration() {
               </div>
 
               <div>
-                <Label htmlFor="availability">Availability</Label>
+                <Label htmlFor="availability" className="text-sm sm:text-base">Availability</Label>
                 <Input
                   id="availability"
-                  placeholder="e.g., Weekends, Friday nights, Most evenings"
+                  placeholder="e.g., Weekends, Friday nights"
                   value={formData.availability}
                   onChange={(e) => handleInputChange("availability", e.target.value)}
                   required
                   data-testid="input-availability"
+                  className="w-full"
                 />
               </div>
 
-              <Button type="submit" className="w-full" data-testid="button-register">
+              <Button type="submit" className="w-full min-h-[44px]" data-testid="button-register">
                 Join {SITE_NAME}
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        <p className="text-center text-sm text-muted-foreground mt-4">
+        <p className="text-center text-xs sm:text-sm text-muted-foreground mt-4 mb-6">
           Already have an account?{" "}
           <button
             type="button"
             onClick={() => setLocation("/login")}
-            className="text-primary hover:underline"
+            className="text-primary hover:underline min-h-[44px] inline-flex items-center"
             data-testid="link-login"
           >
             Sign in
