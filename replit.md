@@ -91,6 +91,23 @@ Preferred communication style: Simple, everyday language.
 - Conversation header member count now safely handles missing `otherParticipants` array
 - Messaging works end-to-end without runtime errors
 
+**Profile Photo Consistency & Avatar Quality (October 20, 2025)**: Comprehensive profile photo display improvements across the entire application:
+- **Messages "0" Bug Fix**: Fixed conversation header displaying stray "0" character by changing `isGroup &&` to `!!isGroup &&` (line 431)
+  - Root cause: `isGroup` stored as integer (0/1) in database; React renders integer 0 as text in conditionals
+  - Solution: Force boolean conversion with `!!` operator to prevent React from rendering the number
+- **Profile Photo Standardization**: Ensured consistent avatarUrl usage across all components
+  - Updated UserProfileDetail.tsx, People.tsx, and Header.tsx to use `avatarUrl || profileImages?.[0]` pattern
+  - Added `avatarUrl` field to AuthUser interface in shared/schema.ts for type consistency
+  - All pages now show the same primary photo for each user (self-view and others' view match)
+- **Avatar Component Quality**: Enhanced global Avatar component for better image display at all sizes
+  - Added `object-cover` class to AvatarImage component for proper cropping without distortion
+  - Added `rounded-full` class to AvatarImage to ensure perfect circular shape at all sizes (8px to 192px)
+  - All avatars throughout the app now maintain circular shape with proper border-radius
+- **End-to-End Testing**: Verified fixes across all pages (Messages, Profile, People, Groups)
+  - No stray "0" characters in conversation headers
+  - All avatars perfectly circular with borderRadius: 9999px
+  - Profile photos consistent across all views and pages
+
 **Schedule Pregame Feature (October 2025)**: Complete conversation-based pregame scheduling system:
 - **Database Schema**: Added conversationId, status, and googleCalendarEventId fields to pregames table
 - **Backend API**: Three new endpoints (POST/GET conversations/:id/pregames, GET pregames/calendar) with proper JWT auth and conversation membership validation
