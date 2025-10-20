@@ -637,7 +637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (report.checks.jwt?.status === "pass") {
         try {
           const { db } = await import("./db");
-          const { conversations, conversation_participants, messages } = await import("@shared/schema");
+          const { conversations, conversationParticipants, messages } = await import("@shared/schema");
           const { eq, and } = await import("drizzle-orm");
           
           const decoded = report.checks.jwt.payload;
@@ -653,7 +653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }).returning();
           
           // Add participant
-          await db.insert(conversation_participants).values({
+          await db.insert(conversationParticipants).values({
             conversationId: tempConv.id,
             userId,
           });
@@ -672,7 +672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Cleanup
           await db.delete(messages).where(eq(messages.conversationId, tempConv.id));
-          await db.delete(conversation_participants).where(eq(conversation_participants.conversationId, tempConv.id));
+          await db.delete(conversationParticipants).where(eq(conversationParticipants.conversationId, tempConv.id));
           await db.delete(conversations).where(eq(conversations.id, tempConv.id));
           
           if (readBack && readBack.content === "selftest message") {

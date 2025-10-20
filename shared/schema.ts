@@ -418,6 +418,7 @@ export interface AuthUser {
   username: string;
   email: string;
   displayName?: string | null;
+  avatarUrl?: string | null; // Primary profile photo (avatarUrl with fallback to first gallery image)
   profileImage?: string | null;
   galleryImages?: string[];
   profileImages?: string[] | null; // Deprecated: kept for backward compatibility

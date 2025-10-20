@@ -425,7 +425,7 @@ export default function Messages() {
                       <h3 className="font-semibold" data-testid="conversation-header-name">
                         {getConversationDisplayName(selectedConversation)}
                       </h3>
-                      {selectedConversation.isGroup && selectedConversation.otherParticipants && (
+                      {!!selectedConversation.isGroup && selectedConversation.otherParticipants && (
                         <p className="text-xs text-muted-foreground">
                           {selectedConversation.otherParticipants.length + 1} members
                         </p>

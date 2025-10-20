@@ -87,7 +87,7 @@ export default function UserProfileDetail() {
               school: currentUser.school || "",
               description: currentUser.bio || "",
               classYear: undefined,
-              profileImage: currentUser.profileImage || null,
+              profileImage: currentUser.avatarUrl || null,
               profileImages: currentUser.galleryImages || [],
               createdAt: "",
               photos: [],

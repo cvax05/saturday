@@ -116,7 +116,7 @@ export default function People() {
                       {/* Profile Picture */}
                       <Avatar className="h-16 w-16">
                         <AvatarImage 
-                          src={person.profileImages?.[0] || ""} 
+                          src={person.avatarUrl || person.profileImages?.[0] || ""} 
                           alt={person.displayName || person.username} 
                         />
                         <AvatarFallback className="text-lg font-bold">

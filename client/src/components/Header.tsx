@@ -117,7 +117,7 @@ export default function Header() {
               <Button variant="ghost" className="relative h-8 w-8 rounded-full" data-testid="user-menu">
                 <Avatar className="h-8 w-8">
                   <AvatarImage 
-                    src={currentUser.profileImages?.[0] || ""} 
+                    src={currentUser.avatarUrl || currentUser.profileImages?.[0] || ""} 
                     alt={currentUser.username}
                     className="object-cover"
                   />
