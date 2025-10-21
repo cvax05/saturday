@@ -17,14 +17,14 @@ export default function Landing() {
       
       {/* Content */}
       <div className="relative z-10 flex h-full flex-col items-center justify-start pt-8 px-4 text-center sm:pt-12 md:pt-16">
-        <h1 className="mb-8 text-5xl font-bold text-white sm:text-6xl md:text-7xl lg:text-8xl">
+        <h1 className="mb-4 text-5xl font-bold text-white sm:text-6xl md:text-7xl lg:text-8xl">
           Join your Campus<br />Pregame Community
         </h1>
         
         <Button
           size="lg"
           onClick={() => setLocation("/register")}
-          className="mt-4 h-14 px-12 text-lg font-semibold"
+          className="h-14 px-12 text-lg font-semibold"
           data-testid="button-get-started"
         >
           Get Started
