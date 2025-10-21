@@ -3,16 +3,12 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { 
   ChevronLeft, 
   ChevronRight, 
   Calendar as CalendarIcon, 
   Clock, 
   MapPin,
-  Plus,
-  MessageSquare,
   Loader2,
   Beer
 } from "lucide-react";
@@ -32,6 +28,14 @@ interface ScheduledPregame {
   location?: string;
   notes?: string;
   createdAt: string;
+}
+
+// Convert military time (HH:MM) to 12-hour format with AM/PM
+function formatTime12Hour(time24: string): string {
+  const [hours, minutes] = time24.split(':').map(Number);
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const hours12 = hours % 12 || 12; // Convert 0 to 12 for midnight
+  return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
 }
 
 export default function Calendar() {
@@ -144,10 +148,6 @@ export default function Calendar() {
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
-  };
-
-  const handleMessageParticipant = (pregame: ScheduledPregame) => {
-    setLocation(`/messages/${pregame.participantEmail}`);
   };
 
   const selectedDatePregames = selectedDate 
@@ -270,7 +270,7 @@ export default function Calendar() {
                         {/* Pregame indicator - Beer icon */}
                         {dayPregames.length > 0 && (
                           <div className="absolute inset-0 z-10 flex items-center justify-center pt-4 sm:pt-6 pointer-events-none" data-testid={`beer-icon-${dayStr}`}>
-                            <Beer className="h-10 w-10 sm:h-16 sm:w-16 text-orange-500 dark:text-orange-400 drop-shadow-lg" strokeWidth={3} />
+                            <Beer className="h-14 w-14 sm:h-20 sm:w-20 text-orange-500 dark:text-orange-400 drop-shadow-lg" strokeWidth={3} />
                           </div>
                         )}
                       </Button>
@@ -313,41 +313,21 @@ export default function Calendar() {
                         className="border rounded-lg p-3 touch-manipulation"
                         data-testid={`selected-pregame-${pregame.id}`}
                       >
-                        <div className="flex items-start gap-3">
-                          <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0">
-                            <AvatarImage src={pregame.participantImage} alt={pregame.participantName} />
-                            <AvatarFallback className="text-xs sm:text-sm">
-                              {pregame.participantName.split(' ').map((n: string) => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
+                        <div className="space-y-2">
+                          <h4 className="font-medium text-sm sm:text-base break-words">Pregaming with {pregame.participantName}</h4>
                           
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-xs sm:text-sm mb-1 break-words">Pregaming with {pregame.participantName}</h4>
-                            
-                            <div className="space-y-1 text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{pregame.time}</span>
-                              </div>
-                              
-                              {pregame.location && (
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3 shrink-0" />
-                                  <span className="truncate">{pregame.location}</span>
-                                </div>
-                              )}
+                          <div className="space-y-1.5 text-xs sm:text-sm text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 shrink-0" />
+                              <span>{formatTime12Hour(pregame.time)}</span>
                             </div>
                             
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleMessageParticipant(pregame)}
-                              className="mt-2 min-h-[36px] text-xs w-full sm:w-auto"
-                              data-testid={`button-message-selected-${pregame.id}`}
-                            >
-                              <MessageSquare className="h-3 w-3 mr-1" />
-                              Message
-                            </Button>
+                            {pregame.location && (
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 shrink-0" />
+                                <span className="break-words">{pregame.location}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
