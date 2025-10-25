@@ -83,7 +83,7 @@ export default function Groups() {
             <UserIcon className="h-8 w-8 text-primary" />
             <div>
               <h1 className="text-3xl font-bold" data-testid="groups-title">{schoolName}</h1>
-              <p className="text-muted-foreground">Browse students at your school</p>
+              <p className="text-muted-foreground">Browse Groups</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
