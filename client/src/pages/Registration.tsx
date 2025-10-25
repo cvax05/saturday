@@ -222,7 +222,7 @@ export default function Registration() {
               
               {/* Profile Picture */}
               <div className="flex flex-col items-center space-y-3 py-2">
-                <Label className="text-center text-sm sm:text-base">Profile Photo (shown in feeds)</Label>
+                <Label className="text-center text-sm sm:text-base">Profile Photo</Label>
                 <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-2 border-border">
                   <AvatarImage 
                     src={formData.profileImage} 
