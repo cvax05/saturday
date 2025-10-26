@@ -24,7 +24,7 @@ export const users = pgTable("users", {
   classYear: integer("class_year"), // Graduation year
   groupSizeMin: integer("group_size_min"), // Minimum group size preference
   groupSizeMax: integer("group_size_max"), // Maximum group size preference
-  preferredAlcohol: text("preferred_alcohol"), // Alcohol preference (Beer, Wine, Cocktails, etc.)
+  preferences: text("preferences"), // JSON string storing categorized preferences: { alcohol: [], music: [], vibe: [], other: "" }
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
 });
 
@@ -254,6 +254,16 @@ export const insertUserPhotoSchema = createInsertSchema(userPhotos).omit({
   createdAt: true,
 });
 
+// Preferences type for structured preference data
+export const preferencesSchema = z.object({
+  alcohol: z.array(z.string()).optional(),
+  music: z.array(z.string()).optional(),
+  vibe: z.array(z.string()).optional(),
+  other: z.string().optional(),
+});
+
+export type UserPreferences = z.infer<typeof preferencesSchema>;
+
 // Updated user schemas for multi-tenant
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -267,7 +277,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   classYear: true,
   groupSizeMin: true,
   groupSizeMax: true,
-  preferredAlcohol: true,
+  preferences: true,
 });
 
 export const registerSchema = createInsertSchema(users).pick({
@@ -280,7 +290,6 @@ export const registerSchema = createInsertSchema(users).pick({
   classYear: true,
   groupSizeMin: true,
   groupSizeMax: true,
-  preferredAlcohol: true,
 }).extend({
   profileImage: z.string()
     .regex(/^data:image\/(jpeg|jpg|png|gif|webp);base64,/, "Must be a valid image data URL")
@@ -296,7 +305,7 @@ export const registerSchema = createInsertSchema(users).pick({
   classYear: z.number().int().min(2020).max(2030).optional(),
   groupSizeMin: z.number().int().min(1).max(100).optional(),
   groupSizeMax: z.number().int().min(1).max(100).optional(),
-  preferredAlcohol: z.string().optional(),
+  preferences: preferencesSchema.optional(),
 });
 
 export const loginSchema = createInsertSchema(users).pick({
@@ -313,7 +322,7 @@ export const updateProfileSchema = z.object({
   bio: z.string().max(500).optional(),
   groupSizeMin: z.number().int().min(1).max(50).optional(),
   groupSizeMax: z.number().int().min(1).max(50).optional(),
-  preferredAlcohol: z.string().max(100).optional(),
+  preferences: preferencesSchema.optional(),
   profileImage: z.string().regex(dataUrlRegex, "Must be a valid image data URL").optional(),
   galleryImages: z.array(z.string().regex(dataUrlRegex, "Must be a valid image data URL")).max(5).optional(),
 }).refine(data => {
@@ -433,7 +442,7 @@ export interface AuthUser {
   bio?: string | null;
   groupSizeMin?: number | null;
   groupSizeMax?: number | null;
-  preferredAlcohol?: string | null;
+  preferences?: UserPreferences | null;
 }
 
 export interface AuthResponse {
