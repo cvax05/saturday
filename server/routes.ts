@@ -11,6 +11,17 @@ function mapUserToClient(user: User): AuthUser & { avatarUrl?: string | null } {
   // Backward compatibility: fallback to profileImages[0] if avatarUrl is null (legacy users)
   const primaryPhoto = user.avatarUrl || user.profileImages?.[0] || null;
   
+  // Parse preferences JSON string to object
+  let preferences = null;
+  if (user.preferences) {
+    try {
+      preferences = JSON.parse(user.preferences);
+    } catch (error) {
+      console.error('Failed to parse preferences JSON:', error);
+      preferences = null;
+    }
+  }
+  
   return {
     id: user.id,
     username: user.username,
@@ -24,7 +35,7 @@ function mapUserToClient(user: User): AuthUser & { avatarUrl?: string | null } {
     bio: user.bio,
     groupSizeMin: user.groupSizeMin,
     groupSizeMax: user.groupSizeMax,
-    preferredAlcohol: user.preferredAlcohol,
+    preferences: preferences,
   };
 }
 
@@ -54,7 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bio,
         groupSizeMin,
         groupSizeMax,
-        preferredAlcohol
+        preferences
       } = registerSchema.parse(req.body);
       
       // Store primary photo in avatarUrl, additional photos in profileImages
@@ -86,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           bio: bio || null,
           groupSizeMin: groupSizeMin || null,
           groupSizeMax: groupSizeMax || null,
-          preferredAlcohol: preferredAlcohol || null,
+          preferences: preferences ? JSON.stringify(preferences) : null,
           school: null, // Will be set after we get school info
         }, schoolSlug);
         
@@ -268,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bio: profileData.bio,
         groupSizeMin: profileData.groupSizeMin,
         groupSizeMax: profileData.groupSizeMax,
-        preferredAlcohol: profileData.preferredAlcohol,
+        preferences: profileData.preferences ? JSON.stringify(profileData.preferences) : null,
       };
       
       if (profileData.profileImage !== undefined) {
