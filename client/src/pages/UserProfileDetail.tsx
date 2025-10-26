@@ -40,7 +40,6 @@ interface UserProfile {
   groupSizeMin: string;
   groupSizeMax: string;
   preferredAlcohol: string;
-  availability: string;
 }
 
 export default function UserProfileDetail() {
@@ -94,8 +93,7 @@ export default function UserProfileDetail() {
               groupSize: "",
               groupSizeMin: currentUser.groupSizeMin?.toString() || "",
               groupSizeMax: currentUser.groupSizeMax?.toString() || "",
-              preferredAlcohol: currentUser.preferredAlcohol || "",
-              availability: currentUser.availability || ""
+              preferredAlcohol: currentUser.preferredAlcohol || ""
             };
             setUserProfile(profileData);
             setLoading(false);
@@ -144,8 +142,7 @@ export default function UserProfileDetail() {
               groupSize: userData.user.groupSize,
               groupSizeMin: userData.user.groupSizeMin, 
               groupSizeMax: userData.user.groupSizeMax,
-              preferredAlcohol: userData.user.preferredAlcohol,
-              availability: userData.user.availability
+              preferredAlcohol: userData.user.preferredAlcohol
             };
             
             console.log('UserProfileDetail: Profile data:', {
@@ -158,8 +155,7 @@ export default function UserProfileDetail() {
               username: userData.user.username,
               groupSizeMin: profileData.groupSizeMin,
               groupSizeMax: profileData.groupSizeMax,
-              preferredAlcohol: profileData.preferredAlcohol,
-              availability: profileData.availability
+              preferredAlcohol: profileData.preferredAlcohol
             });
           } else {
             console.log('UserProfileDetail: User not found via API:', userResponse.status);
@@ -333,7 +329,7 @@ export default function UserProfileDetail() {
           {/* Left Column */}
           <div className="space-y-4 sm:space-y-6">
             {/* Pregame Preferences - Only show if user has filled out preferences */}
-            {(userProfile.preferredAlcohol || userProfile.groupSize || userProfile.groupSizeMin || userProfile.groupSizeMax || userProfile.availability) && (
+            {(userProfile.preferredAlcohol || userProfile.groupSize || userProfile.groupSizeMin || userProfile.groupSizeMax) && (
               <Card className="w-full">
                 <CardHeader>
                   <h3 className="text-lg sm:text-xl font-semibold">Pregame Preferences</h3>
@@ -368,17 +364,6 @@ export default function UserProfileDetail() {
                       <span className="font-medium text-sm sm:text-base">Looking for groups of:</span>
                       <Badge variant="outline" data-testid="profile-group-range">
                         {userProfile.groupSizeMin || '?'} - {userProfile.groupSizeMax || '?'} people
-                      </Badge>
-                    </div>
-                  )}
-
-                  {/* Availability */}
-                  {userProfile.availability && (
-                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                      <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
-                      <span className="font-medium text-sm sm:text-base">Availability:</span>
-                      <Badge variant="outline" data-testid="profile-availability" className="max-w-full break-words">
-                        {userProfile.availability}
                       </Badge>
                     </div>
                   )}
