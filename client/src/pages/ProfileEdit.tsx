@@ -37,7 +37,6 @@ export default function ProfileEdit() {
     groupSizeMin: "",
     groupSizeMax: "",
     preferredAlcohol: "",
-    availability: "",
     profileImage: "",
     galleryImages: [] as string[]
   });
@@ -54,7 +53,6 @@ export default function ProfileEdit() {
         groupSizeMin: currentUser.groupSizeMin?.toString() || "",
         groupSizeMax: currentUser.groupSizeMax?.toString() || "",
         preferredAlcohol: currentUser.preferredAlcohol || "",
-        availability: currentUser.availability || "",
         profileImage: currentUser.profileImage || "",
         galleryImages: currentUser.galleryImages || []
       });
@@ -154,7 +152,6 @@ export default function ProfileEdit() {
         groupSizeMin: formData.groupSizeMin ? parseInt(formData.groupSizeMin) : undefined,
         groupSizeMax: formData.groupSizeMax ? parseInt(formData.groupSizeMax) : undefined,
         preferredAlcohol: formData.preferredAlcohol || undefined,
-        availability: formData.availability || undefined,
       };
 
       // Only include photos if they've been set
@@ -418,19 +415,6 @@ export default function ProfileEdit() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="availability" className="text-sm sm:text-base">Availability</Label>
-                <Input
-                  id="availability"
-                  placeholder="e.g., Weekends, Friday nights"
-                  value={formData.availability}
-                  onChange={(e) => handleInputChange("availability", e.target.value)}
-                  required
-                  data-testid="input-availability"
-                  className="w-full"
-                />
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-4">

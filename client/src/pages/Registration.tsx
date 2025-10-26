@@ -26,7 +26,6 @@ export default function Registration() {
     groupSizeMin: "",
     groupSizeMax: "",
     preferredAlcohol: "",
-    availability: "",
     profileImage: "",
     galleryImages: [] as string[]
   });
@@ -161,8 +160,7 @@ export default function Registration() {
         bio: formData.description,
         groupSizeMin: formData.groupSizeMin ? parseInt(formData.groupSizeMin) : undefined,
         groupSizeMax: formData.groupSizeMax ? parseInt(formData.groupSizeMax) : undefined,
-        preferredAlcohol: formData.preferredAlcohol,
-        availability: formData.availability
+        preferredAlcohol: formData.preferredAlcohol
       };
       
       // Only include profileImage if it has a value
@@ -433,19 +431,6 @@ export default function Registration() {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="availability" className="text-sm sm:text-base">Availability</Label>
-                <Input
-                  id="availability"
-                  placeholder="e.g., Weekends, Friday nights"
-                  value={formData.availability}
-                  onChange={(e) => handleInputChange("availability", e.target.value)}
-                  required
-                  data-testid="input-availability"
-                  className="w-full"
-                />
               </div>
 
               <Button type="submit" className="w-full min-h-[44px]" data-testid="button-register">
