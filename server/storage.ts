@@ -154,7 +154,7 @@ export class DatabaseStorage implements IStorage {
         classYear: users.classYear,
         groupSizeMin: users.groupSizeMin,
         groupSizeMax: users.groupSizeMax,
-        preferredAlcohol: users.preferredAlcohol,
+        preferences: users.preferences,
         createdAt: users.createdAt,
       })
       .from(users)
@@ -178,7 +178,7 @@ export class DatabaseStorage implements IStorage {
         classYear: users.classYear,
         groupSizeMin: users.groupSizeMin,
         groupSizeMax: users.groupSizeMax,
-        preferredAlcohol: users.preferredAlcohol,
+        preferences: users.preferences,
         createdAt: users.createdAt,
       })
       .from(users)
@@ -235,7 +235,7 @@ export class DatabaseStorage implements IStorage {
         classYear: users.classYear,
         groupSizeMin: users.groupSizeMin,
         groupSizeMax: users.groupSizeMax,
-        preferredAlcohol: users.preferredAlcohol,
+        preferences: users.preferences,
         createdAt: users.createdAt,
       })
       .from(users)
@@ -703,7 +703,7 @@ export class DatabaseStorage implements IStorage {
         classYear: users.classYear,
         groupSizeMin: users.groupSizeMin,
         groupSizeMax: users.groupSizeMax,
-        preferredAlcohol: users.preferredAlcohol,
+        preferences: users.preferences,
         createdAt: users.createdAt,
       })
       .from(users)
