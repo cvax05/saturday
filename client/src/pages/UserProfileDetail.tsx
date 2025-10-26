@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { authQueryFn } from "@/lib/queryClient";
-import type { AuthResponse } from "@shared/schema";
+import type { AuthResponse, UserPreferences } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,8 @@ import {
   Users, 
   Calendar, 
   Wine,
+  Music,
+  Sparkles,
   ArrowLeft,
   MessageCircle,
   Edit,
@@ -35,11 +37,11 @@ interface UserProfile {
   profileImages: string[]; // Array of image URLs from registration
   photos: { id: string; url: string; }[]; // Legacy field for compatibility
   createdAt: string;
-  // Legacy fields for pregame preferences (may not be filled)
+  // Pregame preferences
   groupSize: string;
   groupSizeMin: string;
   groupSizeMax: string;
-  preferredAlcohol: string;
+  preferences?: UserPreferences;
 }
 
 export default function UserProfileDetail() {
@@ -93,7 +95,7 @@ export default function UserProfileDetail() {
               groupSize: "",
               groupSizeMin: currentUser.groupSizeMin?.toString() || "",
               groupSizeMax: currentUser.groupSizeMax?.toString() || "",
-              preferredAlcohol: currentUser.preferredAlcohol || ""
+              preferences: currentUser.preferences
             };
             setUserProfile(profileData);
             setLoading(false);
@@ -138,11 +140,11 @@ export default function UserProfileDetail() {
               profileImages: userData.user.profileImages || [], // Gallery photos
               createdAt: userData.user.createdAt,
               photos: userData.photos || [],
-              // Legacy fields - don't add fake data
+              // Pregame preferences
               groupSize: userData.user.groupSize,
               groupSizeMin: userData.user.groupSizeMin, 
               groupSizeMax: userData.user.groupSizeMax,
-              preferredAlcohol: userData.user.preferredAlcohol
+              preferences: userData.user.preferences
             };
             
             console.log('UserProfileDetail: Profile data:', {
@@ -155,7 +157,7 @@ export default function UserProfileDetail() {
               username: userData.user.username,
               groupSizeMin: profileData.groupSizeMin,
               groupSizeMax: profileData.groupSizeMax,
-              preferredAlcohol: profileData.preferredAlcohol
+              preferences: profileData.preferences
             });
           } else {
             console.log('UserProfileDetail: User not found via API:', userResponse.status);
@@ -172,17 +174,14 @@ export default function UserProfileDetail() {
     fetchUserProfile();
   }, [params?.email, currentUser]);
 
-  const getPreferredAlcoholColor = (alcohol: string) => {
-    switch (alcohol.toLowerCase()) {
-      case 'beer': return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300';
-      case 'wine': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-      case 'cocktails': return 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300';
-      case 'vodka': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      case 'whiskey': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
-      case 'anything': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      case 'none': return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
-    }
+  const hasPreferences = (prefs: UserPreferences | undefined): boolean => {
+    if (!prefs) return false;
+    return !!(
+      (prefs.alcohol && prefs.alcohol.length > 0) ||
+      (prefs.music && prefs.music.length > 0) ||
+      (prefs.vibe && prefs.vibe.length > 0) ||
+      prefs.other
+    );
   };
 
   if (loading) {
@@ -329,31 +328,73 @@ export default function UserProfileDetail() {
           {/* Left Column */}
           <div className="space-y-4 sm:space-y-6">
             {/* Pregame Preferences - Only show if user has filled out preferences */}
-            {(userProfile.preferredAlcohol || userProfile.groupSize || userProfile.groupSizeMin || userProfile.groupSizeMax) && (
+            {(hasPreferences(userProfile.preferences) || userProfile.groupSize || userProfile.groupSizeMin || userProfile.groupSizeMax) && (
               <Card className="w-full">
                 <CardHeader>
-                  <h3 className="text-lg sm:text-xl font-semibold">Pregame Preferences</h3>
+                  <h3 className="text-lg sm:text-xl font-semibold">Preferences</h3>
                 </CardHeader>
                 <CardContent className="space-y-3 sm:space-y-4">
-                  {/* Preferred Alcohol */}
-                  {userProfile.preferredAlcohol && (
-                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                      <Wine className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
-                      <span className="font-medium text-sm sm:text-base">Preferred Drinks:</span>
-                      <Badge className={getPreferredAlcoholColor(userProfile.preferredAlcohol)} data-testid="profile-alcohol">
-                        {userProfile.preferredAlcohol}
-                      </Badge>
+                  {/* Alcohol Preferences */}
+                  {userProfile.preferences?.alcohol && userProfile.preferences.alcohol.length > 0 && (
+                    <div className="flex items-start gap-2 sm:gap-3 flex-wrap">
+                      <Wine className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0 mt-1" />
+                      <div className="flex-1 min-w-0">
+                        <span className="font-semibold text-sm sm:text-base block mb-1">Alcohol:</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {userProfile.preferences.alcohol.map((item, index) => (
+                            <Badge key={index} variant="secondary" data-testid={`pref-alcohol-${index}`}>
+                              {item}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   )}
 
-                  {/* Group Size Preference */}
-                  {userProfile.groupSize && (
-                    <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                      <Users className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
-                      <span className="font-medium text-sm sm:text-base">Group Size:</span>
-                      <Badge variant="secondary" data-testid="profile-group-size">
-                        {userProfile.groupSize}
-                      </Badge>
+                  {/* Music Preferences */}
+                  {userProfile.preferences?.music && userProfile.preferences.music.length > 0 && (
+                    <div className="flex items-start gap-2 sm:gap-3 flex-wrap">
+                      <Music className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0 mt-1" />
+                      <div className="flex-1 min-w-0">
+                        <span className="font-semibold text-sm sm:text-base block mb-1">Music:</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {userProfile.preferences.music.map((item, index) => (
+                            <Badge key={index} variant="secondary" data-testid={`pref-music-${index}`}>
+                              {item}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Vibe Preferences */}
+                  {userProfile.preferences?.vibe && userProfile.preferences.vibe.length > 0 && (
+                    <div className="flex items-start gap-2 sm:gap-3 flex-wrap">
+                      <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0 mt-1" />
+                      <div className="flex-1 min-w-0">
+                        <span className="font-semibold text-sm sm:text-base block mb-1">Vibe:</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {userProfile.preferences.vibe.map((item, index) => (
+                            <Badge key={index} variant="secondary" data-testid={`pref-vibe-${index}`}>
+                              {item}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Other/Custom Preferences */}
+                  {userProfile.preferences?.other && (
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <User className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0 mt-1" />
+                      <div className="flex-1 min-w-0">
+                        <span className="font-semibold text-sm sm:text-base block mb-1">Other:</span>
+                        <p className="text-sm text-muted-foreground" data-testid="pref-other">
+                          {userProfile.preferences.other}
+                        </p>
+                      </div>
                     </div>
                   )}
 
