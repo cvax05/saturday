@@ -5,15 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
+import PreferencesSelector from "@/components/PreferencesSelector";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArrowLeft, Upload, X, Plus } from "lucide-react";
 import { compressImage } from "@/lib/imageUtils";
 import { useQuery } from "@tanstack/react-query";
 import { authQueryFn, queryClient } from "@/lib/queryClient";
-import type { AuthResponse } from "@shared/schema";
+import type { AuthResponse, UserPreferences } from "@shared/schema";
 
 export default function ProfileEdit() {
   const [, setLocation] = useLocation();
@@ -36,10 +36,11 @@ export default function ProfileEdit() {
     description: "",
     groupSizeMin: "",
     groupSizeMax: "",
-    preferredAlcohol: "",
     profileImage: "",
     galleryImages: [] as string[]
   });
+  
+  const [preferences, setPreferences] = useState<UserPreferences>({});
 
   // Load user data from API when it's available
   useEffect(() => {
@@ -52,26 +53,12 @@ export default function ProfileEdit() {
         description: currentUser.bio || "",
         groupSizeMin: currentUser.groupSizeMin?.toString() || "",
         groupSizeMax: currentUser.groupSizeMax?.toString() || "",
-        preferredAlcohol: currentUser.preferredAlcohol || "",
         profileImage: currentUser.profileImage || "",
         galleryImages: currentUser.galleryImages || []
       });
+      setPreferences(currentUser.preferences || {});
     }
   }, [currentUser]);
-
-  // Schools list now handled by SearchableCollegeSelect component
-
-  const alcoholOptions = [
-    "Beer",
-    "Wine", 
-    "Cocktails",
-    "Vodka",
-    "Whiskey",
-    "Seltzers",
-    "Wine & Cocktails",
-    "Anything",
-    "None"
-  ];
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -151,7 +138,7 @@ export default function ProfileEdit() {
         bio: formData.description,
         groupSizeMin: formData.groupSizeMin ? parseInt(formData.groupSizeMin) : undefined,
         groupSizeMax: formData.groupSizeMax ? parseInt(formData.groupSizeMax) : undefined,
-        preferredAlcohol: formData.preferredAlcohol || undefined,
+        preferences: preferences,
       };
 
       // Only include photos if they've been set
@@ -401,21 +388,11 @@ export default function ProfileEdit() {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="preferredAlcohol" className="text-sm sm:text-base">Preferred Alcohol</Label>
-                <Select value={formData.preferredAlcohol} onValueChange={(value) => handleInputChange("preferredAlcohol", value)} required>
-                  <SelectTrigger data-testid="select-alcohol" className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {alcoholOptions.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <PreferencesSelector
+                value={preferences}
+                onChange={setPreferences}
+                className="w-full"
+              />
 
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Button 
