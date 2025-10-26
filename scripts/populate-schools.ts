@@ -2,6 +2,7 @@ import { db } from "../server/db";
 import { schools } from "../shared/schema";
 import { readFileSync } from "fs";
 import { sql } from "drizzle-orm";
+import { parse } from "csv-parse/sync";
 
 // Function to create a slug from school name
 function createSlug(name: string): string {
@@ -17,18 +18,20 @@ async function populateSchools() {
   console.log('Reading CSV file...');
   const csvContent = readFileSync('/tmp/world-universities.csv', 'utf-8');
   
-  // Parse CSV and filter US universities
-  const lines = csvContent.split('\n');
+  // Parse CSV properly with quoting support
+  const records = parse(csvContent, {
+    skip_empty_lines: true,
+    relax_column_count: true, // Allow variable column counts
+  });
+  
+  // Filter US universities and create school objects
   const usUniversities: { name: string; slug: string }[] = [];
   
-  for (const line of lines) {
-    if (line.startsWith('US,')) {
-      const parts = line.split(',');
-      const name = parts[1];
-      if (name && name.trim()) {
-        const slug = createSlug(name);
-        usUniversities.push({ name: name.trim(), slug });
-      }
+  for (const record of records) {
+    const [countryCode, name] = record;
+    if (countryCode === 'US' && name && name.trim()) {
+      const slug = createSlug(name);
+      usUniversities.push({ name: name.trim(), slug });
     }
   }
   
