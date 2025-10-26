@@ -93,7 +93,7 @@ export default function Calendar() {
     };
   }) || [];
 
-  // Get calendar grid
+  // Get calendar grid - Only Saturdays
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calendarStart = new Date(monthStart);
@@ -102,7 +102,9 @@ export default function Calendar() {
   const calendarEnd = new Date(monthEnd);
   calendarEnd.setDate(calendarEnd.getDate() + (6 - monthEnd.getDay())); // End on Saturday
   
-  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  // Get all days in the calendar view and filter to only Saturdays
+  const allDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  const calendarDays = allDays.filter(day => day.getDay() === 6); // 6 = Saturday
 
   // Group pregames by date
   const pregamesByDate = scheduledPregames.reduce((acc, pregame) => {
@@ -154,7 +156,8 @@ export default function Calendar() {
     ? pregamesByDate[format(selectedDate, 'yyyy-MM-dd')] || []
     : [];
 
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  // No longer needed - we only show Saturdays
+  // const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Loading states
   if (authLoading) {
@@ -227,22 +230,17 @@ export default function Calendar() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Calendar Grid */}
+          {/* Calendar Grid - Saturdays Only */}
           <div className="lg:col-span-2">
             <Card className="w-full overflow-hidden">
               <CardContent className="p-2 sm:p-4">
-                {/* Day Headers */}
-                <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-2">
-                  {dayNames.map(day => (
-                    <div key={day} className="text-center text-xs sm:text-sm font-medium text-muted-foreground py-1 sm:py-2">
-                      <span className="hidden sm:inline">{day}</span>
-                      <span className="sm:hidden">{day.substring(0, 1)}</span>
-                    </div>
-                  ))}
+                {/* Header indicating Saturday-only view */}
+                <div className="text-center mb-4">
+                  <h3 className="text-sm sm:text-base font-medium text-muted-foreground">Saturdays in {format(currentDate, 'MMMM yyyy')}</h3>
                 </div>
 
-                {/* Calendar Days */}
-                <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
+                {/* Saturday Tiles - Grid layout */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                   {calendarDays.map(day => {
                     const dayStr = format(day, 'yyyy-MM-dd');
                     const dayPregames = pregamesByDate[dayStr] || [];
@@ -255,22 +253,26 @@ export default function Calendar() {
                         key={dayStr}
                         variant={isSelected ? "default" : "ghost"}
                         className={`
-                          h-14 sm:h-20 p-0.5 sm:p-1 flex flex-col items-center justify-start relative touch-manipulation
+                          h-24 sm:h-28 p-2 flex flex-col items-center justify-center relative touch-manipulation
                           ${!isCurrentMonth ? 'opacity-50' : ''}
-                          ${isTodayDate ? 'ring-1 sm:ring-2 ring-primary ring-opacity-50' : ''}
+                          ${isTodayDate ? 'ring-2 ring-primary' : ''}
                           hover:bg-muted
                         `}
                         onClick={() => handleDateClick(day)}
                         data-testid={`calendar-day-${dayStr}`}
                       >
-                        <span className={`text-xs sm:text-sm ${isTodayDate ? 'font-bold' : ''} relative z-20`}>
-                          {format(day, 'd')}
-                        </span>
+                        <div className="flex flex-col items-center gap-1 relative z-20">
+                          <span className="text-xs text-muted-foreground">Saturday</span>
+                          <span className={`text-lg sm:text-2xl font-bold ${isTodayDate ? 'text-primary' : ''}`}>
+                            {format(day, 'd')}
+                          </span>
+                          <span className="text-xs text-muted-foreground">{format(day, 'MMM')}</span>
+                        </div>
                         
                         {/* Pregame indicator - Beer icon */}
                         {dayPregames.length > 0 && (
-                          <div className="absolute inset-0 z-10 flex items-center justify-center pt-4 sm:pt-6 pointer-events-none" data-testid={`beer-icon-${dayStr}`}>
-                            <Beer className="h-14 w-14 sm:h-20 sm:w-20 text-orange-500 dark:text-orange-400 drop-shadow-lg" strokeWidth={3} />
+                          <div className="absolute top-1 right-1 z-10" data-testid={`beer-icon-${dayStr}`}>
+                            <Beer className="h-6 w-6 sm:h-8 sm:w-8 text-orange-500 dark:text-orange-400" strokeWidth={2.5} />
                           </div>
                         )}
                       </Button>

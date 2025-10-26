@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
-import { insertUserSchema, insertMessageSchema, insertPregameSchema, insertReviewSchema, registerSchema, loginSchema, updateProfileSchema, createConversationSchema, sendMessageSchema, markReadSchema, type AuthResponse, type AuthUser, type User } from "@shared/schema";
+import { insertUserSchema, insertMessageSchema, insertPregameSchema, schedulePregameSchema, insertReviewSchema, registerSchema, loginSchema, updateProfileSchema, createConversationSchema, sendMessageSchema, markReadSchema, type AuthResponse, type AuthUser, type User } from "@shared/schema";
 import { signJWT, setAuthCookie } from "./auth/jwt";
 import { authenticateJWT, optionalAuth } from "./auth/middleware";
 

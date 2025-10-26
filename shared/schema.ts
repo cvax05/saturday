@@ -378,6 +378,13 @@ export const insertPregameSchema = createInsertSchema(pregames).omit({
   schoolId: true, // Will be derived from JWT
   conversationId: true, // Will be derived from route parameter
   googleCalendarEventId: true, // Managed by backend
+}).extend({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").refine((dateStr) => {
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.getDay() === 6; // 6 = Saturday
+  }, {
+    message: "Pregames can only be scheduled on Saturdays"
+  }),
 });
 
 // Schema for scheduling pregames from conversations
