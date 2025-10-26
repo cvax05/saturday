@@ -152,6 +152,9 @@ export class DatabaseStorage implements IStorage {
         avatarUrl: users.avatarUrl,
         bio: users.bio,
         classYear: users.classYear,
+        groupSizeMin: users.groupSizeMin,
+        groupSizeMax: users.groupSizeMax,
+        preferredAlcohol: users.preferredAlcohol,
         createdAt: users.createdAt,
       })
       .from(users)
@@ -176,7 +179,6 @@ export class DatabaseStorage implements IStorage {
         groupSizeMin: users.groupSizeMin,
         groupSizeMax: users.groupSizeMax,
         preferredAlcohol: users.preferredAlcohol,
-        availability: users.availability,
         createdAt: users.createdAt,
       })
       .from(users)
@@ -231,6 +233,9 @@ export class DatabaseStorage implements IStorage {
         avatarUrl: users.avatarUrl,
         bio: users.bio,
         classYear: users.classYear,
+        groupSizeMin: users.groupSizeMin,
+        groupSizeMax: users.groupSizeMax,
+        preferredAlcohol: users.preferredAlcohol,
         createdAt: users.createdAt,
       })
       .from(users)
@@ -696,6 +701,9 @@ export class DatabaseStorage implements IStorage {
         avatarUrl: users.avatarUrl,
         bio: users.bio,
         classYear: users.classYear,
+        groupSizeMin: users.groupSizeMin,
+        groupSizeMax: users.groupSizeMax,
+        preferredAlcohol: users.preferredAlcohol,
         createdAt: users.createdAt,
       })
       .from(users)

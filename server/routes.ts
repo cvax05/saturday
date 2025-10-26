@@ -25,7 +25,6 @@ function mapUserToClient(user: User): AuthUser & { avatarUrl?: string | null } {
     groupSizeMin: user.groupSizeMin,
     groupSizeMax: user.groupSizeMax,
     preferredAlcohol: user.preferredAlcohol,
-    availability: user.availability,
   };
 }
 
@@ -55,8 +54,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bio,
         groupSizeMin,
         groupSizeMax,
-        preferredAlcohol,
-        availability
+        preferredAlcohol
       } = registerSchema.parse(req.body);
       
       // Store primary photo in avatarUrl, additional photos in profileImages
@@ -89,7 +87,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           groupSizeMin: groupSizeMin || null,
           groupSizeMax: groupSizeMax || null,
           preferredAlcohol: preferredAlcohol || null,
-          availability: availability || null,
           school: null, // Will be set after we get school info
         }, schoolSlug);
         
@@ -272,7 +269,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         groupSizeMin: profileData.groupSizeMin,
         groupSizeMax: profileData.groupSizeMax,
         preferredAlcohol: profileData.preferredAlcohol,
-        availability: profileData.availability,
       };
       
       if (profileData.profileImage !== undefined) {
