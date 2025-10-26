@@ -37,13 +37,36 @@ export default function SchedulePregameModal({
   const [time, setTime] = useState(initialValues?.time || "");
   const [location, setLocation] = useState(initialValues?.location || "");
   const [notes, setNotes] = useState(initialValues?.notes || "");
+  const [dateError, setDateError] = useState("");
 
   // Set minimum date to today
   const today = new Date().toISOString().split('T')[0];
 
+  // Helper function to check if a date is Saturday
+  const isSaturday = (dateString: string) => {
+    const selectedDate = new Date(dateString + 'T00:00:00');
+    return selectedDate.getDay() === 6;
+  };
+
+  // Handle date change with Saturday validation
+  const handleDateChange = (newDate: string) => {
+    setDate(newDate);
+    if (newDate && !isSaturday(newDate)) {
+      setDateError("Pregames can only be scheduled on Saturdays");
+    } else {
+      setDateError("");
+    }
+  };
+
   const handleSubmit = () => {
     if (!date || !time) {
       alert("Please select both date and time");
+      return;
+    }
+
+    // Validate that the date is a Saturday
+    if (!isSaturday(date)) {
+      alert("Pregames can only be scheduled on Saturdays");
       return;
     }
 
@@ -59,6 +82,7 @@ export default function SchedulePregameModal({
     setTime("");
     setLocation("");
     setNotes("");
+    setDateError("");
     onClose();
   };
 
@@ -76,26 +100,31 @@ export default function SchedulePregameModal({
           <div className="bg-muted/50 rounded-md p-3">
             <p className="text-sm font-medium">Pregame with {participantName}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              You can change the date and time anytime before the event
+              Pregames can only be scheduled on Saturdays
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="date">Date *</Label>
+              <Label htmlFor="date">Date (Saturday only) *</Label>
               <div className="relative">
                 <Input
                   id="date"
                   type="date"
                   value={date}
                   min={today}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={(e) => handleDateChange(e.target.value)}
                   className="pl-10"
                   required
                   data-testid="input-date"
                 />
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               </div>
+              {dateError && (
+                <p className="text-xs text-destructive mt-1" data-testid="error-date">
+                  {dateError}
+                </p>
+              )}
             </div>
 
             <div>
@@ -155,7 +184,7 @@ export default function SchedulePregameModal({
               onClick={handleSubmit} 
               className="flex-1"
               data-testid="button-schedule"
-              disabled={!date || !time}
+              disabled={!date || !time || !!dateError}
             >
               Schedule Pregame
             </Button>
