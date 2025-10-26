@@ -25,7 +25,6 @@ export const users = pgTable("users", {
   groupSizeMin: integer("group_size_min"), // Minimum group size preference
   groupSizeMax: integer("group_size_max"), // Maximum group size preference
   preferredAlcohol: text("preferred_alcohol"), // Alcohol preference (Beer, Wine, Cocktails, etc.)
-  availability: text("availability"), // Availability (Weekends, Weekdays, Both)
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
 });
 
@@ -269,7 +268,6 @@ export const insertUserSchema = createInsertSchema(users).pick({
   groupSizeMin: true,
   groupSizeMax: true,
   preferredAlcohol: true,
-  availability: true,
 });
 
 export const registerSchema = createInsertSchema(users).pick({
@@ -283,7 +281,6 @@ export const registerSchema = createInsertSchema(users).pick({
   groupSizeMin: true,
   groupSizeMax: true,
   preferredAlcohol: true,
-  availability: true,
 }).extend({
   profileImage: z.string()
     .regex(/^data:image\/(jpeg|jpg|png|gif|webp);base64,/, "Must be a valid image data URL")
@@ -300,7 +297,6 @@ export const registerSchema = createInsertSchema(users).pick({
   groupSizeMin: z.number().int().min(1).max(100).optional(),
   groupSizeMax: z.number().int().min(1).max(100).optional(),
   preferredAlcohol: z.string().optional(),
-  availability: z.string().optional(),
 });
 
 export const loginSchema = createInsertSchema(users).pick({
@@ -318,7 +314,6 @@ export const updateProfileSchema = z.object({
   groupSizeMin: z.number().int().min(1).max(50).optional(),
   groupSizeMax: z.number().int().min(1).max(50).optional(),
   preferredAlcohol: z.string().max(100).optional(),
-  availability: z.string().max(100).optional(),
   profileImage: z.string().regex(dataUrlRegex, "Must be a valid image data URL").optional(),
   galleryImages: z.array(z.string().regex(dataUrlRegex, "Must be a valid image data URL")).max(5).optional(),
 }).refine(data => {
@@ -387,7 +382,12 @@ export const insertPregameSchema = createInsertSchema(pregames).omit({
 
 // Schema for scheduling pregames from conversations
 export const schedulePregameSchema = z.object({
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").refine((dateStr) => {
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.getDay() === 6; // 6 = Saturday
+  }, {
+    message: "Pregames can only be scheduled on Saturdays"
+  }),
   time: z.string().regex(/^\d{2}:\d{2}$/, "Time must be in HH:MM format"),
   location: z.string().min(1, "Location is required").max(200, "Location too long"),
   notes: z.string().max(500, "Notes too long").optional(),
@@ -427,7 +427,6 @@ export interface AuthUser {
   groupSizeMin?: number | null;
   groupSizeMax?: number | null;
   preferredAlcohol?: string | null;
-  availability?: string | null;
 }
 
 export interface AuthResponse {
