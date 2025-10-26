@@ -1,174 +1,76 @@
 # Pregame Connect - Social Platform for College Groups
 
 ## Overview
-
-Pregame Connect (branded as "Saturday") is a social platform designed for college groups and organizations to find others to pregame with before events. The application facilitates connections between groups through profile discovery, messaging, and a rating system to build trust within the community.
-
-The platform uses a card-based discovery feed similar to dating apps, where users can browse group profiles, connect with others, and coordinate pregame activities. It includes comprehensive user management with registration, authentication, profile customization, and real-time messaging capabilities.
+Pregame Connect (branded as "Saturday") is a social platform for college groups and organizations to connect for pregame activities. It features profile discovery, real-time messaging, and a rating system. The platform aims to facilitate connections between groups, coordinate pregame events, and build a trusted community within college campuses.
 
 ## User Preferences
-
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
-**React + TypeScript SPA**: Built with Vite for fast development and optimized production builds. Uses Wouter for client-side routing instead of React Router for a lighter footprint.
+### Frontend
+- **Framework**: React + TypeScript SPA built with Vite.
+- **Routing**: Wouter for client-side routing.
+- **UI Components**: shadcn/ui built on Radix UI for accessibility and consistency.
+- **State Management**: TanStack Query for server state; React's built-in state for client state.
+- **Styling**: Tailwind CSS with a custom design system, dark/light theme, and responsive mobile-first design.
 
-**Component Library**: Utilizes shadcn/ui components built on Radix UI primitives for accessibility and consistency. All UI components follow a unified design system with proper TypeScript support.
+### Backend
+- **Server**: Express.js with TypeScript and ES modules, featuring middleware for logging, JSON parsing, and error handling.
+- **Storage**: Abstracted storage layer, designed for easy database integration.
+- **API**: RESTful API with centralized route registration and JSON response formatting.
 
-**State Management**: TanStack Query for server state management and caching. No global client state management library - relies on React's built-in state and props for component state.
-
-**Styling**: Tailwind CSS with a custom design system featuring dark/light theme support. Uses CSS variables for theming and includes hover/active state utilities for interactive elements.
-
-### Backend Architecture
-**Express.js Server**: RESTful API server with TypeScript support and ES modules. Includes middleware for request logging, JSON parsing, and error handling.
-
-**Storage Interface**: Abstracted storage layer with in-memory implementation for development. Designed to be easily swapped for database implementations without changing business logic.
-
-**Route Organization**: Centralized route registration system with proper HTTP status code handling and JSON response formatting.
-
-### Database Schema
-**PostgreSQL with Drizzle ORM**: Uses Drizzle for type-safe database operations and schema management.
-
-**Schema Structure**: 
-- **Users table**: UUID primary keys, authentication, profile data (display name, bio, group size, availability)
-- **Conversations table**: UUID primary keys, supports both direct (1-on-1) and group conversations with titles
-- **Conversation_participants table**: Junction table linking users to conversations with last_read_at timestamps for unread count tracking
-- **Messages table**: UUID primary keys, content with CHECK constraint (length > 0), indexed by conversation_id and created_at for efficient pagination
-- **Schools table**: School information with unique slugs
-- **User_school_memberships table**: Many-to-many relationship between users and schools for multi-tenancy
-- **Reviews, pregames tables**: Rating and event coordination features
-
-**Messaging System (October 2025)**: Complete first-class messaging implementation with:
-- Cursor-based pagination for efficient message loading
-- Direct message deduplication via composite unique constraint on sorted participant IDs
-- Unread count tracking via last_read_at timestamps
-- School isolation: all conversations scoped to school_id from JWT
-- Real-time updates via polling (3-second intervals)
+### Database
+- **Type**: PostgreSQL with Drizzle ORM for type-safe operations.
+- **Schema**:
+    - **Users**: Authentication, profile data (display name, bio, group size, availability).
+    - **Conversations**: Direct and group conversations, titles.
+    - **Conversation Participants**: Links users to conversations, tracks unread counts.
+    - **Messages**: Content, indexed for efficient pagination.
+    - **Schools**: Comprehensive database of 2,092 US colleges populated via a script.
+    - **User School Memberships**: Many-to-many relationship for multi-tenancy.
+    - **Reviews & Pregames**: Rating and event coordination features, including pregame scheduling linked to conversations.
+- **Schools Data Population**: Automated script `scripts/populate-schools.ts` handles CSV parsing, slug generation, and ensures data integrity and idempotency.
 
 ### Authentication & Authorization
-**JWT Implementation**: Complete JWT authentication system with httpOnly cookies for secure token storage. Tokens expire after 7 days and are automatically sent with all API requests.
+- **Method**: JWT authentication using httpOnly cookies for secure token storage (7-day expiry).
+- **Security**: Password hashing with bcryptjs, JWT in httpOnly cookies, trust proxy for Replit.
+- **Flows**: All authentication flows rely on API endpoints; no localStorage caching. `setAuthCookie` helper ensures consistent cookie settings. Seamless authentication flows with TanStack Query caching for improved UX.
 
-**Security Considerations**: 
-- Password hashing with bcryptjs
-- JWT tokens stored in httpOnly cookies (not accessible to JavaScript)
-- Trust proxy configuration for Replit production environment
-- All authentication flows rely on API endpoints, no localStorage caching
-- /api/auth/me endpoint for user data retrieval
-
-**LocalStorage Fix (October 2025)**: Removed all localStorage caching from auth flows to prevent quota exceeded errors. Previously, base64-encoded profile images were cached in localStorage, exceeding the 5MB browser limit. Now all user data is fetched fresh from API using JWT authentication.
-
-**Cookie Navigation Fix (October 2025)**: Fixed random logout bug during navigation by setting explicit `path: '/'` on auth cookies and changing `sameSite` from 'strict' to 'lax'. Root cause: cookies without explicit path were scoped to `/api/auth/*`, causing other API calls to miss the cookie. Cookie settings now: `httpOnly: true`, `secure: production only`, `sameSite: 'lax'`, `path: '/'`, `maxAge: 7 days`.
-
-**Auth Hardening (October 2025)**: Created `setAuthCookie` helper function in `server/auth/jwt.ts` to ensure consistent cookie settings across all authentication routes (login, register, profile updates). All auth routes now use this centralized helper for cookie management.
-
-**Legacy Route Cleanup (October 2025)**: Removed three email-based messaging endpoints that were causing Express routing conflicts with conversation-based endpoints. The old `/api/messages/:userEmail` route was matching "conversations" as a URL parameter, causing "Access denied" errors. All messaging now uses conversation-based endpoints exclusively.
-
-**Navigation Fix (October 2025)**: Fixed Messages page back button to navigate to `/groups` instead of `/` (registration page), preventing the appearance of being logged out. Also added `credentials: 'include'` to Login and Registration fetch requests to ensure JWT cookies are properly sent and stored during authentication flows.
-
-**Profile Photo System (October 2025)**: Complete two-tier profile photo architecture with primary photo and optional gallery:
-- **Database Schema**: `users.avatar_url` stores primary profile photo (base64 data URL), `users.profile_images` stores gallery photos array
-- **Centralized User Mapper**: `mapUserToClient()` function in `server/routes.ts` ensures consistent API responses across all endpoints (register, login, auth/me, users/:id, profile update)
-- **Backward Compatibility**: Mapper falls back to `profileImages[0]` when `avatar_url` is null to support legacy users
-- **Cache Management**: Added cache-control headers to GET `/api/users/:id` and ProfileEdit invalidates TanStack Query cache after updates
-- **Groups Feed Design**: Uses `object-cover` CSS for better photo fitting; intentionally filters out current user (line 118) similar to dating app UX
-- **Profile Detail**: Displays primary photo from `avatarUrl` with `object-cover`, gallery photos shown separately
-- **Registration UI**: Clear labels distinguish primary photo ("Profile Photo - shown when others see you") from optional gallery photos
-- **Messages Display Fix (October 2025)**: Fixed conversation participant profile photos in Messages page
-  - Updated storage layer to use `COALESCE(avatar_url, profile_images[1])` for consistent photo retrieval with avatarUrl priority
-  - Fixed ConversationUser interface to use `profileImage: string | null` matching API response format
-  - Profile photos now display correctly in conversation list, headers, and message senders
-
-**Auth Flow Optimization (October 2025)**: Fixed registration and login flows to cache auth data before redirecting:
-- Registration and Login pages now parse the API response and cache it in TanStack Query using `queryClient.setQueryData()`
-- Groups page immediately displays after registration/login without showing "Authentication Required" message
-- Seamless user experience - no intermediate loading states or auth checks after successful registration/login
-
-**Messages Null Safety Fix (October 2025)**: Fixed runtime error "Cannot read properties of undefined (reading 'length')" when accessing `otherParticipants` in Messages page:
-- Added null/undefined checks to `getConversationDisplayName()` and `getConversationAvatar()` functions
-- Protected all access to `otherParticipants.length` and `otherParticipants[0]` with existence checks
-- Conversation header member count now safely handles missing `otherParticipants` array
-- Messaging works end-to-end without runtime errors
-
-**Profile Photo Consistency & Avatar Quality (October 20, 2025)**: Comprehensive profile photo display improvements across the entire application:
-- **Messages "0" Bug Fix**: Fixed conversation header displaying stray "0" character by changing `isGroup &&` to `!!isGroup &&` (line 431)
-  - Root cause: `isGroup` stored as integer (0/1) in database; React renders integer 0 as text in conditionals
-  - Solution: Force boolean conversion with `!!` operator to prevent React from rendering the number
-- **Profile Photo Standardization**: Ensured consistent avatarUrl usage across all components
-  - Updated UserProfileDetail.tsx, People.tsx, and Header.tsx to use `avatarUrl || profileImages?.[0]` pattern
-  - Added `avatarUrl` field to AuthUser interface in shared/schema.ts for type consistency
-  - All pages now show the same primary photo for each user (self-view and others' view match)
-- **Avatar Component Quality**: Enhanced global Avatar component for better image display at all sizes
-  - Added `object-cover` class to AvatarImage component for proper cropping without distortion
-  - Added `rounded-full` class to AvatarImage to ensure perfect circular shape at all sizes (8px to 192px)
-  - All avatars throughout the app now maintain circular shape with proper border-radius
-- **End-to-End Testing**: Verified fixes across all pages (Messages, Profile, People, Groups)
-  - No stray "0" characters in conversation headers
-  - All avatars perfectly circular with borderRadius: 9999px
-  - Profile photos consistent across all views and pages
-
-**Schedule Pregame Feature (October 2025)**: Complete conversation-based pregame scheduling system:
-- **Database Schema**: Added conversationId, status, and googleCalendarEventId fields to pregames table
-- **Backend API**: Three new endpoints (POST/GET conversations/:id/pregames, GET pregames/calendar) with proper JWT auth and conversation membership validation
-- **Frontend UI**: Schedule Pregame button/dialog in Messages, displays scheduled pregames above messages, Calendar page integration
-- **Bug Fixes Applied**:
-  - Fixed route ordering issue: `/api/pregames/calendar` now registered before `/api/pregames/:userEmail` to prevent "calendar" being matched as email parameter
-  - Active investigation: Conversation deduplication issue causing pregames to appear in wrong conversation
-
-**Database Cleanup (October 2025)**: Removed all test and mock data from production database:
-- Deleted 11 test accounts (emails with @test.com and @example.com domains)
-- Properly cascaded deletions through all related tables: school_memberships, conversation_participants, messages, pregames, reviews, conversations, and users
-- Only real user accounts remain: dogs@gmail.com (password: dogs) and cats@gmail.com (password: cats)
-- Application now contains authentic user data only
-
-### Design System
-**Comprehensive Design Guidelines**: Detailed color palette for dark/light themes, typography using Inter font family, consistent spacing system, and component specifications.
-
-**Accessibility Focus**: All UI components built on Radix UI primitives ensuring ARIA compliance and keyboard navigation support.
-
-**Mobile-First Responsive**: Tailwind-based responsive design with mobile-optimized layouts and touch-friendly interactions.
-
-**Mobile Navigation (October 2025)**: Complete mobile-responsive implementation across all pages:
-- **Bottom Tab Bar**: Fixed bottom navigation on mobile with Groups, Messages, and Calendar tabs (hidden on desktop md:)
-- **Single-Pane Messages**: Messages page shows conversation list OR chat view on mobile, not both simultaneously
-- **Touch Targets**: All interactive elements meet 44px minimum height for proper touch interaction
-- **Responsive Layouts**: Mobile-first designs using Tailwind breakpoints (sm:, md:, lg:)
-  - Registration/Login: Full-width forms, single-column layouts on mobile
-  - Groups: Card grid stacks to single column on mobile
-  - Calendar: Smaller calendar cells and single-column event list on mobile
-  - Profile pages: Forms and content stack vertically on mobile
-- **No Horizontal Scroll**: All pages verified to fit 375px viewport width without scrolling
-- **Content Padding**: Main content includes pb-16 on mobile for bottom nav clearance
+### Features
+- **Messaging System**: Full-featured messaging with cursor-based pagination, unread count tracking, and school isolation.
+- **Profile Photo System**: Two-tier architecture with a primary avatar and an optional gallery. Centralized user mapper ensures consistent API responses.
+- **Mobile Responsiveness**: Complete mobile-first implementation with a fixed bottom tab bar, single-pane messages view, and touch-friendly interactions.
+- **Schedule Pregame**: Conversation-based pregame scheduling with database integration and API endpoints.
 
 ## External Dependencies
 
 ### UI & Styling
-- **Radix UI**: Complete set of accessible, unstyled UI primitives for complex components
-- **Tailwind CSS**: Utility-first CSS framework with custom theme configuration
-- **Lucide React**: Icon library for consistent iconography
-- **class-variance-authority**: Type-safe variant-based component styling
+- **Radix UI**: Accessible UI primitives.
+- **Tailwind CSS**: Utility-first CSS framework.
+- **Lucide React**: Icon library.
+- **class-variance-authority**: Type-safe variant styling.
 
 ### State & Data Management
-- **TanStack Query**: Server state management, caching, and synchronization
-- **React Hook Form**: Form state management with validation
-- **Drizzle ORM**: Type-safe database operations and schema management
-- **Zod**: Schema validation for forms and API requests
+- **TanStack Query**: Server state management and caching.
+- **React Hook Form**: Form state management and validation.
+- **Drizzle ORM**: Type-safe PostgreSQL ORM.
+- **Zod**: Schema validation.
 
 ### Database & Storage
-- **PostgreSQL**: Primary database (configured but not yet implemented)
-- **Neon Database**: Serverless PostgreSQL provider for cloud deployment
-- **connect-pg-simple**: PostgreSQL session store for Express sessions
+- **PostgreSQL**: Primary database.
+- **Neon Database**: Serverless PostgreSQL.
+- **connect-pg-simple**: PostgreSQL session store.
 
 ### Development & Build
-- **Vite**: Fast build tool and development server
-- **TypeScript**: Type safety across frontend and backend
-- **ESBuild**: Fast JavaScript bundler for production builds
-- **tsx**: TypeScript execution for development server
+- **Vite**: Fast build tool and dev server.
+- **TypeScript**: Type safety.
+- **ESBuild**: Fast JavaScript bundler.
+- **tsx**: TypeScript execution for development.
 
 ### Utilities & Formatting
-- **date-fns**: Date manipulation and formatting utilities
-- **clsx & tailwind-merge**: Conditional CSS class composition
-- **nanoid**: URL-safe unique ID generation
-- **bcryptjs**: Password hashing for authentication
-- **jsonwebtoken**: JWT token generation and verification
+- **date-fns**: Date manipulation.
+- **clsx & tailwind-merge**: CSS class composition.
+- **nanoid**: Unique ID generation.
+- **bcryptjs**: Password hashing.
+- **jsonwebtoken**: JWT handling.
