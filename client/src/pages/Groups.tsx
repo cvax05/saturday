@@ -119,14 +119,14 @@ export default function Groups() {
                 .map((user) => (
                   <Card 
                     key={user.id || user.email} 
-                    className="hover-elevate cursor-pointer transition-all"
+                    className="hover-elevate cursor-pointer transition-all min-h-[240px]"
                     data-testid={`user-card-${user.email}`}
                     onClick={() => handleViewProfile(user.id)}
                   >
-                    <CardContent className="p-8">
-                      <div className="flex items-center gap-6">
+                    <CardContent className="p-8 h-full">
+                      <div className="flex items-center gap-6 h-full">
                         {/* Large Profile Image */}
-                        <Avatar className="h-32 w-32 border-4 border-primary/20 ring-2 ring-primary/10">
+                        <Avatar className="h-32 w-32 flex-shrink-0 border-4 border-primary/20 ring-2 ring-primary/10">
                           <AvatarImage 
                             src={user.avatarUrl || user.profileImages?.[0] || ""} 
                             alt={user.username}
@@ -138,12 +138,12 @@ export default function Groups() {
                         </Avatar>
 
                         {/* User Info */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-3xl font-bold mb-2 truncate bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text" data-testid={`user-name-${user.email}`}>
+                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                          <h3 className="text-lg font-bold mb-2 line-clamp-2 text-center" data-testid={`user-name-${user.email}`}>
                             {user.displayName || user.username || 'Student'}
                           </h3>
                           {user.displayName && user.username && user.displayName !== user.username && (
-                            <p className="text-lg text-muted-foreground mb-3">@{user.username}</p>
+                            <p className="text-sm text-muted-foreground mb-3 text-center">@{user.username}</p>
                           )}
                           <Button
                             size="lg"
