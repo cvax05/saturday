@@ -39,6 +39,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Features
 - **Messaging System**: Full-featured messaging with cursor-based pagination, unread count tracking, and school isolation.
+  - **Database Integrity Fix (October 2025)**: Fixed "Unknown" profiles bug by adding missing PRIMARY KEY constraint on `conversation_participants (conversation_id, user_id)`. Removed 4 duplicate participant entries and 3 orphaned conversations. Constraint prevents duplicate participants and ensures data integrity.
 - **Profile Photo System**: Two-tier architecture with a primary avatar and an optional gallery. Centralized user mapper ensures consistent API responses.
 - **Mobile Responsiveness**: Complete mobile-first implementation with a fixed bottom tab bar, single-pane messages view, and touch-friendly interactions.
 - **Schedule Pregame**: Conversation-based pregame scheduling with database integration and API endpoints.
