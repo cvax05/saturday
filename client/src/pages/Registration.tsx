@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
 import PreferencesSelector from "@/components/PreferencesSelector";
-import { Upload, X, Calendar } from "lucide-react";
+import { Upload, X, Calendar, User } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
 import { compressImage } from "@/lib/imageUtils";
 import { queryClient } from "@/lib/queryClient";
@@ -249,8 +249,8 @@ export default function Registration() {
                     alt="Profile"
                     className="object-cover"
                   />
-                  <AvatarFallback className="text-4xl sm:text-5xl font-light bg-muted text-muted-foreground">
-                    {formData.name && formData.name.trim() ? formData.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : ''}
+                  <AvatarFallback className="bg-muted">
+                    <User className="h-12 w-12 sm:h-14 sm:w-14 text-muted-foreground" />
                   </AvatarFallback>
                 </Avatar>
                 <input
