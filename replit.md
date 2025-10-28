@@ -43,6 +43,7 @@ Preferred communication style: Simple, everyday language.
 - **Profile Photo System**: Two-tier architecture with a primary avatar and an optional gallery. Centralized user mapper ensures consistent API responses.
 - **Mobile Responsiveness**: Complete mobile-first implementation with a fixed bottom tab bar, single-pane messages view, and touch-friendly interactions.
 - **Schedule Pregame**: Conversation-based pregame scheduling with database integration and API endpoints.
+  - **Saturday-Only Scheduling (October 2025)**: Updated scheduling UI to enforce Saturday-only pregames with dropdown selector showing next 10 upcoming Saturdays. Removed manual date input to prevent scheduling on non-Saturday dates. Includes timezone-safe date formatting using local date components to prevent date drift across timezones.
 - **Saturday Availability Tracking (October 2025)**: Complete implementation of Saturday-focused availability system.
   - Users can select multiple upcoming Saturdays during registration and profile editing via checkbox-based UI (12 upcoming Saturdays displayed)
   - Backend stores availability as text array in `available_saturdays` column
