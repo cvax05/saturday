@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Clock, MapPin } from "lucide-react";
 
 interface SchedulePregameModalProps {
@@ -25,6 +26,59 @@ interface SchedulePregameModalProps {
   };
 }
 
+// Helper function to convert Date to local YYYY-MM-DD string (timezone-safe)
+const formatDateToLocal = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper function to generate next N Saturdays
+const getNextSaturdays = (count: number = 10): { date: Date; isoString: string; displayText: string }[] => {
+  const saturdays: { date: Date; isoString: string; displayText: string }[] = [];
+  const today = new Date();
+  let current = new Date(today);
+  
+  // Find the next Saturday
+  const daysUntilSaturday = (6 - current.getDay() + 7) % 7;
+  if (daysUntilSaturday === 0 && current.getHours() >= 12) {
+    // If it's Saturday afternoon, start from next Saturday
+    current.setDate(current.getDate() + 7);
+  } else {
+    current.setDate(current.getDate() + daysUntilSaturday);
+  }
+  
+  // Generate the next saturdays
+  for (let i = 0; i < count; i++) {
+    const saturdayDate = new Date(current);
+    // Use timezone-safe local date formatting instead of toISOString()
+    const isoString = formatDateToLocal(saturdayDate);
+    
+    // Verify this is actually a Saturday (day 6)
+    if (saturdayDate.getDay() !== 6) {
+      console.error(`Generated non-Saturday date: ${isoString}, day: ${saturdayDate.getDay()}`);
+    }
+    
+    // Format display text (e.g., "Sat, Nov 2" or "This Saturday" for the first one)
+    const displayText = saturdayDate.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
+    
+    saturdays.push({
+      date: saturdayDate,
+      isoString,
+      displayText: i === 0 ? `This Saturday (${displayText})` : displayText
+    });
+    
+    current.setDate(current.getDate() + 7);
+  }
+  
+  return saturdays;
+};
+
 export default function SchedulePregameModal({
   isOpen,
   onClose,
@@ -33,40 +87,26 @@ export default function SchedulePregameModal({
   onSchedule,
   initialValues
 }: SchedulePregameModalProps) {
-  const [date, setDate] = useState(initialValues?.date || "");
+  const upcomingSaturdays = getNextSaturdays(10);
+  
+  // Default to next Saturday if no initial value
+  const defaultDate = initialValues?.date || upcomingSaturdays[0]?.isoString || "";
+  
+  const [date, setDate] = useState(defaultDate);
   const [time, setTime] = useState(initialValues?.time || "");
   const [location, setLocation] = useState(initialValues?.location || "");
   const [notes, setNotes] = useState(initialValues?.notes || "");
-  const [dateError, setDateError] = useState("");
 
-  // Set minimum date to today
-  const today = new Date().toISOString().split('T')[0];
-
-  // Helper function to check if a date is Saturday
-  const isSaturday = (dateString: string) => {
-    const selectedDate = new Date(dateString + 'T00:00:00');
-    return selectedDate.getDay() === 6;
-  };
-
-  // Handle date change with Saturday validation
-  const handleDateChange = (newDate: string) => {
-    setDate(newDate);
-    if (newDate && !isSaturday(newDate)) {
-      setDateError("Pregames can only be scheduled on Saturdays");
-    } else {
-      setDateError("");
+  // Update date when modal opens if no date is set
+  useEffect(() => {
+    if (isOpen && !date) {
+      setDate(upcomingSaturdays[0]?.isoString || "");
     }
-  };
+  }, [isOpen]);
 
   const handleSubmit = () => {
     if (!date || !time) {
-      alert("Please select both date and time");
-      return;
-    }
-
-    // Validate that the date is a Saturday
-    if (!isSaturday(date)) {
-      alert("Pregames can only be scheduled on Saturdays");
+      alert("Please select both a Saturday and time");
       return;
     }
 
@@ -78,11 +118,10 @@ export default function SchedulePregameModal({
     });
 
     // Reset form
-    setDate("");
+    setDate(upcomingSaturdays[0]?.isoString || "");
     setTime("");
     setLocation("");
     setNotes("");
-    setDateError("");
     onClose();
   };
 
@@ -100,31 +139,36 @@ export default function SchedulePregameModal({
           <div className="bg-muted/50 rounded-md p-3">
             <p className="text-sm font-medium">Pregame with {participantName}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Pregames can only be scheduled on Saturdays
+              Pick a Saturday, time, and location
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="date">Date (Saturday only) *</Label>
-              <div className="relative">
-                <Input
-                  id="date"
-                  type="date"
-                  value={date}
-                  min={today}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  className="pl-10"
-                  required
-                  data-testid="input-date"
-                />
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              </div>
-              {dateError && (
-                <p className="text-xs text-destructive mt-1" data-testid="error-date">
-                  {dateError}
-                </p>
-              )}
+              <Label htmlFor="saturday">Saturday *</Label>
+              <Select 
+                value={date} 
+                onValueChange={setDate}
+              >
+                <SelectTrigger 
+                  id="saturday" 
+                  className="w-full" 
+                  data-testid="select-saturday"
+                >
+                  <SelectValue placeholder="Select a Saturday" />
+                </SelectTrigger>
+                <SelectContent>
+                  {upcomingSaturdays.map((saturday) => (
+                    <SelectItem 
+                      key={saturday.isoString} 
+                      value={saturday.isoString}
+                      data-testid={`option-saturday-${saturday.isoString}`}
+                    >
+                      {saturday.displayText}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
@@ -184,7 +228,7 @@ export default function SchedulePregameModal({
               onClick={handleSubmit} 
               className="flex-1"
               data-testid="button-schedule"
-              disabled={!date || !time || !!dateError}
+              disabled={!date || !time}
             >
               Schedule Pregame
             </Button>
