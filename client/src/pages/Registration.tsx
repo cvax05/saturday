@@ -243,16 +243,17 @@ export default function Registration() {
               {/* Profile Picture */}
               <div className="flex flex-col items-center space-y-3 py-2">
                 <Label className="text-center text-sm sm:text-base">Profile Photo</Label>
-                <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-2 border-border">
-                  <AvatarImage 
-                    src={formData.profileImage} 
-                    alt="Profile"
-                    className="object-cover"
-                  />
-                  <AvatarFallback className="bg-muted">
+                <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-full border-2 border-border bg-muted overflow-hidden flex items-center justify-center">
+                  {formData.profileImage ? (
+                    <img 
+                      src={formData.profileImage} 
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
                     <User className="h-12 w-12 sm:h-14 sm:w-14 text-muted-foreground" />
-                  </AvatarFallback>
-                </Avatar>
+                  )}
+                </div>
                 <input
                   type="file"
                   ref={fileInputRef}
