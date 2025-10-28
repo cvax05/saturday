@@ -24,7 +24,7 @@ export const users = pgTable("users", {
   classYear: integer("class_year"), // Graduation year
   groupSizeMin: integer("group_size_min"), // Minimum group size preference
   groupSizeMax: integer("group_size_max"), // Maximum group size preference
-  preferences: text("preferences"), // JSON string storing categorized preferences: { alcohol: [], music: [], vibe: [], other: "" }
+  preferences: text("preferences"), // JSON string storing categorized preferences: { music: [], vibe: [], other: "" }
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
 });
 
@@ -256,7 +256,6 @@ export const insertUserPhotoSchema = createInsertSchema(userPhotos).omit({
 
 // Preferences type for structured preference data
 export const preferencesSchema = z.object({
-  alcohol: z.array(z.string()).optional(),
   music: z.array(z.string()).optional(),
   vibe: z.array(z.string()).optional(),
   other: z.string().optional(),

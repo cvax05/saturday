@@ -14,13 +14,11 @@ interface PreferencesSelectorProps {
 }
 
 const PREFERENCE_OPTIONS = {
-  alcohol: ["Beer", "Seltzer", "Liquor", "Wine", "Shots", "Mixed Drinks"],
   music: ["Pop", "Rap", "EDM", "House", "Rock", "Country"],
   vibe: ["Chill", "Blackout", "Dance", "Kickback", "Themed"],
 };
 
 const CATEGORY_LABELS = {
-  alcohol: "Alcohol",
   music: "Music",
   vibe: "Vibe",
 };
@@ -28,7 +26,6 @@ const CATEGORY_LABELS = {
 export default function PreferencesSelector({ value, onChange, className }: PreferencesSelectorProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [customInputs, setCustomInputs] = useState<Record<string, string>>({
-    alcohol: "",
     music: "",
     vibe: "",
   });
@@ -204,7 +201,7 @@ export default function PreferencesSelector({ value, onChange, className }: Pref
                     <div className="flex gap-2">
                       <Input
                         type="text"
-                        placeholder={`e.g., ${category === 'alcohol' ? 'Cider' : category === 'music' ? 'Jazz' : 'Game Night'}`}
+                        placeholder={`e.g., ${category === 'music' ? 'Jazz' : 'Game Night'}`}
                         value={customInputs[category]}
                         onChange={(e) => setCustomInputs({ ...customInputs, [category]: e.target.value })}
                         onKeyDown={(e) => {

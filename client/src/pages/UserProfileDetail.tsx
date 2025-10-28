@@ -177,7 +177,6 @@ export default function UserProfileDetail() {
   const hasPreferences = (prefs: UserPreferences | undefined): boolean => {
     if (!prefs) return false;
     return !!(
-      (prefs.alcohol && prefs.alcohol.length > 0) ||
       (prefs.music && prefs.music.length > 0) ||
       (prefs.vibe && prefs.vibe.length > 0) ||
       prefs.other
@@ -334,23 +333,6 @@ export default function UserProfileDetail() {
                   <h3 className="text-lg sm:text-xl font-semibold">Preferences</h3>
                 </CardHeader>
                 <CardContent className="space-y-3 sm:space-y-4">
-                  {/* Alcohol Preferences */}
-                  {userProfile.preferences?.alcohol && userProfile.preferences.alcohol.length > 0 && (
-                    <div className="flex items-start gap-2 sm:gap-3 flex-wrap">
-                      <Wine className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0 mt-1" />
-                      <div className="flex-1 min-w-0">
-                        <span className="font-semibold text-sm sm:text-base block mb-1">Alcohol:</span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {userProfile.preferences.alcohol.map((item, index) => (
-                            <Badge key={index} variant="secondary" data-testid={`pref-alcohol-${index}`}>
-                              {item}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Music Preferences */}
                   {userProfile.preferences?.music && userProfile.preferences.music.length > 0 && (
                     <div className="flex items-start gap-2 sm:gap-3 flex-wrap">
