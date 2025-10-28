@@ -1,3 +1,4 @@
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
 import PreferencesSelector from "@/components/PreferencesSelector";
+import { Upload, X, Calendar } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
 import { compressImage } from "@/lib/imageUtils";
 import { queryClient } from "@/lib/queryClient";
@@ -105,6 +108,39 @@ export default function Registration() {
 
   const handleGalleryUploadClick = () => {
     galleryInputRef.current?.click();
+  };
+
+  // Helper function to generate next 12 Saturdays
+  const getNextSaturdays = (count: number = 12): Date[] => {
+    const saturdays: Date[] = [];
+    const today = new Date();
+    let current = new Date(today);
+    
+    // Find the next Saturday
+    const daysUntilSaturday = (6 - current.getDay() + 7) % 7;
+    if (daysUntilSaturday === 0 && current.getHours() >= 12) {
+      // If it's Saturday afternoon, start from next Saturday
+      current.setDate(current.getDate() + 7);
+    } else {
+      current.setDate(current.getDate() + daysUntilSaturday);
+    }
+    
+    // Generate the next saturdays
+    for (let i = 0; i < count; i++) {
+      saturdays.push(new Date(current));
+      current.setDate(current.getDate() + 7);
+    }
+    
+    return saturdays;
+  };
+
+  const toggleSaturday = (dateStr: string) => {
+    setAvailableSaturdays(prev => {
+      if (prev.includes(dateStr)) {
+        return prev.filter(d => d !== dateStr);
+      }
+      return [...prev, dateStr].sort();
+    });
   };
 
   // Helper function to convert school name to URL-friendly slug
@@ -400,6 +436,49 @@ export default function Registration() {
                       className="w-full"
                     />
                   </div>
+                </div>
+              </div>
+
+              {/* Saturday Availability Selector */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm sm:text-base">When are you available? (Select Saturdays)</Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Select the Saturdays you're available for pregames
+                </p>
+                <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 border rounded-md">
+                  {getNextSaturdays(12).map((saturday) => {
+                    const dateStr = saturday.toISOString().split('T')[0];
+                    const displayDate = saturday.toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric',
+                      year: 'numeric'
+                    });
+                    const isSelected = availableSaturdays.includes(dateStr);
+                    
+                    return (
+                      <div 
+                        key={dateStr}
+                        className="flex items-center space-x-2 p-2 rounded-md"
+                        data-testid={`checkbox-saturday-${dateStr}`}
+                      >
+                        <Checkbox
+                          id={`saturday-${dateStr}`}
+                          checked={isSelected}
+                          onCheckedChange={() => toggleSaturday(dateStr)}
+                          className="cursor-pointer"
+                        />
+                        <Label
+                          htmlFor={`saturday-${dateStr}`}
+                          className="text-xs sm:text-sm cursor-pointer flex-1"
+                        >
+                          {displayDate}
+                        </Label>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

@@ -278,6 +278,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   groupSizeMin: true,
   groupSizeMax: true,
   preferences: true,
+  availableSaturdays: true,
 });
 
 export const registerSchema = createInsertSchema(users).pick({
@@ -290,6 +291,7 @@ export const registerSchema = createInsertSchema(users).pick({
   classYear: true,
   groupSizeMin: true,
   groupSizeMax: true,
+  availableSaturdays: true,
 }).extend({
   profileImage: z.string()
     .regex(/^data:image\/(jpeg|jpg|png|gif|webp);base64,/, "Must be a valid image data URL")
@@ -323,6 +325,7 @@ export const updateProfileSchema = z.object({
   groupSizeMin: z.number().int().min(1).max(50).optional(),
   groupSizeMax: z.number().int().min(1).max(50).optional(),
   preferences: preferencesSchema.optional(),
+  availableSaturdays: z.array(z.string()).optional(),
   profileImage: z.string().regex(dataUrlRegex, "Must be a valid image data URL").optional(),
   galleryImages: z.array(z.string().regex(dataUrlRegex, "Must be a valid image data URL")).max(5).optional(),
 }).refine(data => {
