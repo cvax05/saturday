@@ -246,11 +246,11 @@ export default function Registration() {
                 <Avatar className="h-24 w-24 sm:h-28 sm:w-28 border-2 border-border">
                   <AvatarImage 
                     src={formData.profileImage} 
-                    alt={formData.name}
+                    alt="Profile"
                     className="object-cover"
                   />
-                  <AvatarFallback className="text-xl sm:text-2xl font-bold bg-muted">
-                    {formData.name.split(' ').map(n => n[0]).join('')}
+                  <AvatarFallback className="text-4xl sm:text-5xl font-light bg-muted text-muted-foreground">
+                    {formData.name && formData.name.trim() ? formData.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : ''}
                   </AvatarFallback>
                 </Avatar>
                 <input
