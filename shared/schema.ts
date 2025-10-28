@@ -25,6 +25,7 @@ export const users = pgTable("users", {
   groupSizeMin: integer("group_size_min"), // Minimum group size preference
   groupSizeMax: integer("group_size_max"), // Maximum group size preference
   preferences: text("preferences"), // JSON string storing categorized preferences: { music: [], vibe: [], other: "" }
+  availableSaturdays: text("available_saturdays").array(), // Array of Saturday dates (YYYY-MM-DD format) when user is available
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
 });
 
@@ -442,6 +443,7 @@ export interface AuthUser {
   groupSizeMin?: number | null;
   groupSizeMax?: number | null;
   preferences?: UserPreferences | null;
+  availableSaturdays?: string[] | null;
 }
 
 export interface AuthResponse {

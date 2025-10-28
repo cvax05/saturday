@@ -7,8 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
 import PreferencesSelector from "@/components/PreferencesSelector";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, X } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
 import { compressImage } from "@/lib/imageUtils";
 import { queryClient } from "@/lib/queryClient";
@@ -29,6 +27,7 @@ export default function Registration() {
     galleryImages: [] as string[]
   });
   const [preferences, setPreferences] = useState<UserPreferences>({});
+  const [availableSaturdays, setAvailableSaturdays] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
@@ -146,7 +145,8 @@ export default function Registration() {
         bio: formData.description,
         groupSizeMin: formData.groupSizeMin ? parseInt(formData.groupSizeMin) : undefined,
         groupSizeMax: formData.groupSizeMax ? parseInt(formData.groupSizeMax) : undefined,
-        preferences: preferences
+        preferences: preferences,
+        availableSaturdays: availableSaturdays.length > 0 ? availableSaturdays : undefined
       };
       
       // Only include profileImage if it has a value

@@ -7,9 +7,12 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Users, GraduationCap, MessageCircle, ChevronRight, Loader2, User as UserIcon } from "lucide-react";
 import { authQueryFn } from "@/lib/queryClient";
 import type { AuthResponse, User } from "@shared/schema";
+import FilterPanel, { type FilterState } from "@/components/FilterPanel";
+import { useState } from "react";
 
 export default function Groups() {
   const [, setLocation] = useLocation();
+  const [filters, setFilters] = useState<FilterState>({});
 
   // Get current user and authentication status
   const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
@@ -17,9 +20,26 @@ export default function Groups() {
     queryFn: authQueryFn as any,
   });
 
-  // Get school users roster
+  // Build query parameters from filters
+  const buildQueryParams = (filters: FilterState): string => {
+    const params = new URLSearchParams();
+    if (filters.saturday) params.append('saturday', filters.saturday);
+    if (filters.music) params.append('music', filters.music);
+    if (filters.vibe) params.append('vibe', filters.vibe);
+    if (filters.groupSizeMin) params.append('groupSizeMin', filters.groupSizeMin);
+    if (filters.groupSizeMax) params.append('groupSizeMax', filters.groupSizeMax);
+    return params.toString();
+  };
+
+  // Get filtered or all school users
+  const hasActiveFilters = Object.values(filters).some(value => value !== undefined && value !== '');
+  const queryParams = buildQueryParams(filters);
+  const endpoint = hasActiveFilters 
+    ? `/api/users/filter?${queryParams}`
+    : '/api/users/school';
+
   const { data: schoolUsersData, isLoading: usersLoading } = useQuery<{ users: User[] }>({
-    queryKey: ['/api/users/school'],
+    queryKey: [endpoint],
     enabled: !!authData?.user,
   });
 
@@ -93,6 +113,13 @@ export default function Groups() {
             </span>
           </div>
         </div>
+
+        {/* Filter Panel */}
+        <FilterPanel 
+          filters={filters}
+          onFilterChange={setFilters}
+          onClearFilters={() => setFilters({})}
+        />
 
         {/* Loading state */}
         {usersLoading && (

@@ -349,6 +349,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Filter users in current school by Saturday availability, preferences, and group size
+  app.get("/api/users/filter", authenticateJWT, async (req, res) => {
+    try {
+      const { saturday, music, vibe, groupSizeMin, groupSizeMax } = req.query;
+      
+      // Get all users in the school first
+      let users = await storage.getUsersBySchoolId(req.user!.school_id);
+      
+      // Apply Saturday availability filter
+      if (saturday && typeof saturday === 'string') {
+        users = users.filter(user => {
+          const availableSaturdays = user.availableSaturdays || [];
+          return availableSaturdays.includes(saturday);
+        });
+      }
+      
+      // Apply preference filters
+      if (music || vibe) {
+        users = users.filter(user => {
+          if (!user.preferences) return false;
+          
+          try {
+            const prefs = typeof user.preferences === 'string' 
+              ? JSON.parse(user.preferences) 
+              : user.preferences;
+            
+            // Check music preference
+            if (music && typeof music === 'string') {
+              const musicArray = prefs.music || [];
+              if (!musicArray.some((m: string) => m.toLowerCase() === music.toLowerCase())) {
+                return false;
+              }
+            }
+            
+            // Check vibe preference
+            if (vibe && typeof vibe === 'string') {
+              const vibeArray = prefs.vibe || [];
+              if (!vibeArray.some((v: string) => v.toLowerCase() === vibe.toLowerCase())) {
+                return false;
+              }
+            }
+            
+            return true;
+          } catch {
+            return false;
+          }
+        });
+      }
+      
+      // Apply group size filter
+      if (groupSizeMin || groupSizeMax) {
+        const minSize = groupSizeMin ? parseInt(groupSizeMin as string) : null;
+        const maxSize = groupSizeMax ? parseInt(groupSizeMax as string) : null;
+        
+        users = users.filter(user => {
+          const userMin = user.groupSizeMin || 0;
+          const userMax = user.groupSizeMax || 999;
+          
+          // Check if there's overlap between the filter range and user's range
+          if (minSize && userMax < minSize) return false;
+          if (maxSize && userMin > maxSize) return false;
+          
+          return true;
+        });
+      }
+      
+      // Return users without passwords
+      const usersWithoutPasswords = users.map(({ password: _, ...user }) => user);
+      res.status(200).json({ users: usersWithoutPasswords });
+    } catch (error) {
+      console.error("Error filtering users:", error);
+      res.status(500).json({ message: "Failed to filter users" });
+    }
+  });
+
   // Get individual user profile by ID with photos and schools - JWT protected, school-scoped
   app.get("/api/users/:id", authenticateJWT, async (req, res) => {
     try {

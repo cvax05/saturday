@@ -42,6 +42,7 @@ interface UserProfile {
   groupSizeMin: string;
   groupSizeMax: string;
   preferences?: UserPreferences;
+  availableSaturdays?: string[];
 }
 
 export default function UserProfileDetail() {
@@ -95,7 +96,8 @@ export default function UserProfileDetail() {
               groupSize: "",
               groupSizeMin: currentUser.groupSizeMin?.toString() || "",
               groupSizeMax: currentUser.groupSizeMax?.toString() || "",
-              preferences: currentUser.preferences
+              preferences: currentUser.preferences || undefined,
+              availableSaturdays: currentUser.availableSaturdays || []
             };
             setUserProfile(profileData);
             setLoading(false);
@@ -144,7 +146,8 @@ export default function UserProfileDetail() {
               groupSize: userData.user.groupSize,
               groupSizeMin: userData.user.groupSizeMin, 
               groupSizeMax: userData.user.groupSizeMax,
-              preferences: userData.user.preferences
+              preferences: userData.user.preferences,
+              availableSaturdays: userData.user.availableSaturdays || []
             };
             
             console.log('UserProfileDetail: Profile data:', {
@@ -388,6 +391,28 @@ export default function UserProfileDetail() {
                       <Badge variant="outline" data-testid="profile-group-range">
                         {userProfile.groupSizeMin || '?'} - {userProfile.groupSizeMax || '?'} people
                       </Badge>
+                    </div>
+                  )}
+
+                  {/* Saturday Availability */}
+                  {userProfile.availableSaturdays && userProfile.availableSaturdays.length > 0 && (
+                    <div className="flex items-start gap-2 sm:gap-3 flex-wrap">
+                      <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0 mt-1" />
+                      <div className="flex-1 min-w-0">
+                        <span className="font-semibold text-sm sm:text-base block mb-1">Available Saturdays:</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {userProfile.availableSaturdays.map((dateStr, index) => {
+                            const date = new Date(dateStr + 'T00:00:00');
+                            const month = date.toLocaleDateString('en-US', { month: 'short' });
+                            const day = date.getDate();
+                            return (
+                              <Badge key={index} variant="secondary" data-testid={`saturday-${index}`}>
+                                {month} {day}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   )}
                 </CardContent>
