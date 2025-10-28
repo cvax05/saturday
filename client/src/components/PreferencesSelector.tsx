@@ -246,7 +246,7 @@ export default function PreferencesSelector({ value, onChange, className }: Pref
           <Input
             id="other-preferences"
             type="text"
-            placeholder="e.g., BYOB only, no hard liquor, etc."
+            placeholder="Add any other preferences..."
             value={value.other || ""}
             onChange={(e) => handleOtherChange(e.target.value)}
             maxLength={100}
