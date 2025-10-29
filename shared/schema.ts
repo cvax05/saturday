@@ -259,6 +259,7 @@ export const insertUserPhotoSchema = createInsertSchema(userPhotos).omit({
 export const preferencesSchema = z.object({
   music: z.array(z.string()).optional(),
   vibe: z.array(z.string()).optional(),
+  alcohol: z.array(z.string()).optional(),
   other: z.string().optional(),
 });
 
