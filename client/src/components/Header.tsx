@@ -119,7 +119,6 @@ export default function Header() {
                   <AvatarImage 
                     src={currentUser.avatarUrl || currentUser.profileImages?.[0] || ""} 
                     alt={currentUser.username}
-                    className="object-cover"
                   />
                   <AvatarFallback className="text-xs font-semibold">
                     {currentUser.username?.slice(0, 2).toUpperCase() || currentUser.email?.slice(0, 2).toUpperCase()}

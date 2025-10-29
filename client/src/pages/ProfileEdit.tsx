@@ -248,7 +248,6 @@ export default function ProfileEdit() {
                   <AvatarImage 
                     src={formData.profileImage} 
                     alt={formData.name}
-                    className="object-cover"
                   />
                   <AvatarFallback className="text-xl sm:text-2xl font-bold bg-muted">
                     {formData.name.split(' ').map(n => n[0]).join('')}
