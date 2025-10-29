@@ -283,11 +283,11 @@ export default function Registration() {
                 
                 <div className="grid grid-cols-3 gap-2 sm:gap-3">
                   {formData.galleryImages.map((image, index) => (
-                    <div key={index} className="relative group aspect-square">
+                    <div key={index} className="relative group aspect-square overflow-hidden rounded-lg border">
                       <img 
                         src={image} 
                         alt={`Gallery ${index + 1}`}
-                        className="w-full h-full object-cover rounded-lg border"
+                        className="w-full h-full object-cover object-center"
                       />
                       <Button
                         type="button"

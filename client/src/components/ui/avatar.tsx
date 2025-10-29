@@ -14,7 +14,7 @@ export function Avatar({ className, children }: { className?: string; children: 
 export function AvatarImage({ src, alt, className }: { src?: string; alt?: string; className?: string }) {
   return (
     <img
-      className={cn("aspect-square h-full w-full", className)}
+      className={cn("aspect-square h-full w-full object-cover object-center", className)}
       src={src}
       alt={alt || "Profile"}
     />

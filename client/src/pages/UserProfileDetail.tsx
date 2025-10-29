@@ -436,7 +436,7 @@ export default function UserProfileDetail() {
                         <img
                           src={imageUrl}
                           alt={`${userProfile.name}'s photo ${index + 1}`}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover object-center"
                           data-testid={`photo-${index}`}
                         />
                       </div>
