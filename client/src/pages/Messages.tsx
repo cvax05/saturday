@@ -579,12 +579,12 @@ export default function Messages() {
                           <div
                             className={`max-w-[70%] rounded-lg px-4 py-2 ${
                               isOwn
-                                ? 'bg-primary text-primary-foreground'
+                                ? 'bg-purple-600 text-white'
                                 : 'bg-muted'
                             }`}
                           >
                             <p className="text-sm break-words">{msg.content}</p>
-                            <p className={`text-xs mt-1 ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                            <p className={`text-xs mt-1 ${isOwn ? 'text-white/70' : 'text-muted-foreground'}`}>
                               {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
                             </p>
                           </div>

@@ -346,8 +346,8 @@ export default function ChatView() {
                       {message.content}
                     </p>
                   </Card>
-                  <p className={`text-xs text-muted-foreground mt-1 ${
-                    message.isFromUser ? 'text-right' : 'text-left'
+                  <p className={`text-xs mt-1 ${
+                    message.isFromUser ? 'text-white/70 text-right' : 'text-muted-foreground text-left'
                   }`}>
                     {formatDistanceToNow(message.timestamp, { addSuffix: true })}
                   </p>
