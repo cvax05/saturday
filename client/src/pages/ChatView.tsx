@@ -339,7 +339,7 @@ export default function ChatView() {
                 <div className={`max-w-[70%] ${message.isFromUser ? 'order-2' : 'order-1'}`}>
                   <Card className={`p-3 ${
                     message.isFromUser 
-                      ? 'bg-primary text-primary-foreground ml-auto' 
+                      ? 'bg-purple-600 text-white ml-auto' 
                       : 'bg-muted'
                   }`}>
                     <p className="text-sm leading-relaxed" data-testid={`message-${message.id}`}>
