@@ -16,7 +16,7 @@ interface PreferencesSelectorProps {
 const PREFERENCE_OPTIONS = {
   music: ["Pop", "Rap", "EDM", "House", "Rock", "Country"],
   vibe: ["Chill", "Blackout", "Dance", "Kickback", "Themed"],
-  alcohol: ["Beer", "Liquor", "Wine", "Seltzers", "Shots", "Mixed Drinks"],
+  alcohol: ["No alcohol", "Beer", "Liquor", "Wine", "Seltzers", "Shots", "Mixed Drinks"],
 };
 
 const CATEGORY_LABELS = {
