@@ -604,16 +604,16 @@ export default function Messages() {
                     {pregames.map((pregame: any) => (
                       <div key={pregame.id} className="bg-card border rounded-lg p-3" data-testid={`pregame-${pregame.id}`}>
                         <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1">
-                            <p className="font-medium">{pregame.location}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium break-words">{pregame.location}</p>
                             <p className="text-sm text-muted-foreground">
                               {format(new Date(pregame.date + 'T00:00:00'), 'MMM d, yyyy')} at {pregame.time}
                             </p>
                             {pregame.notes && (
-                              <p className="text-sm text-muted-foreground mt-1">{pregame.notes}</p>
+                              <p className="text-sm text-muted-foreground mt-1 break-words">{pregame.notes}</p>
                             )}
                           </div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-xs text-muted-foreground flex-shrink-0">
                             {pregame.creatorId === currentUser?.id ? "You scheduled" : "Scheduled"}
                           </div>
                         </div>
