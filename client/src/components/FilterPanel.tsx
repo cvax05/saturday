@@ -78,9 +78,9 @@ export default function FilterPanel({ filters, onFilterChange, onClearFilters }:
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Saturday Availability */}
         <div>
-          <Label className="text-sm mb-2 flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Saturday Availability
+          <Label className="text-sm mb-2 flex items-center gap-2 min-h-[20px]">
+            <Calendar className="h-4 w-4 flex-shrink-0" />
+            <span className="truncate">Saturday Availability</span>
           </Label>
           <Select
             value={filters.saturday || "all"}
@@ -102,8 +102,8 @@ export default function FilterPanel({ filters, onFilterChange, onClearFilters }:
         
         {/* Music Preference */}
         <div>
-          <Label className="text-sm mb-2 flex items-center gap-2">
-            <Music className="h-4 w-4" />
+          <Label className="text-sm mb-2 flex items-center gap-2 min-h-[20px]">
+            <Music className="h-4 w-4 flex-shrink-0" />
             Music
           </Label>
           <Select
@@ -126,8 +126,8 @@ export default function FilterPanel({ filters, onFilterChange, onClearFilters }:
         
         {/* Vibe Preference */}
         <div>
-          <Label className="text-sm mb-2 flex items-center gap-2">
-            <Sparkles className="h-4 w-4" />
+          <Label className="text-sm mb-2 flex items-center gap-2 min-h-[20px]">
+            <Sparkles className="h-4 w-4 flex-shrink-0" />
             Vibe
           </Label>
           <Select
@@ -150,8 +150,8 @@ export default function FilterPanel({ filters, onFilterChange, onClearFilters }:
         
         {/* Group Size Min */}
         <div>
-          <Label className="text-sm mb-2 flex items-center gap-2">
-            <Users className="h-4 w-4" />
+          <Label className="text-sm mb-2 flex items-center gap-2 min-h-[20px]">
+            <Users className="h-4 w-4 flex-shrink-0" />
             Min People
           </Label>
           <Input
@@ -166,8 +166,8 @@ export default function FilterPanel({ filters, onFilterChange, onClearFilters }:
         
         {/* Group Size Max */}
         <div>
-          <Label className="text-sm mb-2 flex items-center gap-2">
-            <Users className="h-4 w-4" />
+          <Label className="text-sm mb-2 flex items-center gap-2 min-h-[20px]">
+            <Users className="h-4 w-4 flex-shrink-0" />
             Max People
           </Label>
           <Input
