@@ -40,10 +40,12 @@ Preferred communication style: Simple, everyday language.
 ### Features
 - **Messaging System**: Full-featured messaging with cursor-based pagination, unread count tracking, and school isolation.
   - **Database Integrity Fix (October 2025)**: Fixed "Unknown" profiles bug by adding missing PRIMARY KEY constraint on `conversation_participants (conversation_id, user_id)`. Removed 4 duplicate participant entries and 3 orphaned conversations. Constraint prevents duplicate participants and ensures data integrity.
+  - **Message Styling (November 2025)**: Own messages display with purple background (bg-purple-600) and right alignment. Other users' messages show neutral/muted background and left alignment. Styling automatically adjusts based on logged-in user for proper conversation perspective.
 - **Profile Photo System**: Two-tier architecture with a primary avatar and an optional gallery. Centralized user mapper ensures consistent API responses.
 - **Mobile Responsiveness**: Complete mobile-first implementation with a fixed bottom tab bar, single-pane messages view, and touch-friendly interactions.
 - **Schedule Pregame**: Conversation-based pregame scheduling with database integration and API endpoints.
   - **Saturday-Only Scheduling (October 2025)**: Updated scheduling UI to enforce Saturday-only pregames with dropdown selector showing next 10 upcoming Saturdays. Removed manual date input to prevent scheduling on non-Saturday dates. Includes timezone-safe date formatting using local date components to prevent date drift across timezones.
+  - **Implementation**: Saturday selector dropdown implemented in both SchedulePregameModal component (used by ChatView) and Messages page inline dialog. Both automatically refresh to show current upcoming Saturdays when dialog opens, preventing stale date selections.
 - **Saturday Availability Tracking (October 2025)**: Complete implementation of Saturday-focused availability system.
   - Users can select multiple upcoming Saturdays during registration and profile editing via checkbox-based UI (12 upcoming Saturdays displayed)
   - Backend stores availability as text array in `available_saturdays` column

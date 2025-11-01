@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Loader2, MessageCircle, Send, Calendar } from "lucide-react";
 import { authQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import type { AuthResponse } from "@shared/schema";
@@ -38,6 +39,54 @@ interface Conversation {
   unreadCount: number;
 }
 
+// Helper function to convert Date to local YYYY-MM-DD string (timezone-safe)
+const formatDateToLocal = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper function to generate next N Saturdays
+const getNextSaturdays = (count: number = 10): { date: Date; isoString: string; displayText: string }[] => {
+  const saturdays: { date: Date; isoString: string; displayText: string }[] = [];
+  const today = new Date();
+  let current = new Date(today);
+  
+  // Find the next Saturday
+  const daysUntilSaturday = (6 - current.getDay() + 7) % 7;
+  if (daysUntilSaturday === 0 && current.getHours() >= 12) {
+    // If it's Saturday afternoon, start from next Saturday
+    current.setDate(current.getDate() + 7);
+  } else {
+    current.setDate(current.getDate() + daysUntilSaturday);
+  }
+  
+  // Generate the next saturdays
+  for (let i = 0; i < count; i++) {
+    const saturdayDate = new Date(current);
+    // Use timezone-safe local date formatting instead of toISOString()
+    const isoString = formatDateToLocal(saturdayDate);
+    
+    // Format display text (e.g., "Sat, Nov 2" or "This Saturday" for the first one)
+    const displayText = saturdayDate.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
+    
+    saturdays.push({
+      date: saturdayDate,
+      isoString,
+      displayText: i === 0 ? `This Saturday (${displayText})` : displayText
+    });
+    
+    current.setDate(current.getDate() + 7);
+  }
+  
+  return saturdays;
+};
+
 export default function Messages() {
   const [, setLocation] = useLocation();
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
@@ -49,10 +98,13 @@ export default function Messages() {
   const lastMarkReadTime = useRef(0);
   const prevScrollHeightRef = useRef(0);
   
+  // Get upcoming Saturdays for pregame scheduling
+  const upcomingSaturdays = getNextSaturdays(10);
+  
   // Schedule pregame dialog state
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [pregameForm, setPregameForm] = useState({
-    date: "",
+    date: upcomingSaturdays[0]?.isoString || "",
     time: "",
     location: "",
     notes: ""
@@ -161,7 +213,14 @@ export default function Messages() {
       queryClient.invalidateQueries({ queryKey: ['/api/conversations', selectedConversationId, 'pregames'] });
       queryClient.invalidateQueries({ queryKey: ['/api/pregames/calendar'] });
       setShowScheduleDialog(false);
-      setPregameForm({ date: "", time: "", location: "", notes: "" });
+      // Reset form with freshly computed first upcoming Saturday
+      const freshSaturdays = getNextSaturdays(10);
+      setPregameForm({ 
+        date: freshSaturdays[0]?.isoString || "", 
+        time: "", 
+        location: "", 
+        notes: "" 
+      });
     },
   });
 
@@ -172,6 +231,17 @@ export default function Messages() {
     lastMarkedMessageId.current = null;
     prevScrollHeightRef.current = 0;
   }, [selectedConversationId]);
+
+  // Reset pregame form to first upcoming Saturday when dialog opens
+  useEffect(() => {
+    if (showScheduleDialog) {
+      const saturdays = getNextSaturdays(10);
+      setPregameForm(prev => ({
+        ...prev,
+        date: saturdays[0]?.isoString || ""
+      }));
+    }
+  }, [showScheduleDialog]);
 
   // Check if user is near bottom of scroll area
   const checkIfNearBottom = () => {
@@ -446,14 +516,30 @@ export default function Messages() {
                       </DialogHeader>
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="date">Date</Label>
-                          <Input
-                            id="date"
-                            type="date"
-                            value={pregameForm.date}
-                            onChange={(e) => setPregameForm({ ...pregameForm, date: e.target.value })}
-                            data-testid="input-pregame-date"
-                          />
+                          <Label htmlFor="saturday">Saturday</Label>
+                          <Select 
+                            value={pregameForm.date} 
+                            onValueChange={(value) => setPregameForm({ ...pregameForm, date: value })}
+                          >
+                            <SelectTrigger 
+                              id="saturday" 
+                              className="w-full" 
+                              data-testid="select-pregame-saturday"
+                            >
+                              <SelectValue placeholder="Select a Saturday" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {upcomingSaturdays.map((saturday) => (
+                                <SelectItem 
+                                  key={saturday.isoString} 
+                                  value={saturday.isoString}
+                                  data-testid={`option-saturday-${saturday.isoString}`}
+                                >
+                                  {saturday.displayText}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="time">Time</Label>
