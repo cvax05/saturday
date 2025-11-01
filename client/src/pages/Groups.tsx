@@ -46,6 +46,10 @@ export default function Groups() {
   const currentUser = authData?.user;
   const schoolUsers = schoolUsersData?.users || [];
   
+  // Filter out current user to get other groups
+  const otherGroups = schoolUsers.filter(user => user.email !== currentUser?.email);
+  const otherGroupsCount = otherGroups.length;
+  
   // Get school name - try multiple sources for school information
   const schoolName = currentUser?.school || 
     (schoolUsers.length > 0 ? schoolUsers[0]?.school : null) ||
@@ -109,7 +113,7 @@ export default function Groups() {
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              {schoolUsers.length} students found
+              {otherGroupsCount} groups found at your school
             </span>
           </div>
         </div>
@@ -125,25 +129,23 @@ export default function Groups() {
         {usersLoading && (
           <div className="text-center py-8">
             <Loader2 className="h-6 w-6 text-muted-foreground mx-auto mb-2 animate-spin" />
-            <p className="text-muted-foreground">Loading students...</p>
+            <p className="text-muted-foreground">Loading groups...</p>
           </div>
         )}
 
         {/* User Cards Grid */}
         {!usersLoading && (
           <div className="grid gap-6 md:grid-cols-2">
-            {schoolUsers.length === 0 ? (
+            {otherGroupsCount === 0 ? (
               <div className="col-span-full text-center py-12">
                 <UserIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">No Students Found</h3>
+                <h3 className="text-lg font-medium mb-2">No Groups Found</h3>
                 <p className="text-muted-foreground">
-                  There are no other students at {schoolName.toLowerCase()} yet.
+                  There are no other groups at {schoolName} yet.
                 </p>
               </div>
             ) : (
-              schoolUsers
-                .filter(user => user.email !== currentUser?.email) // Exclude current user
-                .map((user) => (
+              otherGroups.map((user) => (
                   <Card 
                     key={user.id || user.email} 
                     className="hover-elevate cursor-pointer transition-all min-h-[240px]"
