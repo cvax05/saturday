@@ -161,12 +161,29 @@ export default function Registration() {
       return;
     }
     
-    // Validate group size min/max
+    // Validate group size
+    if (!formData.groupSize) {
+      alert('Please enter the number of people in your group/organization.');
+      return;
+    }
+    
+    // Validate ideal group size min/max
+    if (!formData.groupSizeMin || !formData.groupSizeMax) {
+      alert('Please enter both minimum and maximum ideal group size.');
+      return;
+    }
+    
     const minSize = parseInt(formData.groupSizeMin);
     const maxSize = parseInt(formData.groupSizeMax);
     
     if (minSize && maxSize && minSize > maxSize) {
       alert('Minimum group size cannot be larger than maximum group size.');
+      return;
+    }
+    
+    // Validate Saturday availability
+    if (availableSaturdays.length === 0) {
+      alert('Please select at least one Saturday you are available.');
       return;
     }
     
@@ -242,7 +259,7 @@ export default function Registration() {
               
               {/* Profile Picture */}
               <div className="flex flex-col items-center space-y-3 py-2">
-                <Label className="text-center text-sm sm:text-base">Profile Photo</Label>
+                <Label className="text-center text-sm sm:text-base">Profile Photo - Optional</Label>
                 <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-full border-2 border-border bg-muted overflow-hidden flex items-center justify-center">
                   {formData.profileImage ? (
                     <img 
@@ -276,7 +293,7 @@ export default function Registration() {
 
               {/* Photo Gallery */}
               <div>
-                <Label className="text-sm sm:text-base">Additional Photos - Optional ({formData.galleryImages.length}/5)</Label>
+                <Label className="text-sm sm:text-base">Additional Photos ({formData.galleryImages.length}/5) - Optional</Label>
                 <p className="text-xs sm:text-sm text-muted-foreground mb-3">
                   Add up to 5 more photos (shown on your profile page)
                 </p>
@@ -390,14 +407,13 @@ export default function Registration() {
               />
 
               <div>
-                <Label htmlFor="description" className="text-sm sm:text-base">About You (1-2 sentences)</Label>
+                <Label htmlFor="description" className="text-sm sm:text-base">About You (1-2 sentences) - Optional</Label>
                 <Textarea
                   id="description"
                   placeholder="Tell others about yourself and what you're looking for in pregame activities..."
                   value={formData.description}
                   onChange={(e) => handleInputChange("description", e.target.value)}
                   maxLength={200}
-                  required
                   data-testid="textarea-description"
                   className="w-full min-h-[80px] resize-none"
                 />
@@ -444,10 +460,10 @@ export default function Registration() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <Label className="text-sm sm:text-base">When are you available? (Select Saturdays)</Label>
+                  <Label className="text-sm sm:text-base">When are you available? (Select Saturdays) *</Label>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Select the Saturdays you're available for pregames
+                  Select at least one Saturday you're available for pregames
                 </p>
                 <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 border rounded-md">
                   {getNextSaturdays(12).map((saturday) => {
@@ -483,11 +499,14 @@ export default function Registration() {
                 </div>
               </div>
 
-              <PreferencesSelector
-                value={preferences}
-                onChange={setPreferences}
-                className="w-full"
-              />
+              <div>
+                <Label className="text-sm sm:text-base mb-2 block">Preferences - Optional</Label>
+                <PreferencesSelector
+                  value={preferences}
+                  onChange={setPreferences}
+                  className="w-full"
+                />
+              </div>
 
               <Button type="submit" className="w-full min-h-[44px]" data-testid="button-register">
                 Join {SITE_NAME}
