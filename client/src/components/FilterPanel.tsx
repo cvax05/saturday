@@ -80,7 +80,7 @@ export default function FilterPanel({ filters, onFilterChange, onClearFilters }:
         <div>
           <Label className="text-sm mb-2 flex items-center gap-2 min-h-[20px]">
             <Calendar className="h-4 w-4 flex-shrink-0" />
-            <span className="truncate">Saturday Availability</span>
+            <span>Saturday Availability</span>
           </Label>
           <Select
             value={filters.saturday || "all"}
