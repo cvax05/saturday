@@ -103,7 +103,6 @@ export default function FilterPanel({ filters, onFilterChange, onClearFilters }:
         {/* Music Preference */}
         <div>
           <Label className="text-sm mb-2 flex items-center gap-2 min-h-[20px]">
-            <Music className="h-4 w-4 flex-shrink-0" />
             Music
           </Label>
           <Select
@@ -127,7 +126,6 @@ export default function FilterPanel({ filters, onFilterChange, onClearFilters }:
         {/* Vibe Preference */}
         <div>
           <Label className="text-sm mb-2 flex items-center gap-2 min-h-[20px]">
-            <Sparkles className="h-4 w-4 flex-shrink-0" />
             Vibe
           </Label>
           <Select
