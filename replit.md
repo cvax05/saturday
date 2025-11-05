@@ -33,9 +33,10 @@ Preferred communication style: Simple, everyday language.
 - **Schools Data Population**: Automated script `scripts/populate-schools.ts` handles CSV parsing, slug generation, and ensures data integrity and idempotency.
 
 ### Authentication & Authorization
-- **Method**: JWT authentication using httpOnly cookies for secure token storage (7-day expiry).
+- **Method**: JWT authentication using httpOnly cookies for secure token storage (30-day expiry).
 - **Security**: Password hashing with bcryptjs, JWT in httpOnly cookies, trust proxy for Replit.
 - **Flows**: All authentication flows rely on API endpoints; no localStorage caching. `setAuthCookie` helper ensures consistent cookie settings. Seamless authentication flows with TanStack Query caching for improved UX.
+- **Session Isolation (November 2025)**: Enhanced session management to prevent account confusion when testing multiple accounts on same browser. Login flow clears all TanStack Query cache before setting new auth data. Logout endpoint clears cookies with explicit options (path, httpOnly, sameSite, secure) for complete session cleanup. Cookie overwrites handled automatically by setAuthCookie on successful login.
 
 ### Features
 - **Messaging System**: Full-featured messaging with cursor-based pagination, unread count tracking, and school isolation.

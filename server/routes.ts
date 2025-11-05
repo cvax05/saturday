@@ -205,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: user.username,
       });
 
-      // Set auth cookie with consistent options
+      // Set auth cookie with consistent options (this automatically overwrites any existing cookie)
       setAuthCookie(res, token);
       
       // Use centralized mapper for consistent response
@@ -259,7 +259,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/logout", (req, res) => {
-    res.clearCookie('auth_token');
+    // Clear cookie with explicit options to ensure complete removal
+    res.clearCookie('auth_token', {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+    });
     res.status(200).json({ message: "Logged out successfully" });
   });
 

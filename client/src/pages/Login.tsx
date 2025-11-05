@@ -23,6 +23,9 @@ export default function Login() {
     e.preventDefault();
     
     try {
+      // Clear all cached query data to prevent session mixing between different accounts
+      queryClient.clear();
+      
       // Submit to backend
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -45,7 +48,7 @@ export default function Login() {
       // Parse the auth response and cache it
       const authResponse: AuthResponse = await response.json();
       
-      // Cache the auth data so Groups page has it immediately
+      // Cache the fresh auth data so Groups page has it immediately
       queryClient.setQueryData(['/api/auth/me'], authResponse);
       
       // JWT token is automatically stored in httpOnly cookie by server
