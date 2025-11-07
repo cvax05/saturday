@@ -47,12 +47,15 @@ Preferred communication style: Simple, everyday language.
 - **Schedule Pregame**: Conversation-based pregame scheduling with database integration and API endpoints.
   - **Saturday-Only Scheduling (October 2025)**: Updated scheduling UI to enforce Saturday-only pregames with dropdown selector showing next 10 upcoming Saturdays. Removed manual date input to prevent scheduling on non-Saturday dates. Includes timezone-safe date formatting using local date components to prevent date drift across timezones.
   - **Implementation**: Saturday selector dropdown implemented in both SchedulePregameModal component (used by ChatView) and Messages page inline dialog. Both automatically refresh to show current upcoming Saturdays when dialog opens, preventing stale date selections.
-- **Saturday Availability Tracking (October 2025)**: Complete implementation of Saturday-focused availability system.
-  - Users can select multiple upcoming Saturdays during registration and profile editing via checkbox-based UI (12 upcoming Saturdays displayed)
-  - Backend stores availability as text array in `available_saturdays` column
-  - Integrates with existing filter system (`/api/users/filter`) for finding groups with matching availability
-  - Display on profile pages shows formatted Saturday dates with Calendar icon
-  - Fixed critical double-toggle bug by removing redundant event handlers
+- **Three-State Saturday Availability System (November 2025)**: Complete redesign of availability management with calendar-based interface.
+  - **Calendar Tab**: Central hub for all availability management - full monthly grid showing all weekdays, but only Saturdays are interactive
+  - **Three-State Toggle**: Saturdays cycle through Empty → Available (✅) → Planned (🍺) → Empty states via tap/click
+  - **Database**: New `user_availability` table with composite primary key (userId, date) and state enum ('available', 'planned'). Empty/unmarked dates have no database entry.
+  - **Auto-Save**: 500ms debounce timer per date with optimistic UI updates and rollback on error
+  - **Filter Logic**: Groups filter only matches users with 'available' state for selected Saturday, excluding 'planned' or empty entries
+  - **Registration/Profile**: Removed all Saturday checkboxes; both pages direct users to manage availability via Calendar tab
+  - **Migration**: Automated script (`scripts/migrate-availability.ts`) converted 10 existing availability entries from legacy `available_saturdays` array column
+  - **API Endpoints**: GET /api/availability, PATCH /api/availability/:date, DELETE /api/availability/:date with JWT authentication
 
 ## External Dependencies
 
