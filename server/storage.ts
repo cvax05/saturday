@@ -9,6 +9,7 @@ import {
   conversationParticipants,
   userPhotos,
   reviews,
+  userAvailability,
   type User, 
   type InsertUser, 
   type Organization, 
@@ -95,6 +96,12 @@ export interface IStorage {
   getMessagesForUser(userEmail: string): Promise<Message[]>;
   getMessagesForUserInSchool(userEmail: string, schoolId: string): Promise<Message[]>;
   getConversationMessages(conversationId: string, afterTimestamp?: Date): Promise<Message[]>;
+  
+  // Availability methods (three-state calendar system)
+  listUserAvailability(userId: string, startDate?: string, endDate?: string): Promise<import("@shared/schema").UserAvailabilitySelect[]>;
+  getUsersAvailableOnDate(date: string, state?: import("@shared/schema").AvailabilityState): Promise<string[]>;
+  upsertAvailability(userId: string, date: string, state: import("@shared/schema").AvailabilityState): Promise<void>;
+  deleteAvailability(userId: string, date: string): Promise<void>;
   
   // Pregame methods (school-scoped)
   createPregame(pregame: InsertPregame, creatorEmail: string): Promise<Pregame>; // Legacy method
@@ -1085,6 +1092,71 @@ export class DatabaseStorage implements IStorage {
         )
       );
     return review || undefined;
+  }
+
+  // Availability methods (three-state calendar system)
+  async listUserAvailability(userId: string, startDate?: string, endDate?: string): Promise<import("@shared/schema").UserAvailabilitySelect[]> {
+    let conditions = [eq(userAvailability.userId, userId)];
+    
+    if (startDate) {
+      conditions.push(sql`${userAvailability.date} >= ${startDate}`);
+    }
+    if (endDate) {
+      conditions.push(sql`${userAvailability.date} <= ${endDate}`);
+    }
+    
+    const availabilityList = await db
+      .select()
+      .from(userAvailability)
+      .where(and(...conditions))
+      .orderBy(userAvailability.date);
+    
+    return availabilityList;
+  }
+
+  async getUsersAvailableOnDate(date: string, state: import("@shared/schema").AvailabilityState = 'available'): Promise<string[]> {
+    const result = await db
+      .select({
+        userId: userAvailability.userId,
+      })
+      .from(userAvailability)
+      .where(
+        and(
+          eq(userAvailability.date, date),
+          eq(userAvailability.state, state)
+        )
+      );
+    
+    return result.map(r => r.userId);
+  }
+
+  async upsertAvailability(userId: string, date: string, state: import("@shared/schema").AvailabilityState): Promise<void> {
+    await db
+      .insert(userAvailability)
+      .values({
+        userId,
+        date,
+        state,
+        updatedAt: sql`now()`,
+      })
+      .onConflictDoUpdate({
+        target: [userAvailability.userId, userAvailability.date],
+        set: {
+          state,
+          updatedAt: sql`now()`,
+        },
+      });
+  }
+
+  async deleteAvailability(userId: string, date: string): Promise<void> {
+    await db
+      .delete(userAvailability)
+      .where(
+        and(
+          eq(userAvailability.userId, userId),
+          eq(userAvailability.date, date)
+        )
+      );
   }
 }
 

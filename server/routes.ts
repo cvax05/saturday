@@ -320,6 +320,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Availability endpoints - JWT protected
+  app.get("/api/availability", authenticateJWT, async (req, res) => {
+    try {
+      const userId = req.user!.user_id;
+      const { startDate, endDate } = req.query;
+      
+      const availability = await storage.listUserAvailability(
+        userId,
+        startDate as string | undefined,
+        endDate as string | undefined
+      );
+      
+      res.status(200).json({ availability });
+    } catch (error) {
+      console.error("Error fetching availability:", error);
+      res.status(500).json({ error: "Failed to fetch availability" });
+    }
+  });
+
+  app.patch("/api/availability/:date", authenticateJWT, async (req, res) => {
+    try {
+      const userId = req.user!.user_id;
+      const { date } = req.params;
+      const { state } = req.body;
+      
+      // Validate state
+      const validStates = ['available', 'planned'];
+      if (!validStates.includes(state)) {
+        return res.status(400).json({ error: "Invalid state. Must be 'available' or 'planned'" });
+      }
+      
+      await storage.upsertAvailability(userId, date, state);
+      
+      res.status(200).json({ message: "Availability updated successfully" });
+    } catch (error) {
+      console.error("Error updating availability:", error);
+      res.status(500).json({ error: "Failed to update availability" });
+    }
+  });
+
+  app.delete("/api/availability/:date", authenticateJWT, async (req, res) => {
+    try {
+      const userId = req.user!.user_id;
+      const { date } = req.params;
+      
+      await storage.deleteAvailability(userId, date);
+      
+      res.status(200).json({ message: "Availability removed successfully" });
+    } catch (error) {
+      console.error("Error removing availability:", error);
+      res.status(500).json({ error: "Failed to remove availability" });
+    }
+  });
+
   // Legacy endpoints removed for security - all authentication now goes through JWT-based /api/auth/* endpoints
 
   // User profile endpoint - JWT protected, school-scoped
@@ -367,12 +421,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all users in the school first
       let users = await storage.getUsersBySchoolId(req.user!.school_id);
       
-      // Apply Saturday availability filter
+      // Apply Saturday availability filter using new user_availability table
       if (saturday && typeof saturday === 'string') {
-        users = users.filter(user => {
-          const availableSaturdays = user.availableSaturdays || [];
-          return availableSaturdays.includes(saturday);
-        });
+        // Get all users who are 'available' (not 'planned') for this Saturday
+        const availableUserIds = await storage.getUsersAvailableOnDate(saturday, 'available');
+        
+        // Filter to only users who are available
+        users = users.filter(user => availableUserIds.includes(user.id));
       }
       
       // Apply preference filters

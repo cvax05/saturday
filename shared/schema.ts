@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, foreignKey, index, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, foreignKey, index, unique, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -28,6 +28,31 @@ export const users = pgTable("users", {
   availableSaturdays: text("available_saturdays").array(), // Array of Saturday dates (YYYY-MM-DD format) when user is available
   createdAt: timestamp("created_at").default(sql`now()`).notNull(),
 });
+
+// Availability states enum
+export const availabilityStateEnum = z.enum(['available', 'planned']);
+export type AvailabilityState = z.infer<typeof availabilityStateEnum>;
+
+// User availability table for three-state calendar system
+export const userAvailability = pgTable("user_availability", {
+  userId: varchar("user_id").notNull(),
+  date: text("date").notNull(), // Format: YYYY-MM-DD
+  state: text("state").notNull(), // 'available' or 'planned'
+  createdAt: timestamp("created_at").default(sql`now()`).notNull(),
+  updatedAt: timestamp("updated_at").default(sql`now()`).notNull(),
+}, (table) => ({
+  // Composite primary key on user_id + date
+  pk: primaryKey({ columns: [table.userId, table.date] }),
+  // Foreign key to users
+  userFK: foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+  }).onDelete("cascade"),
+  // Index for querying by user
+  userIndex: index().on(table.userId),
+  // Index for querying by date
+  dateIndex: index().on(table.date),
+}));
 
 // Junction table for many-to-many relationship between users and schools
 export const schoolMemberships = pgTable("school_memberships", {
@@ -254,6 +279,21 @@ export const insertUserPhotoSchema = createInsertSchema(userPhotos).omit({
   id: true,
   createdAt: true,
 });
+
+// User availability schemas
+export const insertUserAvailabilitySchema = createInsertSchema(userAvailability).omit({
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  state: availabilityStateEnum,
+});
+
+export const updateUserAvailabilitySchema = z.object({
+  state: availabilityStateEnum,
+});
+
+export type InsertUserAvailability = z.infer<typeof insertUserAvailabilitySchema>;
+export type UserAvailabilitySelect = typeof userAvailability.$inferSelect;
 
 // Preferences type for structured preference data
 export const preferencesSchema = z.object({

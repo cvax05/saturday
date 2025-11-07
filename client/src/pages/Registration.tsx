@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
 import PreferencesSelector from "@/components/PreferencesSelector";
 import { Upload, X, Calendar, User } from "lucide-react";
@@ -30,7 +29,6 @@ export default function Registration() {
     galleryImages: [] as string[]
   });
   const [preferences, setPreferences] = useState<UserPreferences>({});
-  const [availableSaturdays, setAvailableSaturdays] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
@@ -110,39 +108,6 @@ export default function Registration() {
     galleryInputRef.current?.click();
   };
 
-  // Helper function to generate next 12 Saturdays
-  const getNextSaturdays = (count: number = 12): Date[] => {
-    const saturdays: Date[] = [];
-    const today = new Date();
-    let current = new Date(today);
-    
-    // Find the next Saturday
-    const daysUntilSaturday = (6 - current.getDay() + 7) % 7;
-    if (daysUntilSaturday === 0 && current.getHours() >= 12) {
-      // If it's Saturday afternoon, start from next Saturday
-      current.setDate(current.getDate() + 7);
-    } else {
-      current.setDate(current.getDate() + daysUntilSaturday);
-    }
-    
-    // Generate the next saturdays
-    for (let i = 0; i < count; i++) {
-      saturdays.push(new Date(current));
-      current.setDate(current.getDate() + 7);
-    }
-    
-    return saturdays;
-  };
-
-  const toggleSaturday = (dateStr: string) => {
-    setAvailableSaturdays(prev => {
-      if (prev.includes(dateStr)) {
-        return prev.filter(d => d !== dateStr);
-      }
-      return [...prev, dateStr].sort();
-    });
-  };
-
   // Helper function to convert school name to URL-friendly slug
   const schoolNameToSlug = (schoolName: string): string => {
     return schoolName
@@ -181,12 +146,6 @@ export default function Registration() {
       return;
     }
     
-    // Validate Saturday availability
-    if (availableSaturdays.length === 0) {
-      alert('Please select at least one Saturday you are available.');
-      return;
-    }
-    
     try {
       // Submit to backend API
       const registrationData: Record<string, any> = {
@@ -198,8 +157,7 @@ export default function Registration() {
         bio: formData.description,
         groupSizeMin: formData.groupSizeMin ? parseInt(formData.groupSizeMin) : undefined,
         groupSizeMax: formData.groupSizeMax ? parseInt(formData.groupSizeMax) : undefined,
-        preferences: preferences,
-        availableSaturdays: availableSaturdays.length > 0 ? availableSaturdays : undefined
+        preferences: preferences
       };
       
       // Only include profileImage if it has a value
@@ -456,49 +414,6 @@ export default function Registration() {
                 </div>
               </div>
 
-              {/* Saturday Availability Selector */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <Label className="text-sm sm:text-base">When are you available? (Select Saturdays) *</Label>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Select at least one Saturday you're available for pregames
-                </p>
-                <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 border rounded-md">
-                  {getNextSaturdays(12).map((saturday) => {
-                    const dateStr = saturday.toISOString().split('T')[0];
-                    const displayDate = saturday.toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric',
-                      year: 'numeric'
-                    });
-                    const isSelected = availableSaturdays.includes(dateStr);
-                    
-                    return (
-                      <div 
-                        key={dateStr}
-                        className="flex items-center space-x-2 p-2 rounded-md"
-                        data-testid={`checkbox-saturday-${dateStr}`}
-                      >
-                        <Checkbox
-                          id={`saturday-${dateStr}`}
-                          checked={isSelected}
-                          onCheckedChange={() => toggleSaturday(dateStr)}
-                          className="cursor-pointer"
-                        />
-                        <Label
-                          htmlFor={`saturday-${dateStr}`}
-                          className="text-xs sm:text-sm cursor-pointer flex-1"
-                        >
-                          {displayDate}
-                        </Label>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
               <div>
                 <Label className="text-sm sm:text-base mb-2 block">Preferences - Optional</Label>
                 <PreferencesSelector
@@ -506,6 +421,13 @@ export default function Registration() {
                   onChange={setPreferences}
                   className="w-full"
                 />
+              </div>
+
+              <div className="p-4 border rounded-md bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  <Calendar className="h-4 w-4 inline mr-2" />
+                  You can set your availability after registration by visiting the Calendar tab
+                </p>
               </div>
 
               <Button type="submit" className="w-full min-h-[44px]" data-testid="button-register">

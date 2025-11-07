@@ -10,7 +10,6 @@ import PreferencesSelector from "@/components/PreferencesSelector";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArrowLeft, Upload, X, Plus, Calendar } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
 import { compressImage } from "@/lib/imageUtils";
 import { useQuery } from "@tanstack/react-query";
 import { authQueryFn, queryClient } from "@/lib/queryClient";
@@ -42,7 +41,6 @@ export default function ProfileEdit() {
   });
   
   const [preferences, setPreferences] = useState<UserPreferences>({});
-  const [availableSaturdays, setAvailableSaturdays] = useState<string[]>([]);
 
   // Load user data from API when it's available
   useEffect(() => {
@@ -59,7 +57,6 @@ export default function ProfileEdit() {
         galleryImages: currentUser.galleryImages || []
       });
       setPreferences(currentUser.preferences || {});
-      setAvailableSaturdays(currentUser.availableSaturdays || []);
     }
   }, [currentUser]);
 
@@ -131,39 +128,6 @@ export default function ProfileEdit() {
     galleryInputRef.current?.click();
   };
 
-  // Helper function to generate next 12 Saturdays
-  const getNextSaturdays = (count: number = 12): Date[] => {
-    const saturdays: Date[] = [];
-    const today = new Date();
-    let current = new Date(today);
-    
-    // Find the next Saturday
-    const daysUntilSaturday = (6 - current.getDay() + 7) % 7;
-    if (daysUntilSaturday === 0 && current.getHours() >= 12) {
-      // If it's Saturday afternoon, start from next Saturday
-      current.setDate(current.getDate() + 7);
-    } else {
-      current.setDate(current.getDate() + daysUntilSaturday);
-    }
-    
-    // Generate the next saturdays
-    for (let i = 0; i < count; i++) {
-      saturdays.push(new Date(current));
-      current.setDate(current.getDate() + 7);
-    }
-    
-    return saturdays;
-  };
-
-  const toggleSaturday = (dateStr: string) => {
-    setAvailableSaturdays(prev => {
-      if (prev.includes(dateStr)) {
-        return prev.filter(d => d !== dateStr);
-      }
-      return [...prev, dateStr].sort();
-    });
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -174,8 +138,7 @@ export default function ProfileEdit() {
         bio: formData.description,
         groupSizeMin: formData.groupSizeMin ? parseInt(formData.groupSizeMin) : undefined,
         groupSizeMax: formData.groupSizeMax ? parseInt(formData.groupSizeMax) : undefined,
-        preferences: preferences,
-        availableSaturdays: availableSaturdays.length > 0 ? availableSaturdays : undefined,
+        preferences: preferences
       };
 
       // Only include photos if they've been set
@@ -424,54 +387,24 @@ export default function ProfileEdit() {
                 </div>
               </div>
 
-              {/* Saturday Availability Selector */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <Label className="text-sm sm:text-base">When are you available? (Select Saturdays)</Label>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Select the Saturdays you're available for pregames
-                </p>
-                <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 border rounded-md">
-                  {getNextSaturdays(12).map((saturday) => {
-                    const dateStr = saturday.toISOString().split('T')[0];
-                    const displayDate = saturday.toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric',
-                      year: 'numeric'
-                    });
-                    const isSelected = availableSaturdays.includes(dateStr);
-                    
-                    return (
-                      <div 
-                        key={dateStr}
-                        className="flex items-center space-x-2 p-2 rounded-md"
-                        data-testid={`checkbox-saturday-${dateStr}`}
-                      >
-                        <Checkbox
-                          id={`saturday-${dateStr}`}
-                          checked={isSelected}
-                          onCheckedChange={() => toggleSaturday(dateStr)}
-                          className="cursor-pointer"
-                        />
-                        <Label
-                          htmlFor={`saturday-${dateStr}`}
-                          className="text-xs sm:text-sm cursor-pointer flex-1"
-                        >
-                          {displayDate}
-                        </Label>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
               <PreferencesSelector
                 value={preferences}
                 onChange={setPreferences}
                 className="w-full"
               />
+
+              <div className="p-4 border rounded-md bg-muted/30 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium">Manage Your Availability</p>
+                  <p className="text-xs text-muted-foreground">
+                    Set the dates you're available or have events planned
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setLocation('/calendar')} data-testid="button-calendar">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Go to Calendar
+                </Button>
+              </div>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <Button 
