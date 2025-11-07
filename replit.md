@@ -48,8 +48,9 @@ Preferred communication style: Simple, everyday language.
   - **Saturday-Only Scheduling (October 2025)**: Updated scheduling UI to enforce Saturday-only pregames with dropdown selector showing next 10 upcoming Saturdays. Removed manual date input to prevent scheduling on non-Saturday dates. Includes timezone-safe date formatting using local date components to prevent date drift across timezones.
   - **Implementation**: Saturday selector dropdown implemented in both SchedulePregameModal component (used by ChatView) and Messages page inline dialog. Both automatically refresh to show current upcoming Saturdays when dialog opens, preventing stale date selections.
 - **Three-State Saturday Availability System (November 2025)**: Complete redesign of availability management with calendar-based interface.
-  - **Calendar Tab**: Central hub for all availability management - full monthly grid showing all weekdays, but only Saturdays are interactive
-  - **Three-State Toggle**: Saturdays cycle through Empty → Available (✅) → Planned (🍺) → Empty states via tap/click
+  - **Calendar Tab**: Central hub for all availability management - displays ONLY upcoming Saturdays (next 3 months) in a scrollable card layout grouped by month
+  - **Three-State Toggle**: Each Saturday card cycles through Empty → Available (✅) → Planned (🍺) → Empty states via tap/click
+  - **Visual Design**: Cards show date, full day/month label, and color-coded states (green for available, orange for planned). Responsive grid (1 column mobile, 2 tablet, 3 desktop)
   - **Database**: New `user_availability` table with composite primary key (userId, date) and state enum ('available', 'planned'). Empty/unmarked dates have no database entry.
   - **Auto-Save**: 500ms debounce timer per date with optimistic UI updates and rollback on error
   - **Filter Logic**: Groups filter only matches users with 'available' state for selected Saturday, excluding 'planned' or empty entries

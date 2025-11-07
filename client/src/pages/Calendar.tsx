@@ -15,15 +15,11 @@ import {
   format, 
   startOfMonth, 
   endOfMonth, 
-  eachDayOfInterval, 
-  isSameMonth, 
   isToday, 
-  addMonths, 
-  subMonths,
-  getDay,
-  startOfWeek,
-  endOfWeek,
-  isSaturday
+  addMonths,
+  addDays,
+  isSaturday,
+  startOfDay
 } from "date-fns";
 import { authQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -51,11 +47,11 @@ export default function Calendar() {
 
   const currentUser = authData?.user;
 
-  // Calculate month boundaries
+  // Calculate date range - show current month + next 2 months of Saturdays
   const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
+  const rangeEnd = endOfMonth(addMonths(currentDate, 2));
   const startDate = format(monthStart, 'yyyy-MM-dd');
-  const endDate = format(monthEnd, 'yyyy-MM-dd');
+  const endDate = format(rangeEnd, 'yyyy-MM-dd');
 
   // Fetch availability for current month
   const { data: availabilityData, isLoading: availabilityLoading } = useQuery<{ availability: UserAvailabilitySelect[] }>({
@@ -190,20 +186,48 @@ export default function Calendar() {
     };
   }, []);
 
-  // Generate calendar grid
-  const calendarStart = startOfWeek(monthStart);
-  const calendarEnd = endOfWeek(monthEnd);
-  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+  // Get only Saturdays in the range
+  const getSaturdays = (start: Date, end: Date): Date[] => {
+    const saturdays: Date[] = [];
+    let current = new Date(start);
+    
+    // Find first Saturday
+    while (!isSaturday(current) && current <= end) {
+      current = addDays(current, 1);
+    }
+    
+    // Collect all Saturdays
+    while (current <= end) {
+      saturdays.push(new Date(current));
+      current = addDays(current, 7);
+    }
+    
+    return saturdays;
+  };
+  
+  const saturdays = getSaturdays(monthStart, rangeEnd);
+  
+  // Filter out past Saturdays
+  const today = startOfDay(new Date());
+  const upcomingSaturdays = saturdays.filter((saturday: Date) => saturday >= today);
+
+  // Group Saturdays by month for section headers
+  const saturdaysByMonth = upcomingSaturdays.reduce((acc: Record<string, Date[]>, saturday: Date) => {
+    const monthKey = format(saturday, 'MMMM yyyy');
+    if (!acc[monthKey]) {
+      acc[monthKey] = [];
+    }
+    acc[monthKey].push(saturday);
+    return acc;
+  }, {} as Record<string, Date[]>);
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     if (direction === 'prev') {
-      setCurrentDate(subMonths(currentDate, 1));
+      setCurrentDate(addMonths(currentDate, -1));
     } else {
       setCurrentDate(addMonths(currentDate, 1));
     }
   };
-
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Render state icon
   const renderStateIcon = (state: AvailabilityState | undefined) => {
@@ -253,39 +277,14 @@ export default function Calendar() {
     <div className="min-h-screen bg-background">
       <main className="max-w-5xl mx-auto p-4 sm:p-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-          <div className="flex items-center gap-3">
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-2">
             <CalendarIcon className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-3xl font-bold" data-testid="calendar-title">Availability</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Mark which Saturdays you're available for pregames
-              </p>
-            </div>
+            <h1 className="text-3xl font-bold" data-testid="calendar-title">Availability</h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigateMonth('prev')}
-              data-testid="button-prev-month"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <div className="min-w-[160px] text-center">
-              <h2 className="text-lg font-semibold" data-testid="current-month">
-                {format(currentDate, 'MMMM yyyy')}
-              </h2>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigateMonth('next')}
-              data-testid="button-next-month"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            Mark which Saturdays you're available for pregames
+          </p>
         </div>
 
         {/* Legend */}
@@ -312,77 +311,104 @@ export default function Calendar() {
           </CardContent>
         </Card>
 
-        {/* Calendar Grid */}
-        <Card>
-          <CardContent className="p-4">
-            {availabilityLoading ? (
-              <div className="text-center py-12">
+        {/* Saturdays List */}
+        <div className="space-y-6">
+          {availabilityLoading ? (
+            <Card>
+              <CardContent className="p-8 text-center">
                 <Loader2 className="h-8 w-8 text-muted-foreground mx-auto mb-4 animate-spin" />
-                <p className="text-muted-foreground">Loading calendar...</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {/* Day headers */}
-                <div className="grid grid-cols-7 gap-1 mb-2">
-                  {dayNames.map(day => (
-                    <div
-                      key={day}
-                      className="text-center text-sm font-semibold text-muted-foreground py-2"
-                    >
-                      {day}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Calendar dates */}
-                <div className="grid grid-cols-7 gap-1">
-                  {calendarDays.map(day => {
-                    const dayStr = format(day, 'yyyy-MM-dd');
-                    const isCurrentMonth = isSameMonth(day, currentDate);
-                    const isTodayDate = isToday(day);
-                    const isSaturdayDate = isSaturday(day);
+                <p className="text-muted-foreground">Loading Saturdays...</p>
+              </CardContent>
+            </Card>
+          ) : upcomingSaturdays.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No upcoming Saturdays found</p>
+              </CardContent>
+            </Card>
+          ) : (
+            Object.entries(saturdaysByMonth).map(([monthLabel, monthSaturdays]) => (
+              <div key={monthLabel} className="space-y-3">
+                {/* Month Section Header */}
+                <h2 className="text-lg font-semibold text-muted-foreground px-1" data-testid={`month-header-${monthLabel}`}>
+                  {monthLabel}
+                </h2>
+                
+                {/* Saturdays in this month */}
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {monthSaturdays.map(saturday => {
+                    const dayStr = format(saturday, 'yyyy-MM-dd');
+                    const isTodayDate = isToday(saturday);
                     const state = availabilityMap[dayStr];
-                    const isSelectable = isCurrentMonth && isSaturdayDate;
 
                     return (
-                      <Button
+                      <Card
                         key={dayStr}
-                        variant="ghost"
                         className={`
-                          h-16 sm:h-20 p-2 flex flex-col items-center justify-center relative
-                          ${!isCurrentMonth ? 'opacity-40' : ''}
-                          ${!isSaturdayDate ? 'opacity-30 cursor-not-allowed' : ''}
-                          ${isTodayDate ? 'ring-2 ring-primary ring-offset-1' : ''}
+                          hover-elevate active-elevate-2 cursor-pointer transition-all
+                          ${isTodayDate ? 'ring-2 ring-primary' : ''}
+                          ${state === 'available' ? 'bg-green-500/10 border-green-500/30' : ''}
+                          ${state === 'planned' ? 'bg-orange-500/10 border-orange-500/30' : ''}
                         `}
-                        onClick={() => isSelectable && handleDateToggle(dayStr)}
-                        disabled={!isSelectable}
+                        onClick={() => handleDateToggle(dayStr)}
                         data-testid={`calendar-date-${dayStr}`}
                       >
-                        {/* Date number */}
-                        <span className={`text-lg font-semibold ${isTodayDate ? 'text-primary' : ''}`}>
-                          {format(day, 'd')}
-                        </span>
-                        
-                        {/* State icon */}
-                        {state && (
-                          <div className="mt-1">
-                            {renderStateIcon(state)}
+                        <CardContent className="p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {/* Date Display */}
+                            <div className="flex flex-col">
+                              <span className="text-2xl font-bold">
+                                {format(saturday, 'd')}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {format(saturday, 'MMM')}
+                              </span>
+                            </div>
+                            
+                            {/* Full Date Label */}
+                            <div>
+                              <div className="font-medium">
+                                {format(saturday, 'EEEE')}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {format(saturday, 'MMMM d, yyyy')}
+                              </div>
+                            </div>
                           </div>
-                        )}
-                      </Button>
+
+                          {/* State Icon */}
+                          <div className="flex items-center gap-2">
+                            {state === 'available' && (
+                              <div className="flex items-center gap-2 text-green-600">
+                                <Check className="h-6 w-6" data-testid="icon-available" />
+                                <span className="text-sm font-medium hidden sm:inline">Available</span>
+                              </div>
+                            )}
+                            {state === 'planned' && (
+                              <div className="flex items-center gap-2 text-orange-600">
+                                <Beer className="h-6 w-6" data-testid="icon-planned" />
+                                <span className="text-sm font-medium hidden sm:inline">Planned</span>
+                              </div>
+                            )}
+                            {!state && (
+                              <div className="w-8 h-8 rounded-full border-2 border-dashed border-muted-foreground/30" />
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
                     );
                   })}
                 </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            ))
+          )}
+        </div>
 
         {/* Instructions */}
-        <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p className="font-medium">Only Saturdays can be marked</p>
-          <p className="mt-1">Tap any Saturday to toggle: Empty → Available ✅ → Planned 🍺 → Empty</p>
-          <p className="mt-1">Changes are saved automatically</p>
+        <div className="mt-6 text-center text-sm text-muted-foreground space-y-1">
+          <p>Tap any Saturday to toggle: Empty → Available ✅ → Planned 🍺 → Empty</p>
+          <p>Changes are saved automatically</p>
         </div>
       </main>
     </div>
