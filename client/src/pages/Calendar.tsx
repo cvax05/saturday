@@ -22,7 +22,8 @@ import {
   subMonths,
   getDay,
   startOfWeek,
-  endOfWeek
+  endOfWeek,
+  isSaturday
 } from "date-fns";
 import { authQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -258,7 +259,7 @@ export default function Calendar() {
             <div>
               <h1 className="text-3xl font-bold" data-testid="calendar-title">Availability</h1>
               <p className="text-sm text-muted-foreground mt-1">
-                Tap dates to set your availability
+                Mark which Saturdays you're available for pregames
               </p>
             </div>
           </div>
@@ -339,7 +340,9 @@ export default function Calendar() {
                     const dayStr = format(day, 'yyyy-MM-dd');
                     const isCurrentMonth = isSameMonth(day, currentDate);
                     const isTodayDate = isToday(day);
+                    const isSaturdayDate = isSaturday(day);
                     const state = availabilityMap[dayStr];
+                    const isSelectable = isCurrentMonth && isSaturdayDate;
 
                     return (
                       <Button
@@ -348,10 +351,11 @@ export default function Calendar() {
                         className={`
                           h-16 sm:h-20 p-2 flex flex-col items-center justify-center relative
                           ${!isCurrentMonth ? 'opacity-40' : ''}
+                          ${!isSaturdayDate ? 'opacity-30 cursor-not-allowed' : ''}
                           ${isTodayDate ? 'ring-2 ring-primary ring-offset-1' : ''}
                         `}
-                        onClick={() => handleDateToggle(dayStr)}
-                        disabled={!isCurrentMonth}
+                        onClick={() => isSelectable && handleDateToggle(dayStr)}
+                        disabled={!isSelectable}
                         data-testid={`calendar-date-${dayStr}`}
                       >
                         {/* Date number */}
@@ -376,7 +380,8 @@ export default function Calendar() {
 
         {/* Instructions */}
         <div className="mt-6 text-center text-sm text-muted-foreground">
-          <p>Tap any date to toggle: Empty → Available ✅ → Planned 🍺 → Empty</p>
+          <p className="font-medium">Only Saturdays can be marked</p>
+          <p className="mt-1">Tap any Saturday to toggle: Empty → Available ✅ → Planned 🍺 → Empty</p>
           <p className="mt-1">Changes are saved automatically</p>
         </div>
       </main>
