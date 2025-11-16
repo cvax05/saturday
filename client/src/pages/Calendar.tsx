@@ -35,9 +35,6 @@ export default function Calendar() {
   const [, setLocation] = useLocation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const { toast } = useToast();
-  
-  // Debounce timer refs for each date
-  const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
   // Get current user and authentication status
   const { data: authData, isLoading: authLoading } = useQuery<AuthResponse>({
@@ -71,7 +68,7 @@ export default function Calendar() {
       await apiRequest('PATCH', `/api/availability/${date}`, { state });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/availability'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/availability', startDate, endDate] });
     },
     onError: (error) => {
       toast({
@@ -88,7 +85,7 @@ export default function Calendar() {
       await apiRequest('DELETE', `/api/availability/${date}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/availability'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/availability', startDate, endDate] });
     },
     onError: (error) => {
       toast({
@@ -99,13 +96,8 @@ export default function Calendar() {
     },
   });
 
-  // Debounced toggle handler
+  // Direct toggle handler with optimistic updates
   const handleDateToggle = useCallback((dateStr: string) => {
-    // Clear existing timer for this date
-    if (debounceTimers.current[dateStr]) {
-      clearTimeout(debounceTimers.current[dateStr]);
-    }
-
     // Get current state
     const currentState = availabilityMap[dateStr];
     let newState: AvailabilityState | null = null;
@@ -120,9 +112,11 @@ export default function Calendar() {
       newState = null;
     }
 
-    // Optimistically update the UI
-    const previousData = queryClient.getQueryData(['/api/availability', startDate, endDate]);
-    queryClient.setQueryData(['/api/availability', startDate, endDate], (old: any) => {
+    // Optimistically update the UI immediately
+    const queryKey = ['/api/availability', startDate, endDate];
+    const previousData = queryClient.getQueryData(queryKey);
+    
+    queryClient.setQueryData(queryKey, (old: any) => {
       if (!old) return old;
       
       const availability = old.availability || [];
@@ -149,8 +143,8 @@ export default function Calendar() {
                 userId: currentUser!.id,
                 date: dateStr,
                 state: newState,
-                createdAt: new Date(),
-                updatedAt: new Date(),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
               }
             ]
           };
@@ -158,33 +152,23 @@ export default function Calendar() {
       }
     });
 
-    // Set debounced API call
-    debounceTimers.current[dateStr] = setTimeout(() => {
-      if (newState === null) {
-        deleteMutation.mutate(dateStr, {
-          onError: () => {
-            // Revert optimistic update on error
-            queryClient.setQueryData(['/api/availability', startDate, endDate], previousData);
-          }
-        });
-      } else {
-        updateMutation.mutate({ date: dateStr, state: newState }, {
-          onError: () => {
-            // Revert optimistic update on error
-            queryClient.setQueryData(['/api/availability', startDate, endDate], previousData);
-          }
-        });
-      }
-      delete debounceTimers.current[dateStr];
-    }, 500);
-  }, [availabilityMap, currentUser, startDate, endDate, deleteMutation, updateMutation, queryClient]);
-
-  // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      Object.values(debounceTimers.current).forEach(timer => clearTimeout(timer));
-    };
-  }, []);
+    // Trigger API call immediately
+    if (newState === null) {
+      deleteMutation.mutate(dateStr, {
+        onError: () => {
+          // Revert optimistic update on error
+          queryClient.setQueryData(queryKey, previousData);
+        }
+      });
+    } else {
+      updateMutation.mutate({ date: dateStr, state: newState }, {
+        onError: () => {
+          // Revert optimistic update on error
+          queryClient.setQueryData(queryKey, previousData);
+        }
+      });
+    }
+  }, [availabilityMap, currentUser, startDate, endDate, deleteMutation, updateMutation]);
 
   // Get only Saturdays in the range
   const getSaturdays = (start: Date, end: Date): Date[] => {
