@@ -346,7 +346,7 @@ export default function Calendar() {
                       <Card
                         key={dayStr}
                         className={`
-                          hover-elevate active-elevate-2 cursor-pointer transition-all
+                          overflow-visible hover-elevate active-elevate-2 cursor-pointer transition-all
                           ${isTodayDate ? 'ring-2 ring-primary' : ''}
                           ${state === 'available' ? 'bg-green-500/10 border-green-500/30' : ''}
                           ${state === 'planned' ? 'bg-orange-500/10 border-orange-500/30' : ''}
