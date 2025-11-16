@@ -53,6 +53,13 @@ export default function Calendar() {
   // Fetch availability for current month
   const { data: availabilityData, isLoading: availabilityLoading } = useQuery<{ availability: UserAvailabilitySelect[] }>({
     queryKey: ['/api/availability', startDate, endDate],
+    queryFn: async () => {
+      const response = await fetch(`/api/availability?startDate=${startDate}&endDate=${endDate}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch availability');
+      return response.json();
+    },
     enabled: !!currentUser?.id,
   });
 
