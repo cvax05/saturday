@@ -48,6 +48,7 @@ Preferred communication style: Simple, everyday language.
 - **Schedule Pregame**: Conversation-based pregame scheduling with database integration and API endpoints.
   - **Saturday-Only Scheduling (October 2025)**: Updated scheduling UI to enforce Saturday-only pregames with dropdown selector showing next 10 upcoming Saturdays. Removed manual date input to prevent scheduling on non-Saturday dates. Includes timezone-safe date formatting using local date components to prevent date drift across timezones.
   - **Implementation**: Saturday selector dropdown implemented in both SchedulePregameModal component (used by ChatView) and Messages page inline dialog. Both automatically refresh to show current upcoming Saturdays when dialog opens, preventing stale date selections.
+  - **Cancel Pregame (November 2025)**: Added ability to cancel scheduled pregames from within the conversation view. Cancel button (X icon) appears only on pregames you scheduled. Clicking cancel immediately removes the pregame and updates both the conversation view and calendar. Authorization handled server-side via JWT authentication.
 - **Three-State Saturday Availability System (November 2025)**: Complete redesign of availability management with calendar-based interface.
   - **Calendar Tab**: Central hub for all availability management - displays ONLY upcoming Saturdays (next 3 months) in a scrollable card layout grouped by month
   - **Three-State Toggle**: Each Saturday card cycles through Empty → Available (✅) → Planned (🍺) → Empty states via tap/click
