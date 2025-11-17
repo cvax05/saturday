@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import SearchableCollegeSelect from "@/components/SearchableCollegeSelect";
 import PreferencesSelector from "@/components/PreferencesSelector";
-import { Upload, X, Calendar, User } from "lucide-react";
+import { Upload, X, User, ChevronLeft, ChevronRight } from "lucide-react";
 import { SITE_NAME } from "@/lib/constants";
 import { compressImage } from "@/lib/imageUtils";
 import { queryClient } from "@/lib/queryClient";
@@ -16,6 +16,9 @@ import type { AuthResponse, UserPreferences } from "@shared/schema";
 
 export default function Registration() {
   const [, setLocation] = useLocation();
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 5;
+  
   const [formData, setFormData] = useState({
     name: "",
     groupSize: "",
@@ -40,12 +43,10 @@ export default function Registration() {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        // Compress image to reduce storage size
         const compressedImage = await compressImage(file, 400, 400, 0.7);
         setFormData(prev => ({ ...prev, profileImage: compressedImage }));
       } catch (error) {
         console.error('Failed to process image:', error);
-        // Fallback to original method
         const reader = new FileReader();
         reader.onload = () => {
           setFormData(prev => ({ ...prev, profileImage: reader.result as string }));
@@ -53,7 +54,6 @@ export default function Registration() {
         reader.readAsDataURL(file);
       }
     }
-    // Clear the input so the same file can be selected again
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -71,7 +71,6 @@ export default function Registration() {
       
       for (const file of filesToProcess) {
         try {
-          // Compress gallery images to save space
           const compressedImage = await compressImage(file, 600, 600, 0.8);
           setFormData(prev => ({
             ...prev,
@@ -79,7 +78,6 @@ export default function Registration() {
           }));
         } catch (error) {
           console.error('Failed to process gallery image:', error);
-          // Fallback to original method
           const reader = new FileReader();
           reader.onload = () => {
             setFormData(prev => ({
@@ -91,7 +89,6 @@ export default function Registration() {
         }
       }
     }
-    // Clear the input so the same file can be selected again
     if (galleryInputRef.current) {
       galleryInputRef.current.value = '';
     }
@@ -108,13 +105,60 @@ export default function Registration() {
     galleryInputRef.current?.click();
   };
 
-  // Helper function to convert school name to URL-friendly slug
-  const schoolNameToSlug = (schoolName: string): string => {
-    return schoolName
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '') // Remove special characters
-      .trim()
-      .replace(/\s+/g, '-'); // Replace spaces with hyphens
+  // Validate current step before proceeding
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        if (!formData.email || !formData.password) {
+          alert('Please enter both email and password.');
+          return false;
+        }
+        if (formData.password.length < 6) {
+          alert('Password must be at least 6 characters.');
+          return false;
+        }
+        return true;
+      
+      case 2:
+        if (!formData.name) {
+          alert('Please enter your group/organization name.');
+          return false;
+        }
+        if (!formData.groupSize) {
+          alert('Please enter the number of people in your group/organization.');
+          return false;
+        }
+        return true;
+      
+      case 3:
+        if (!formData.school) {
+          alert('Please select your school.');
+          return false;
+        }
+        // Bio is optional
+        return true;
+      
+      case 4:
+        // Preferences are optional
+        return true;
+      
+      case 5:
+        // Photos are optional
+        return true;
+      
+      default:
+        return true;
+    }
+  };
+
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, totalSteps));
+    }
+  };
+
+  const handleBack = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -126,46 +170,28 @@ export default function Registration() {
       return;
     }
     
-    // Validate group size
     if (!formData.groupSize) {
       alert('Please enter the number of people in your group/organization.');
       return;
     }
     
-    // Validate ideal group size min/max
-    if (!formData.groupSizeMin || !formData.groupSizeMax) {
-      alert('Please enter both minimum and maximum ideal group size.');
-      return;
-    }
-    
-    const minSize = parseInt(formData.groupSizeMin);
-    const maxSize = parseInt(formData.groupSizeMax);
-    
-    if (minSize && maxSize && minSize > maxSize) {
-      alert('Minimum group size cannot be larger than maximum group size.');
-      return;
-    }
-    
     try {
-      // Submit to backend API
       const registrationData: Record<string, any> = {
-        username: formData.name, // Using name as username for now
+        username: formData.name,
         email: formData.email,
         password: formData.password,
         displayName: formData.name,
-        schoolSlug: formData.school, // Already a slug from SearchableCollegeSelect
+        schoolSlug: formData.school,
         bio: formData.description,
-        groupSizeMin: formData.groupSizeMin ? parseInt(formData.groupSizeMin) : undefined,
-        groupSizeMax: formData.groupSizeMax ? parseInt(formData.groupSizeMax) : undefined,
+        groupSizeMin: formData.groupSize ? parseInt(formData.groupSize) : undefined,
+        groupSizeMax: formData.groupSize ? parseInt(formData.groupSize) : undefined,
         preferences: preferences
       };
       
-      // Only include profileImage if it has a value
       if (formData.profileImage) {
         registrationData.profileImage = formData.profileImage;
       }
       
-      // Only include galleryImages if there are any
       if (formData.galleryImages && formData.galleryImages.length > 0) {
         registrationData.galleryImages = formData.galleryImages;
       }
@@ -185,14 +211,8 @@ export default function Registration() {
         return;
       }
       
-      // Parse the auth response and cache it
       const authResponse: AuthResponse = await response.json();
-      
-      // Cache the auth data so Groups page has it immediately
       queryClient.setQueryData(['/api/auth/me'], authResponse);
-      
-      // JWT token is automatically stored in httpOnly cookie by server
-      // Redirect to groups page - auth data already cached
       setLocation("/groups");
     } catch (error) {
       console.error('Registration error:', error);
@@ -200,239 +220,296 @@ export default function Registration() {
     }
   };
 
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="email" className="text-sm sm:text-base">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                required
+                data-testid="input-email"
+                className="w-full"
+                placeholder="your.email@example.com"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => handleInputChange("password", e.target.value)}
+                required
+                data-testid="input-password"
+                className="w-full"
+                placeholder="At least 6 characters"
+              />
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name" className="text-sm sm:text-base">Group/Organization</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                required
+                data-testid="input-name"
+                className="w-full"
+                placeholder="e.g., Women's Rugby Team"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="groupSize" className="text-sm sm:text-base">~# in Group/Organization</Label>
+              <Input
+                id="groupSize"
+                type="number"
+                min="1"
+                value={formData.groupSize}
+                onChange={(e) => handleInputChange("groupSize", e.target.value)}
+                required
+                data-testid="input-group-size"
+                className="w-full"
+                placeholder="e.g., 25"
+              />
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-4">
+            <SearchableCollegeSelect
+              value={formData.school}
+              onValueChange={(value) => handleInputChange("school", value)}
+              required
+              label="School"
+              placeholder="Search for your school..."
+              testId="select-school"
+            />
+
+            <div>
+              <Label htmlFor="description" className="text-sm sm:text-base">About You (Optional)</Label>
+              <Textarea
+                id="description"
+                placeholder="Tell others about yourself and what you're looking for in pregame activities..."
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
+                maxLength={200}
+                data-testid="textarea-description"
+                className="w-full min-h-[80px] resize-none"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {formData.description.length}/200 characters
+              </p>
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm sm:text-base mb-3 block">Preferences (Optional)</Label>
+              <p className="text-sm text-muted-foreground mb-4">
+                Select your preferences to help match with compatible groups
+              </p>
+              <PreferencesSelector
+                value={preferences}
+                onChange={setPreferences}
+                className="w-full"
+              />
+            </div>
+          </div>
+        );
+
+      case 5:
+        return (
+          <div className="space-y-5">
+            {/* Profile Picture */}
+            <div className="flex flex-col items-center space-y-3 py-2">
+              <Label className="text-center text-sm sm:text-base">Profile Photo (Optional)</Label>
+              <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-full border-2 border-border bg-muted overflow-hidden flex items-center justify-center">
+                {formData.profileImage ? (
+                  <img 
+                    src={formData.profileImage} 
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User className="h-12 w-12 sm:h-14 sm:w-14 text-muted-foreground" />
+                )}
+              </div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="default"
+                onClick={handleUploadClick}
+                data-testid="button-upload-photo"
+                className="w-full sm:w-auto"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {formData.profileImage ? 'Change Photo' : 'Add Photo'}
+              </Button>
+            </div>
+
+            {/* Photo Gallery */}
+            <div>
+              <Label className="text-sm sm:text-base">Additional Photos ({formData.galleryImages.length}/5) (Optional)</Label>
+              <p className="text-xs sm:text-sm text-muted-foreground mb-3">
+                Add up to 5 more photos to showcase your group
+              </p>
+              
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                {formData.galleryImages.map((image, index) => (
+                  <div key={index} className="relative group aspect-square overflow-hidden rounded-lg border">
+                    <img 
+                      src={image} 
+                      alt={`Gallery ${index + 1}`}
+                      className="w-full h-full object-cover object-center"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeGalleryImage(index)}
+                      data-testid={`button-remove-gallery-${index}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                
+                {formData.galleryImages.length < 5 && (
+                  <div 
+                    className="aspect-square border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
+                    onClick={handleGalleryUploadClick}
+                    data-testid="button-add-gallery-photo"
+                  >
+                    <div className="text-center">
+                      <Upload className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
+                      <p className="text-xs text-muted-foreground">Add Photo</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <input
+                type="file"
+                ref={galleryInputRef}
+                onChange={handleGalleryUpload}
+                accept="image/*"
+                multiple
+                className="hidden"
+              />
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const getStepTitle = () => {
+    switch (currentStep) {
+      case 1: return "Account Setup";
+      case 2: return "Group Information";
+      case 3: return "School & Bio";
+      case 4: return "Your Preferences";
+      case 5: return "Add Photos";
+      default: return "Create Your Profile";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6">
       <div className="max-w-md mx-auto w-full">
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-2">Saturday </h1>
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-2">
+            {SITE_NAME}
+          </h1>
           <p className="text-sm sm:text-base text-muted-foreground">Join your campus pregame community</p>
         </div>
 
         <Card className="w-full">
           <CardHeader>
-            <CardTitle className="text-xl sm:text-2xl">Create Your Profile</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-              
-              {/* Profile Picture */}
-              <div className="flex flex-col items-center space-y-3 py-2">
-                <Label className="text-center text-sm sm:text-base">Profile Photo - Optional</Label>
-                <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-full border-2 border-border bg-muted overflow-hidden flex items-center justify-center">
-                  {formData.profileImage ? (
-                    <img 
-                      src={formData.profileImage} 
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User className="h-12 w-12 sm:h-14 sm:w-14 text-muted-foreground" />
-                  )}
-                </div>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept="image/*"
-                  className="hidden"
-                />
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="default"
-                  onClick={handleUploadClick}
-                  data-testid="button-upload-photo"
-                  className="w-full sm:w-auto"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {formData.profileImage ? 'Change Photo' : 'Add Photo'}
-                </Button>
-              </div>
-
-              {/* Photo Gallery */}
-              <div>
-                <Label className="text-sm sm:text-base">Additional Photos ({formData.galleryImages.length}/5) - Optional</Label>
-                <p className="text-xs sm:text-sm text-muted-foreground mb-3">
-                  Add up to 5 more photos (shown on your profile page)
-                </p>
-                
-                <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                  {formData.galleryImages.map((image, index) => (
-                    <div key={index} className="relative group aspect-square overflow-hidden rounded-lg border">
-                      <img 
-                        src={image} 
-                        alt={`Gallery ${index + 1}`}
-                        className="w-full h-full object-cover object-center"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeGalleryImage(index)}
-                        data-testid={`button-remove-gallery-${index}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                  
-                  {formData.galleryImages.length < 5 && (
-                    <div 
-                      className="aspect-square border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
-                      onClick={handleGalleryUploadClick}
-                      data-testid="button-add-gallery-photo"
-                    >
-                      <div className="text-center">
-                        <Upload className="h-6 w-6 mx-auto mb-1 text-muted-foreground" />
-                        <p className="text-xs text-muted-foreground">Add Photo</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                
-                <input
-                  type="file"
-                  ref={galleryInputRef}
-                  onChange={handleGalleryUpload}
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                />
-              </div>
-
-              {/* Basic Info */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <Label htmlFor="name" className="text-sm sm:text-base">Group/Organization</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    required
-                    data-testid="input-name"
-                    className="w-full"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label htmlFor="groupSize" className="text-sm sm:text-base">~# in Group/Organization</Label>
-                  <Input
-                    id="groupSize"
-                    type="number"
-                    min="1"
-                    value={formData.groupSize}
-                    onChange={(e) => handleInputChange("groupSize", e.target.value)}
-                    required
-                    data-testid="input-group-size"
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="email" className="text-sm sm:text-base">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  required
-                  data-testid="input-email"
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="password" className="text-sm sm:text-base">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => handleInputChange("password", e.target.value)}
-                  required
-                  data-testid="input-password"
-                  className="w-full"
-                />
-              </div>
-
-              <SearchableCollegeSelect
-                value={formData.school}
-                onValueChange={(value) => handleInputChange("school", value)}
-                required
-                label="School"
-                placeholder="Search for your school..."
-                testId="select-school"
+            <div className="flex items-center justify-between mb-2">
+              <CardTitle className="text-xl sm:text-2xl">{getStepTitle()}</CardTitle>
+              <span className="text-sm text-muted-foreground" data-testid="step-indicator">
+                Step {currentStep} of {totalSteps}
+              </span>
+            </div>
+            
+            {/* Progress bar */}
+            <div className="w-full bg-muted rounded-full h-2 mt-3">
+              <div 
+                className="bg-primary h-2 rounded-full transition-all duration-300"
+                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+                data-testid="progress-bar"
               />
+            </div>
+          </CardHeader>
+          
+          <CardContent>
+            <form onSubmit={handleSubmit}>
+              {renderStepContent()}
 
-              <div>
-                <Label htmlFor="description" className="text-sm sm:text-base">About You (1-2 sentences) - Optional</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Tell others about yourself and what you're looking for in pregame activities..."
-                  value={formData.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
-                  maxLength={200}
-                  data-testid="textarea-description"
-                  className="w-full min-h-[80px] resize-none"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formData.description.length}/200 characters
-                </p>
+              {/* Navigation buttons */}
+              <div className="flex gap-3 mt-6">
+                {currentStep > 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleBack}
+                    className="flex-1"
+                    data-testid="button-back"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    Back
+                  </Button>
+                )}
+                
+                {currentStep < totalSteps ? (
+                  <Button
+                    type="button"
+                    onClick={handleNext}
+                    className={`${currentStep === 1 ? 'w-full' : 'flex-1'}`}
+                    data-testid="button-next"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    className={`${currentStep === 1 ? 'w-full' : 'flex-1'}`}
+                    data-testid="button-register"
+                  >
+                    Join {SITE_NAME}
+                  </Button>
+                )}
               </div>
-
-              <div>
-                <Label className="text-sm sm:text-base">Ideal Group/Organization Size</Label>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  <div>
-                    <Label htmlFor="groupSizeMin" className="text-xs sm:text-sm">Min People</Label>
-                    <Input
-                      id="groupSizeMin"
-                      type="number"
-                      min="2"
-                      placeholder="Min"
-                      value={formData.groupSizeMin}
-                      onChange={(e) => handleInputChange("groupSizeMin", e.target.value)}
-                      required
-                      data-testid="input-group-min"
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="groupSizeMax" className="text-xs sm:text-sm">Max People</Label>
-                    <Input
-                      id="groupSizeMax"
-                      type="number"
-                      min="2"
-                      placeholder="Max"
-                      value={formData.groupSizeMax}
-                      onChange={(e) => handleInputChange("groupSizeMax", e.target.value)}
-                      required
-                      data-testid="input-group-max"
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm sm:text-base mb-2 block">Preferences - Optional</Label>
-                <PreferencesSelector
-                  value={preferences}
-                  onChange={setPreferences}
-                  className="w-full"
-                />
-              </div>
-
-              <div className="p-4 border rounded-md bg-muted/30">
-                <p className="text-sm text-muted-foreground">
-                  <Calendar className="h-4 w-4 inline mr-2" />
-                  You can set your availability after registration by visiting the Calendar tab
-                </p>
-              </div>
-
-              <Button type="submit" className="w-full min-h-[44px]" data-testid="button-register">
-                Join {SITE_NAME}
-              </Button>
             </form>
           </CardContent>
         </Card>

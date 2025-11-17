@@ -37,6 +37,7 @@ Preferred communication style: Simple, everyday language.
 - **Security**: Password hashing with bcryptjs, JWT in httpOnly cookies, trust proxy for Replit.
 - **Flows**: All authentication flows rely on API endpoints; no localStorage caching. `setAuthCookie` helper ensures consistent cookie settings. Seamless authentication flows with TanStack Query caching for improved UX.
 - **Session Isolation (November 2025)**: Enhanced session management to prevent account confusion when testing multiple accounts on same browser. Login flow clears all TanStack Query cache before setting new auth data. Logout endpoint clears cookies with explicit options (path, httpOnly, sameSite, secure) for complete session cleanup. Cookie overwrites handled automatically by setAuthCookie on successful login. Logout now forces hard page reload (`window.location.href`) instead of soft navigation to completely clear all JavaScript state and prevent TanStack Query cache persistence between accounts.
+- **Multi-Step Registration (November 2025)**: Registration redesigned as a 5-step progressive flow with visual progress indicator and step-by-step validation. Steps: (1) Email/Password, (2) Group Info (name & size), (3) School & Bio, (4) Preferences (optional), (5) Photos (optional). Each step validates required fields before allowing navigation to next step. Users can navigate back to previous steps. Final submission on step 5.
 
 ### Features
 - **Messaging System**: Full-featured messaging with cursor-based pagination, unread count tracking, and school isolation.
