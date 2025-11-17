@@ -395,12 +395,6 @@ export default function Calendar() {
             ))
           )}
         </div>
-
-        {/* Instructions */}
-        <div className="mt-6 text-center text-sm text-muted-foreground space-y-1">
-          <p>Tap any Saturday to toggle: Empty → Available ✅ → Planned 🍺 → Empty</p>
-          <p>Changes are saved automatically</p>
-        </div>
       </main>
     </div>
   );
