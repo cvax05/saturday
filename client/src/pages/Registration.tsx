@@ -113,10 +113,6 @@ export default function Registration() {
           alert('Please enter both email and password.');
           return false;
         }
-        if (formData.password.length < 6) {
-          alert('Password must be at least 6 characters.');
-          return false;
-        }
         return true;
       
       case 2:
@@ -131,11 +127,7 @@ export default function Registration() {
         return true;
       
       case 3:
-        if (!formData.school) {
-          alert('Please select your school.');
-          return false;
-        }
-        // Bio is optional
+        // School and bio are optional
         return true;
       
       case 4:
@@ -143,7 +135,10 @@ export default function Registration() {
         return true;
       
       case 5:
-        // Photos are optional
+        if (!formData.profileImage) {
+          alert('Please add a profile photo.');
+          return false;
+        }
         return true;
       
       default:
@@ -164,14 +159,24 @@ export default function Registration() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate required fields
-    if (!formData.name || !formData.email || !formData.password || !formData.school) {
-      alert('Please fill in all required fields.');
+    // Only allow submission from step 5
+    if (currentStep !== totalSteps) {
       return;
     }
     
-    if (!formData.groupSize) {
-      alert('Please enter the number of people in your group/organization.');
+    // Validate required fields: email, password, name, groupSize, profileImage
+    if (!formData.email || !formData.password) {
+      alert('Please enter both email and password.');
+      return;
+    }
+    
+    if (!formData.name || !formData.groupSize) {
+      alert('Please fill in all group information.');
+      return;
+    }
+    
+    if (!formData.profileImage) {
+      alert('Please add a profile photo.');
       return;
     }
     
@@ -235,7 +240,6 @@ export default function Registration() {
                 required
                 data-testid="input-email"
                 className="w-full"
-                placeholder="your.email@example.com"
               />
             </div>
 
@@ -249,7 +253,6 @@ export default function Registration() {
                 required
                 data-testid="input-password"
                 className="w-full"
-                placeholder="At least 6 characters"
               />
             </div>
           </div>
@@ -267,7 +270,6 @@ export default function Registration() {
                 required
                 data-testid="input-name"
                 className="w-full"
-                placeholder="e.g., Women's Rugby Team"
               />
             </div>
             
@@ -282,7 +284,6 @@ export default function Registration() {
                 required
                 data-testid="input-group-size"
                 className="w-full"
-                placeholder="e.g., 25"
               />
             </div>
           </div>
@@ -294,9 +295,7 @@ export default function Registration() {
             <SearchableCollegeSelect
               value={formData.school}
               onValueChange={(value) => handleInputChange("school", value)}
-              required
-              label="School"
-              placeholder="Search for your school..."
+              label="School (Optional)"
               testId="select-school"
             />
 
@@ -304,7 +303,6 @@ export default function Registration() {
               <Label htmlFor="description" className="text-sm sm:text-base">About You (Optional)</Label>
               <Textarea
                 id="description"
-                placeholder="Tell others about yourself and what you're looking for in pregame activities..."
                 value={formData.description}
                 onChange={(e) => handleInputChange("description", e.target.value)}
                 maxLength={200}
@@ -323,9 +321,6 @@ export default function Registration() {
           <div className="space-y-4">
             <div>
               <Label className="text-sm sm:text-base mb-3 block">Preferences (Optional)</Label>
-              <p className="text-sm text-muted-foreground mb-4">
-                Select your preferences to help match with compatible groups
-              </p>
               <PreferencesSelector
                 value={preferences}
                 onChange={setPreferences}
@@ -340,7 +335,7 @@ export default function Registration() {
           <div className="space-y-5">
             {/* Profile Picture */}
             <div className="flex flex-col items-center space-y-3 py-2">
-              <Label className="text-center text-sm sm:text-base">Profile Photo (Optional)</Label>
+              <Label className="text-center text-sm sm:text-base">Profile Photo</Label>
               <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-full border-2 border-border bg-muted overflow-hidden flex items-center justify-center">
                 {formData.profileImage ? (
                   <img 
@@ -375,9 +370,6 @@ export default function Registration() {
             {/* Photo Gallery */}
             <div>
               <Label className="text-sm sm:text-base">Additional Photos ({formData.galleryImages.length}/5) (Optional)</Label>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-3">
-                Add up to 5 more photos to showcase your group
-              </p>
               
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {formData.galleryImages.map((image, index) => (
