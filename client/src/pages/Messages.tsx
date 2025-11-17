@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Loader2, MessageCircle, Send, Calendar } from "lucide-react";
+import { ArrowLeft, Loader2, MessageCircle, Send, Calendar, X } from "lucide-react";
 import { authQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
 import type { AuthResponse } from "@shared/schema";
 import { useState, useEffect, useRef } from "react";
@@ -221,6 +221,17 @@ export default function Messages() {
         location: "", 
         notes: "" 
       });
+    },
+  });
+
+  // Delete pregame mutation
+  const deletePregameMutation = useMutation({
+    mutationFn: async (pregameId: string) => {
+      return apiRequest("DELETE", `/api/pregames/${pregameId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/conversations', selectedConversationId, 'pregames'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/pregames/calendar'] });
     },
   });
 
@@ -613,8 +624,22 @@ export default function Messages() {
                               <p className="text-sm text-muted-foreground mt-1 break-words">{pregame.notes}</p>
                             )}
                           </div>
-                          <div className="text-xs text-muted-foreground flex-shrink-0">
-                            {pregame.creatorId === currentUser?.id ? "You scheduled" : "Scheduled"}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="text-xs text-muted-foreground">
+                              {pregame.creatorId === currentUser?.id ? "You scheduled" : "Scheduled"}
+                            </div>
+                            {pregame.creatorId === currentUser?.id && (
+                              <Button 
+                                size="icon" 
+                                variant="ghost"
+                                onClick={() => deletePregameMutation.mutate(pregame.id)}
+                                disabled={deletePregameMutation.isPending}
+                                className="h-6 w-6"
+                                data-testid={`button-cancel-pregame-${pregame.id}`}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
