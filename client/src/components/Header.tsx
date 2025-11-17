@@ -32,13 +32,14 @@ export default function Header() {
     onSuccess: () => {
       // Clear all query cache after logout
       queryClient.clear();
-      setLocation('/login');
+      // Force a hard page reload to clear all JavaScript state
+      window.location.href = '/login';
     },
     onError: (error) => {
       console.error('Logout error:', error);
-      // Even if logout fails, clear cache and redirect
+      // Even if logout fails, clear cache and do hard redirect
       queryClient.clear();
-      setLocation('/login');
+      window.location.href = '/login';
     }
   });
 
