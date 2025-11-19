@@ -157,7 +157,9 @@ export default function UserProfile({
               <Users className="h-5 w-5 text-primary" />
               <div>
                 <p className="font-semibold">Group Size</p>
-                <p className="text-sm text-muted-foreground">{groupSizeMin}-{groupSizeMax} people</p>
+                <p className="text-sm text-muted-foreground">
+                  {groupSizeMin === groupSizeMax ? groupSizeMin : `${groupSizeMin}-${groupSizeMax}`} people
+                </p>
               </div>
             </div>
             

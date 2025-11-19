@@ -174,17 +174,31 @@ export default function Groups() {
                         </Avatar>
 
                         {/* User Info */}
-                        <div className="flex-1 min-w-0 flex flex-col justify-center">
-                          <h3 className="text-lg font-bold mb-2 line-clamp-2 text-center" data-testid={`user-name-${user.email}`}>
+                        <div className="flex-1 min-w-0 flex flex-col justify-center gap-2">
+                          <h3 className="text-lg font-bold line-clamp-2 text-center" data-testid={`user-name-${user.email}`}>
                             {user.displayName || user.username || 'Student'}
                           </h3>
                           {user.displayName && user.username && user.displayName !== user.username && (
-                            <p className="text-sm text-muted-foreground mb-3 text-center">@{user.username}</p>
+                            <p className="text-sm text-muted-foreground text-center">@{user.username}</p>
+                          )}
+                          {(user.groupSizeMin || user.groupSizeMax) && (
+                            <p className="text-sm text-muted-foreground text-center flex items-center justify-center gap-1">
+                              <Users className="h-3 w-3" />
+                              {user.groupSizeMin === user.groupSizeMax 
+                                ? user.groupSizeMin 
+                                : `${user.groupSizeMin || 0}-${user.groupSizeMax || 0}`} people
+                            </p>
+                          )}
+                          {user.school && (
+                            <p className="text-sm text-muted-foreground text-center flex items-center justify-center gap-1">
+                              <GraduationCap className="h-3 w-3" />
+                              {user.school}
+                            </p>
                           )}
                           <Button
                             size="lg"
                             variant="default"
-                            className="w-full font-semibold"
+                            className="w-full font-semibold mt-2"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleViewProfile(user.id);
