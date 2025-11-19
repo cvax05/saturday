@@ -37,10 +37,6 @@ export default function Groups() {
   const endpoint = hasActiveFilters 
     ? `/api/users/filter?${queryParams}`
     : '/api/users/school';
-  
-  console.log('[GROUPS DEBUG] Filters:', filters);
-  console.log('[GROUPS DEBUG] Has active filters:', hasActiveFilters);
-  console.log('[GROUPS DEBUG] Endpoint:', endpoint);
 
   const { data: schoolUsersData, isLoading: usersLoading } = useQuery<{ users: User[] }>({
     queryKey: [endpoint],

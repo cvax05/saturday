@@ -418,22 +418,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { saturday, music, vibe, groupSizeMin, groupSizeMax } = req.query;
       
-      console.log('[FILTER DEBUG] Request params:', { saturday, music, vibe, groupSizeMin, groupSizeMax });
-      console.log('[FILTER DEBUG] Requesting user school_id:', req.user!.school_id);
-      
       // Get all users in the school first
       let users = await storage.getUsersBySchoolId(req.user!.school_id);
-      console.log('[FILTER DEBUG] Users in school before filtering:', users.map(u => ({ id: u.id, username: u.username })));
       
       // Apply Saturday availability filter using new user_availability table
       if (saturday && typeof saturday === 'string') {
         // Get all users who are 'available' (not 'planned') for this Saturday
         const availableUserIds = await storage.getUsersAvailableOnDate(saturday, 'available');
-        console.log('[FILTER DEBUG] Available user IDs for date', saturday, ':', availableUserIds);
         
         // Filter to only users who are available
         users = users.filter(user => availableUserIds.includes(user.id));
-        console.log('[FILTER DEBUG] Users after availability filter:', users.map(u => ({ id: u.id, username: u.username })));
       }
       
       // Apply preference filters
