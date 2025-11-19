@@ -55,17 +55,14 @@ export default function UserProfile({
   isOwnProfile = false
 }: UserProfileProps) {
   const handleMessage = () => {
-    console.log(`Starting message with ${name}`);
     onMessage(id);
   };
 
   const handleConnect = () => {
-    console.log(`Connect and pregame with ${name}`);
     onConnect?.(id);
   };
 
   const handleBack = () => {
-    console.log('Navigating back');
     onBack();
   };
 

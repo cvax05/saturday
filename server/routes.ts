@@ -87,6 +87,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Hash password before storing
       const hashedPassword = await bcrypt.hash(password, 12);
       
+      // Use a default school if none selected (for optional school selection)
+      const effectiveSchoolSlug = schoolSlug || 'princeton-university';
+      
       // Register user with school using transaction
       try {
         const { user, school } = await storage.registerUserWithSchool({
@@ -102,12 +105,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           preferences: preferences ? JSON.stringify(preferences) : null,
           availableSaturdays: availableSaturdays || null,
           school: null, // Will be set after we get school info
-        }, schoolSlug);
+        }, effectiveSchoolSlug);
         
         // Update user with school name for backward compatibility
         user.school = school.name;
-        
-        console.log(`[AUTH] User registered successfully: ${user.username} (${user.email}) at ${school.name}`);
         
         // Create JWT token
         const token = signJWT({
@@ -381,15 +382,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email } = req.params;
       const decodedEmail = decodeURIComponent(email);
-      console.log(`[API] Looking up user by email. Original: ${email}, Decoded: ${decodedEmail}`);
       
       // Get user and verify they're in the same school
       const user = await storage.getUserByEmailInSchool(decodedEmail, req.user!.school_id);
       if (!user) {
-        console.log(`[API] User not found for email: ${decodedEmail} in school: ${req.user!.school_slug}`);
         return res.status(404).json({ message: "User not found" });
       }
-      console.log(`[API] Found user: ${user.username} (${user.email})`);
       
       // Return user without password
       const { password: _, ...userWithoutPassword } = user;
