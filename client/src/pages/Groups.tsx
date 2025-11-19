@@ -41,6 +41,9 @@ export default function Groups() {
   const { data: schoolUsersData, isLoading: usersLoading } = useQuery<{ users: User[] }>({
     queryKey: [endpoint],
     enabled: !!authData?.user,
+    refetchInterval: 20000,
+    refetchOnWindowFocus: true,
+    staleTime: 10000,
   });
 
   const currentUser = authData?.user;
