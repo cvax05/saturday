@@ -59,6 +59,7 @@ Preferred communication style: Simple, everyday language.
   - **Registration/Profile**: Removed all Saturday checkboxes; both pages direct users to manage availability via Calendar tab
   - **Migration**: Automated script (`scripts/migrate-availability.ts`) converted 10 existing availability entries from legacy `available_saturdays` array column
   - **API Endpoints**: GET /api/availability, PATCH /api/availability/:date, DELETE /api/availability/:date with JWT authentication
+  - **Real-Time Synchronization (November 2025)**: Groups page automatically refetches data every 20 seconds and on window focus. When one user updates their availability in Calendar tab, other users viewing Groups page see the change within 20 seconds (or immediately when switching back to the tab). Configuration: refetchInterval: 20s, refetchOnWindowFocus: true, staleTime: 10s.
 
 ## External Dependencies
 
