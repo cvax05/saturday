@@ -177,14 +177,6 @@ export default function Groups() {
                           {user.displayName && user.username && user.displayName !== user.username && (
                             <p className="text-sm text-muted-foreground text-center">@{user.username}</p>
                           )}
-                          {(user.groupSizeMin || user.groupSizeMax) && (
-                            <p className="text-sm text-muted-foreground text-center flex items-center justify-center gap-1">
-                              <Users className="h-3 w-3" />
-                              {user.groupSizeMin === user.groupSizeMax 
-                                ? user.groupSizeMin 
-                                : `${user.groupSizeMin || 0}-${user.groupSizeMax || 0}`} people
-                            </p>
-                          )}
                           {user.school && (
                             <p className="text-sm text-muted-foreground text-center flex items-center justify-center gap-1">
                               <GraduationCap className="h-3 w-3" />
