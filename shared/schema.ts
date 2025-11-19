@@ -343,7 +343,7 @@ export const registerSchema = createInsertSchema(users).pick({
       .regex(/^data:image\/(jpeg|jpg|png|gif|webp);base64,/, "Must be a valid image data URL")
       .max(2000000, "Image size too large (max 2MB per image)")
   ).max(5, "Maximum 5 gallery images allowed").optional(),
-  schoolSlug: z.string().min(1, "School selection is required"), // New field for school selection
+  schoolSlug: z.string().optional(), // New field for school selection (optional)
   bio: z.string().max(500, "Bio must be 500 characters or less").optional(),
   classYear: z.number().int().min(2020).max(2030).optional(),
   groupSizeMin: z.number().int().min(1).max(100).optional(),
