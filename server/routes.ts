@@ -1,10 +1,27 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import rateLimit from "express-rate-limit";
 import { insertUserSchema, insertMessageSchema, insertPregameSchema, schedulePregameSchema, insertReviewSchema, registerSchema, loginSchema, updateProfileSchema, createConversationSchema, sendMessageSchema, markReadSchema, type AuthResponse, type AuthUser, type User } from "@shared/schema";
 import { signJWT, setAuthCookie } from "./auth/jwt";
 import { authenticateJWT, optionalAuth } from "./auth/middleware";
+
+// Rate limiting for API endpoints
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 100,                   // 100 requests per IP
+  message: 'Too many requests from this IP, please try again later'
+});
+
+// Strict rate limiter for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 5,                     // 5 login attempts
+  message: 'Too many authentication attempts, please try again later'
+});
 
 // Centralized user serializer for consistent API responses
 function mapUserToClient(user: User): AuthUser & { avatarUrl?: string | null } {
@@ -41,6 +58,9 @@ function mapUserToClient(user: User): AuthUser & { avatarUrl?: string | null } {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Apply general rate limiting to all API routes
+  app.use('/api/', apiLimiter);
+
   // Schools endpoint - public for registration
   app.get("/api/schools", async (req, res) => {
     try {
@@ -53,7 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // JWT Authentication endpoints
-  app.post("/api/auth/register", async (req, res) => {
+  app.post("/api/auth/register", authLimiter, async (req, res) => {
     try {
       const { 
         username, 
@@ -147,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/auth/login", async (req, res) => {
+  app.post("/api/auth/login", authLimiter, async (req, res) => {
     try {
       const { username, password, schoolSlug } = loginSchema.parse(req.body);
       
@@ -1050,6 +1070,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching my reviews:", error);
       res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
+  // Health check endpoint for monitoring
+  app.get('/health', async (req, res) => {
+    try {
+      // Check database connection
+      await db.execute(sql`SELECT 1`);
+
+      res.json({
+        status: 'healthy',
+        timestamp: new Date(),
+        uptime: process.uptime(),
+        database: 'connected'
+      });
+    } catch (error) {
+      res.status(503).json({
+        status: 'unhealthy',
+        timestamp: new Date(),
+        database: 'disconnected',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

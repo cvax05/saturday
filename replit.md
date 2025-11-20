@@ -1,5 +1,7 @@
 # Pregame Connect - Social Platform for College Groups
 
+> **ARCHIVED**: This project is no longer Replit-specific. All Replit dependencies have been removed. For current deployment instructions, see [README.md](README.md) and [CODEBASE_ANALYSIS_REPORT.md](CODEBASE_ANALYSIS_REPORT.md).
+
 ## Overview
 Pregame Connect (branded as "Saturday") is a social platform for college groups and organizations to connect for pregame activities. It features profile discovery, real-time messaging, and a rating system. The platform aims to facilitate connections between groups, coordinate pregame events, and build a trusted community within college campuses.
 

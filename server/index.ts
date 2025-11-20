@@ -1,11 +1,39 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
 import path from "path";
+import helmet from "helmet";
+import cors from "cors";
+import compression from "compression";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-app.set('trust proxy', 1); // Trust Replit proxy for secure cookies in production
+
+// Trust proxy setting - configure based on deployment platform
+// app.set('trust proxy', 1);  // Uncomment if behind Nginx/CloudFlare/reverse proxy
+
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],  // Tailwind + Google Fonts
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],  // Google Fonts
+      imgSrc: ["'self'", "data:"],  // base64 images
+      scriptSrc: ["'self'"]
+    }
+  }
+}));
+
+// CORS configuration
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5000',
+  credentials: true  // Allow cookies
+}));
+
+// Compression middleware
+app.use(compression());
+
 app.use(express.json({ limit: '15mb' })); // Allow up to 15MB for multiple images (5 images * ~2-3MB each)
 app.use(express.urlencoded({ extended: false, limit: '15mb' }));
 app.use(cookieParser()); // Add cookie parser for JWT authentication

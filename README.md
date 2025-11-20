@@ -2,7 +2,7 @@
 
 **Saturday** is a full-stack social platform designed to connect students on college campuses. It provides a multi-tenant, school-scoped environment where users can find each other, organize events ("pregames"), and communicate through a real-time messaging system.
 
-The project was initially developed in a Replit environment and has reached a significant level of maturity, with a robust feature set and a solid architectural foundation. This document serves as a guide to understanding, running, and further developing the platform.
+The project has reached a significant level of maturity, with a robust feature set and a solid architectural foundation. This document serves as a guide to understanding, running, and further developing the platform.
 
 ## Project Status: Nearing MVP
 
@@ -12,7 +12,7 @@ The platform is well on its way to being a deployable Minimum Viable Product (MV
 - **Architecture is scalable**: The backend is built with Express.js, a Neon serverless Postgres database, and Drizzle ORM. The frontend is a modern React/Vite application.
 - **Security is in place**: Authentication is handled via JWTs stored in secure, `httpOnly` cookies. Authorization is enforced at the API level, with strict school-scoping to ensure data privacy between tenants.
 
-The primary remaining task is to fully decouple the application from the Replit environment and prepare it for a standard cloud deployment.
+The application is ready for deployment to standard cloud platforms (Render, Railway, Heroku, AWS, etc.).
 
 ## Core Features
 
@@ -71,63 +71,7 @@ The project is organized as a monorepo with three main directories:
     └── schema.ts   # Drizzle DB schema and Zod validation schemas
 ```
 
-## From Replit to Standalone Deployment
-
-This guide provides the steps to run the project on any local machine or cloud server, completely independent of Replit.
-
-### Step 1: Remove Replit-Specific Code
-
-Certain files and code snippets are specific to the Replit environment and must be removed or modified.
-
-1.  **Delete `.replit` file**: This file is only used by Replit to configure the environment and run commands. It is not needed for a standard deployment.
-2.  **Modify `vite.config.ts`**: Remove the Replit-specific plugins.
-
-    ```diff
-    --- a/vite.config.ts
-    +++ b/vite.config.ts
-    @@ -1,15 +1,8 @@
-     import { defineConfig } from "vite";
-     import react from "@vitejs/plugin-react";
-     import path from "path";
--    import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
- 
-     export default defineConfig({
--      plugins: [
--        react(),
--        runtimeErrorOverlay(),
--        ...(process.env.NODE_ENV !== "production" &&
--        process.env.REPL_ID !== undefined
--          ? [
--              await import("@replit/vite-plugin-cartographer").then((m) =>
--                m.cartographer(),
--              ),
--            ]
--          : []),
--      ],
-+      plugins: [react()],
-       resolve: {
-         alias: {
-           "@": path.resolve(import.meta.dirname, "client", "src"),
-    ```
-    Also, be sure to uninstall the Replit packages:
-    `npm uninstall @replit/vite-plugin-cartographer @replit/vite-plugin-runtime-error-modal`
-
-3.  **Modify `server/index.ts`**: Remove the `trust proxy` setting, which was for the Replit proxy.
-
-    ```diff
-    --- a/server/index.ts
-    +++ b/server/index.ts
-    @@ -5,7 +5,6 @@
-     import { setupVite, serveStatic, log } from "./vite";
- 
-     const app = express();
--    app.set('trust proxy', 1); // Trust Replit proxy for secure cookies in production
-     app.use(express.json({ limit: '15mb' })); // Allow up to 15MB for multiple images (5 images * ~2-3MB each)
-     app.use(express.urlencoded({ extended: false, limit: '15mb' }));
-     app.use(cookieParser()); // Add cookie parser for JWT authentication
-    ```
-
-### Step 2: Local Environment Setup
+## Local Environment Setup
 
 1.  **Prerequisites**:
     - Node.js (v20 or later recommended)
