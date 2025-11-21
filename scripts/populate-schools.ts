@@ -1,8 +1,10 @@
+import "dotenv/config";
 import { db } from "../server/db";
 import { schools } from "../shared/schema";
 import { readFileSync } from "fs";
 import { sql } from "drizzle-orm";
 import { parse } from "csv-parse/sync";
+import path from "path";
 
 // Function to create a slug from school name
 function createSlug(name: string): string {

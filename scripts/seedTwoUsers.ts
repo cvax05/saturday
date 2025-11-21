@@ -1,10 +1,11 @@
 #!/usr/bin/env tsx
 /**
  * Seed script to create two test users in the same school for multi-account testing
- * 
+ *
  * Usage: npx tsx scripts/seedTwoUsers.ts
  */
 
+import "dotenv/config";
 import { db } from "../server/db";
 import { users, schools, schoolMemberships } from "@shared/schema";
 import { eq, and } from "drizzle-orm";

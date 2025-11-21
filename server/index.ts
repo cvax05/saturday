@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
 import path from "path";
@@ -12,18 +13,25 @@ const app = express();
 // Trust proxy setting - configure based on deployment platform
 // app.set('trust proxy', 1);  // Uncomment if behind Nginx/CloudFlare/reverse proxy
 
-// Security headers
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],  // Tailwind + Google Fonts
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],  // Google Fonts
-      imgSrc: ["'self'", "data:"],  // base64 images
-      scriptSrc: ["'self'"]
+// Security headers - disable CSP in development for Vite HMR
+if (process.env.NODE_ENV === 'production') {
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:"],
+        scriptSrc: ["'self'"]
+      }
     }
-  }
-}));
+  }));
+} else {
+  // In development, use helmet but disable CSP to allow Vite HMR
+  app.use(helmet({
+    contentSecurityPolicy: false
+  }));
+}
 
 // CORS configuration
 app.use(cors({
@@ -96,11 +104,15 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  const host = process.platform === 'win32' ? '127.0.0.1' : '0.0.0.0';
+
+  const listenOptions: any = { port, host };
+  // reusePort is not supported on Windows
+  if (process.platform !== 'win32') {
+    listenOptions.reusePort = true;
+  }
+
+  server.listen(listenOptions, () => {
+    log(`serving on ${host}:${port}`);
   });
 })();
