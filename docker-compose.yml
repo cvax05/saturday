@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: saturday
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: "postgresql://postgres:password@postgres:5432/saturday"
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:

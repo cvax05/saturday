@@ -18,7 +18,7 @@ export default function Registration() {
   const [, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 5;
-  
+
   const [formData, setFormData] = useState({
     name: "",
     groupSize: "",
@@ -68,7 +68,7 @@ export default function Registration() {
     if (files && formData.galleryImages.length < 5) {
       const remainingSlots = 5 - formData.galleryImages.length;
       const filesToProcess = Array.from(files).slice(0, remainingSlots);
-      
+
       for (const file of filesToProcess) {
         try {
           const compressedImage = await compressImage(file, 600, 600, 0.8);
@@ -114,7 +114,7 @@ export default function Registration() {
           return false;
         }
         return true;
-      
+
       case 2:
         if (!formData.name) {
           alert('Please enter your group/organization name.');
@@ -125,22 +125,20 @@ export default function Registration() {
           return false;
         }
         return true;
-      
+
       case 3:
         // School and bio are optional
         return true;
-      
+
       case 4:
         // Preferences are optional
         return true;
-      
+
       case 5:
-        if (!formData.profileImage) {
-          alert('Please add a profile photo.');
-          return false;
-        }
+        // Step 5 is the final step - no "Next" button here
+        // Photo validation happens in handleSubmit instead
         return true;
-      
+
       default:
         return true;
     }
@@ -158,28 +156,29 @@ export default function Registration() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    e.stopPropagation();
+
     // Only allow submission from step 5
     if (currentStep !== totalSteps) {
+      console.log(`Cannot submit - currently on step ${currentStep}, need to be on step ${totalSteps}`);
       return;
     }
-    
-    // Validate required fields: email, password, name, groupSize, profileImage
+
+    console.log('Submitting registration from step 5');
+
+    // Validate required fields: email, password, name, groupSize
     if (!formData.email || !formData.password) {
       alert('Please enter both email and password.');
       return;
     }
-    
+
     if (!formData.name || !formData.groupSize) {
       alert('Please fill in all group information.');
       return;
     }
-    
-    if (!formData.profileImage) {
-      alert('Please add a profile photo.');
-      return;
-    }
-    
+
+    // Profile photo is optional - no validation needed
+
     try {
       const registrationData: Record<string, any> = {
         username: formData.name,
@@ -192,15 +191,15 @@ export default function Registration() {
         groupSizeMax: formData.groupSize ? parseInt(formData.groupSize) : undefined,
         preferences: preferences
       };
-      
+
       if (formData.profileImage) {
         registrationData.profileImage = formData.profileImage;
       }
-      
+
       if (formData.galleryImages && formData.galleryImages.length > 0) {
         registrationData.galleryImages = formData.galleryImages;
       }
-      
+
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -209,13 +208,13 @@ export default function Registration() {
         credentials: 'include',
         body: JSON.stringify(registrationData),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         alert(errorData.message || 'Registration failed');
         return;
       }
-      
+
       const authResponse: AuthResponse = await response.json();
       queryClient.setQueryData(['/api/auth/me'], authResponse);
       setLocation("/groups");
@@ -272,7 +271,7 @@ export default function Registration() {
                 className="w-full"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="groupSize" className="text-sm sm:text-base">~# in Group/Organization</Label>
               <Input
@@ -338,8 +337,8 @@ export default function Registration() {
               <Label className="text-center text-sm sm:text-base">Profile Photo</Label>
               <div className="relative h-24 w-24 sm:h-28 sm:w-28 rounded-full border-2 border-border bg-muted overflow-hidden flex items-center justify-center">
                 {formData.profileImage ? (
-                  <img 
-                    src={formData.profileImage} 
+                  <img
+                    src={formData.profileImage}
                     alt=""
                     className="w-full h-full object-cover"
                   />
@@ -354,9 +353,9 @@ export default function Registration() {
                 accept="image/*"
                 className="hidden"
               />
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 size="default"
                 onClick={handleUploadClick}
                 data-testid="button-upload-photo"
@@ -370,12 +369,12 @@ export default function Registration() {
             {/* Photo Gallery */}
             <div>
               <Label className="text-sm sm:text-base">Additional Photos ({formData.galleryImages.length}/5) (Optional)</Label>
-              
+
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {formData.galleryImages.map((image, index) => (
                   <div key={index} className="relative group aspect-square overflow-hidden rounded-lg border">
-                    <img 
-                      src={image} 
+                    <img
+                      src={image}
                       alt={`Gallery ${index + 1}`}
                       className="w-full h-full object-cover object-center"
                     />
@@ -391,9 +390,9 @@ export default function Registration() {
                     </Button>
                   </div>
                 ))}
-                
+
                 {formData.galleryImages.length < 5 && (
-                  <div 
+                  <div
                     className="aspect-square border-2 border-dashed border-muted-foreground/25 rounded-lg flex items-center justify-center cursor-pointer hover:border-muted-foreground/50 transition-colors"
                     onClick={handleGalleryUploadClick}
                     data-testid="button-add-gallery-photo"
@@ -405,7 +404,7 @@ export default function Registration() {
                   </div>
                 )}
               </div>
-              
+
               <input
                 type="file"
                 ref={galleryInputRef}
@@ -452,19 +451,30 @@ export default function Registration() {
                 Step {currentStep} of {totalSteps}
               </span>
             </div>
-            
+
             {/* Progress bar */}
             <div className="w-full bg-muted rounded-full h-2 mt-3">
-              <div 
+              <div
                 className="bg-primary h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(currentStep / totalSteps) * 100}%` }}
                 data-testid="progress-bar"
               />
             </div>
           </CardHeader>
-          
+
           <CardContent>
-            <form onSubmit={handleSubmit}>
+            <form
+              onSubmit={handleSubmit}
+              onKeyDown={(e) => {
+                // Prevent Enter key from submitting form on steps 1-4
+                if (e.key === 'Enter' && currentStep < totalSteps) {
+                  e.preventDefault();
+                  console.log(`Enter key pressed on step ${currentStep} - prevented form submission`);
+                  // Optionally trigger Next button click instead
+                  handleNext();
+                }
+              }}
+            >
               {renderStepContent()}
 
               {/* Navigation buttons */}
@@ -481,7 +491,7 @@ export default function Registration() {
                     Back
                   </Button>
                 )}
-                
+
                 {currentStep < totalSteps ? (
                   <Button
                     type="button"

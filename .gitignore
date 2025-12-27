@@ -5,3 +5,8 @@ server/public
 vite.config.ts.*
 *.tar.gz
 .local/
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.production

@@ -3,10 +3,10 @@ import type { Response } from 'express';
 import type { JWTPayload } from '@shared/schema';
 
 // Mandatory JWT secret - fail startup if not provided
-const JWT_SECRET = process.env.SESSION_SECRET as string;
+const JWT_SECRET = process.env.JWT_SECRET as string;
 if (!JWT_SECRET) {
-  console.error('CRITICAL: SESSION_SECRET environment variable is required for JWT authentication');
-  console.error('Please set a strong, random SESSION_SECRET before starting the server');
+  console.error('CRITICAL: JWT_SECRET environment variable is required for JWT authentication');
+  console.error('Please set a strong, random JWT_SECRET before starting the server');
   process.exit(1);
 }
 

@@ -10,8 +10,8 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
-// Trust proxy setting - configure based on deployment platform
-// app.set('trust proxy', 1);  // Uncomment if behind Nginx/CloudFlare/reverse proxy
+// Trust proxy setting - required for Render deployment (behind reverse proxy)
+app.set('trust proxy', 1);
 
 // Security headers - disable CSP in development for Vite HMR
 if (process.env.NODE_ENV === 'production') {
@@ -107,10 +107,6 @@ app.use((req, res, next) => {
   const host = process.platform === 'win32' ? '127.0.0.1' : '0.0.0.0';
 
   const listenOptions: any = { port, host };
-  // reusePort is not supported on Windows
-  if (process.platform !== 'win32') {
-    listenOptions.reusePort = true;
-  }
 
   server.listen(listenOptions, () => {
     log(`serving on ${host}:${port}`);
